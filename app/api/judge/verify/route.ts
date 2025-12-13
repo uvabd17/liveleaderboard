@@ -1,0 +1,33 @@
+import { prisma } from '../../../../lib/db'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function POST(request: Request) {
+  try {
+    const { code, eventSlug } = await request.json()
+    if (!code || typeof code !== 'string') return Response.json({ error: 'invalid_code' }, { status: 400 })
+    
+    // If eventSlug provided, use it; otherwise try to find judge by code across all events
+    let evt = null
+    if (eventSlug) {
+      evt = await prisma.event.findUnique({ where: { slug: eventSlug } })
+    } else {
+      // Find judge first, then get event
+      const judge = await prisma.judge.findFirst({ where: { code: code.toUpperCase(), active: true } })
+      if (judge) {
+        evt = await prisma.event.findUnique({ where: { id: judge.eventId } })
+      }
+    }
+    
+    if (!evt) return Response.json({ error: 'no_event' }, { status: 400 })
+
+    const judge = await prisma.judge.findFirst({ where: { eventId: evt.id, code: code.toUpperCase(), active: true } })
+    if (!judge) return Response.json({ error: 'not_found' }, { status: 404 })
+    if (judge.expiresAt && judge.expiresAt < new Date()) return Response.json({ error: 'expired' }, { status: 400 })
+
+    return Response.json({ ok: true, judgeId: judge.id, judgeName: judge.name || 'Judge', role: judge.role })
+  } catch (e: any) {
+    return Response.json({ error: e?.message || 'error' }, { status: 500 })
+  }
+}

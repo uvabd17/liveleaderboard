@@ -1,0 +1,15 @@
+﻿{
+    "event":  {
+                  "id":  "cmj328aif0003g25hqqdb0ybj",
+                  "name":  "Demo Event",
+                  "slug":  "demo-event",
+                  "logoUrl":  null,
+                  "brandColors":  null,
+                  "organization":  {
+                                       "name":  "Demo Org"
+                                   }
+              },
+    "participants":  [
+
+                     ]
+}

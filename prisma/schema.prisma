@@ -1,0 +1,187 @@
+// Prisma schema for Supabase Postgres (can run locally with Docker or Supabase).
+// Minimal models: organization, event, participant (team/individual), score.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                        String              @id @default(cuid())
+  email                     String              @unique
+  name                      String?
+  password                  String // bcrypt hashed
+  orgId                     String?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  organization              Organization?       @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  ownedOrgs                 Organization[]      @relation("OrgOwner")
+  createdJudgeInvites       JudgeInvite[]       @relation("JudgeInviteCreatedBy")
+  usedJudgeInvites          JudgeInvite[]       @relation("JudgeInviteUsedBy")
+  createdRegistrationTokens RegistrationToken[]
+
+  @@index([email])
+}
+
+model Organization {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  ownerId       String
+  brandingTheme Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  owner         User     @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       User[]
+  events        Event[]
+
+  @@index([slug])
+}
+
+model Event {
+  id                 String              @id @default(cuid())
+  orgId              String
+  name               String
+  slug               String              @unique
+  description        String?
+  logoUrl            String?             // Logo URL or data URL for event branding
+  brandColors        Json?               // Extracted brand colors: primary, secondary, accent
+  startAt            DateTime?
+  endAt              DateTime?
+  timezone           String?
+  visibility         String              @default("public") // public|private|unlisted
+  rules              Json? // judgingMode, rubric, rounds, eliminations config
+  features           Json? // per-event toggleable features configuration
+  currentRound       Int                 @default(0)
+  archived           Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  organization       Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  participants       Participant[]
+  scores             Score[]
+  roundCompletions   RoundCompletion[]
+  judges             Judge[]
+  judgeInvites       JudgeInvite[]
+  registrationTokens RegistrationToken[]
+
+  @@index([slug])
+  @@index([orgId])
+  @@index([visibility])
+}
+
+enum ParticipantKind {
+  team
+  individual
+}
+
+model Participant {
+  id        String          @id @default(cuid())
+  eventId   String
+  kind      ParticipantKind
+  name      String
+  normalizedName String
+  profile   Json?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  event     Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  scores    Score[]
+  roundCompletions RoundCompletion[]
+  @@unique([eventId, normalizedName, kind])
+}
+
+model Score {
+  id             String      @id @default(cuid())
+  eventId        String
+  participantId  String
+  value          Int         @default(0)
+  criterion      String      @default("unknown")
+  judgeUserId    String?
+  comment        String? // Judge feedback/comments feature
+  idempotencyKey String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt // For score history tracking
+  event          Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant    Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([participantId])
+}
+
+model Judge {
+  id        String    @id @default(cuid())
+  eventId   String
+  name      String?
+  email     String?
+  code      String    @unique
+  role      String    @default("judge") // judge|admin
+  active    Boolean   @default(true)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model JudgeInvite {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  eventId     String
+  createdById String
+  usedById    String?
+  usedAt      DateTime?
+  expiresAt   DateTime?
+  singleUse   Boolean   @default(true)
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("JudgeInviteCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  usedBy    User? @relation("JudgeInviteUsedBy", fields: [usedById], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([token])
+}
+
+model RegistrationToken {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  eventId     String
+  createdById String
+  usesLeft    Int? // null = unlimited
+  singleUse   Boolean   @default(false)
+  expiresAt   DateTime?
+  metadata    Json?
+  public      Boolean   @default(false)
+  scanCount   Int       @default(0)
+  registrationsCount Int @default(0)
+  createdAt   DateTime  @default(now())
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy User  @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([token])
+}
+
+// Tracks when a participant is completed for a given round
+model RoundCompletion {
+  id            String   @id @default(cuid())
+  eventId       String
+  participantId String
+  roundNumber   Int
+  judgeUserId   String?
+  completedAt   DateTime @default(now())
+  durationSeconds Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, roundNumber])
+  @@unique([eventId, participantId, roundNumber])
+}

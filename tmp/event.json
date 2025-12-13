@@ -1,0 +1,32 @@
+﻿{
+    "event":  {
+                  "id":  "cmj328aif0003g25hqqdb0ybj",
+                  "orgId":  "cmj328ad50001g25hifqh2bkw",
+                  "name":  "Demo Event",
+                  "slug":  "demo-event",
+                  "description":  null,
+                  "logoUrl":  null,
+                  "brandColors":  null,
+                  "startAt":  null,
+                  "endAt":  null,
+                  "timezone":  null,
+                  "visibility":  "public",
+                  "rules":  null,
+                  "features":  null,
+                  "currentRound":  0,
+                  "archived":  false,
+                  "createdAt":  "2025-12-12T16:06:59.127Z",
+                  "updatedAt":  "2025-12-12T16:06:59.127Z",
+                  "organization":  {
+                                       "name":  "Demo Org",
+                                       "id":  "cmj328ad50001g25hifqh2bkw"
+                                   },
+                  "judges":  [
+
+                             ],
+                  "_count":  {
+                                 "participants":  0,
+                                 "judges":  0
+                             }
+              }
+}

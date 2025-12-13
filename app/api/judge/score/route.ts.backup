@@ -1,0 +1,245 @@
+import { db } from '../../../../lib/db'
+import { hub } from '../../../../lib/hub'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+// Multi-tenant judge scoring API
+export async function POST(request: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    const body = await request.json()
+    const { eventSlug, participantId, scores, comment } = body as { 
+      eventSlug: string
+      participantId: string 
+      scores: Record<string, number>
+      comment?: string
+    }
+    
+    if (!eventSlug || !participantId || !scores) {
+      return Response.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+    
+    // Find event
+    const evt = await db.event.findUnique({ 
+      where: { slug: eventSlug },
+      include: {
+        participants: {
+          where: { id: participantId }
+        }
+      }
+    })
+    
+    if (!evt) return Response.json({ error: 'Event not found' }, { status: 404 })
+    if (evt.participants.length === 0) {
+      return Response.json({ error: 'Participant not found' }, { status: 404 })
+    }
+    // Load rubric for normalization + weights
+    const rules = (evt.rules as any) || {}
+    const rubric: { key: string; label: string; max: number; weight?: number }[] = rules.rubric || [
+      { key: 'innovation', label: 'Innovation', max: 100, weight: 1 },
+      { key: 'impact', label: 'Impact', max: 100, weight: 1 },
+      { key: 'technical', label: 'Technical', max: 100, weight: 1 },
+    ]
+    const rubricMap = new Map(rubric.map(r => [r.key, r]))
+    // Enforce judging window: if current round is closed, block scoring
+    const rounds = (rules.rounds || []) as any[]
+    const currentRound = evt.currentRound ?? 0
+    const currentCfg = rounds[currentRound]
+    if (currentCfg) {
+      const isOpen = currentCfg.judgingOpen !== false
+      let withinWindow = true
+      if (typeof currentCfg.judgingWindowMinutes === 'number' && currentCfg.judgingOpenedAt) {
+        const startMs = new Date(currentCfg.judgingOpenedAt).getTime()
+        const endMs = startMs + currentCfg.judgingWindowMinutes * 60 * 1000
+        withinWindow = Date.now() <= endMs
+      }
+      if (!isOpen || !withinWindow) {
+        return Response.json({ error: 'judging_closed' }, { status: 403 })
+      }
+    }
+    const judgeId = judgeUserId || 'dev-judge'
+
+    // Validate required criteria present and per-round applicability
+    const inputMap = new Map(scores.map(s => [s.criterion, s.value]))
+    const missingRequired: string[] = []
+    const displayRound = currentRound + 1
+    for (const r of rubric as any[]) {
+      const req = (r as any).required !== false
+      const applies = Array.isArray(r.rounds) ? r.rounds.includes(displayRound) : true
+      if (applies && req && !inputMap.has(r.key)) missingRequired.push(r.key)
+    }
+    if (missingRequired.length > 0) {
+      return Response.json({ error: 'missing_required', missing: missingRequired }, { status: 400 })
+    }
+
+    // Normalize values according to scale: radio/range treated as numbers already, but clamp to bins for radio
+    function normalizeValue(r: any, v: number) {
+      const max = r.max ?? 100
+      let val = Math.max(0, Math.min(max, Math.floor(v)))
+      if (r.scale === 'radio') {
+        const bins = [0, Math.round(max*0.25), Math.round(max*0.5), Math.round(max*0.75), max]
+        // snap to closest bin
+        let closest = bins[0]
+        let diff = Math.abs(val - closest)
+        for (const b of bins) {
+          const d = Math.abs(val - b)
+          if (d < diff) { closest = b; diff = d }
+        }
+        val = closest
+      }
+      return val
+    }
+
+    // Idempotent upsert per judge+participant+criterion
+    for (const s of scores) {
+      const crit = rubricMap.get(s.criterion) as any
+      const max = crit?.max ?? 100
+      const valueClamped = normalizeValue(crit, s.value)
+      const existing = await prisma.score.findFirst({ where: { eventId: evt.id, participantId, judgeUserId: judgeId, criterion: s.criterion } })
+      if (existing) {
+        await prisma.score.update({ 
+          where: { id: existing.id }, 
+          data: { 
+            value: valueClamped, 
+            comment: s.comment || null,
+            idempotencyKey: idempotency_key ?? existing.idempotencyKey ?? null 
+          } 
+        })
+      } else {
+        await prisma.score.create({ 
+          data: { 
+            eventId: evt.id, 
+            participantId, 
+            judgeUserId: judgeId, 
+            value: valueClamped, 
+            criterion: s.criterion, 
+            comment: s.comment || null,
+            idempotencyKey: idempotency_key 
+          } 
+        })
+      }
+    }
+    
+    // Store general comment as a special "general" criterion if provided
+    if (generalComment) {
+      const existing = await prisma.score.findFirst({ 
+        where: { eventId: evt.id, participantId, judgeUserId: judgeId, criterion: '__general__' } 
+      })
+      if (existing) {
+        await prisma.score.update({ 
+          where: { id: existing.id }, 
+          data: { comment: generalComment, value: 0 } 
+        })
+      } else {
+        await prisma.score.create({ 
+          data: { 
+            eventId: evt.id, 
+            participantId, 
+            judgeUserId: judgeId, 
+            value: 0, 
+            criterion: '__general__', 
+            comment: generalComment 
+          } 
+        })
+      }
+    }
+
+    // Compute weighted normalized total
+    const rows = await prisma.score.findMany({ where: { eventId: evt.id, participantId } })
+    let totalWeighted = 0
+    let totalWeights = 0
+    for (const r of rubric) {
+      const w = r.weight ?? 1
+      const row = rows.find(x => x.criterion === r.key)
+      const val = row ? row.value : 0
+      const normalized = r.max > 0 ? val / r.max : 0
+      totalWeighted += normalized * w
+      totalWeights += w
+    }
+    const finalScore = totalWeights > 0 ? Math.round(totalWeighted / totalWeights * 100) : 0
+
+    // Conflict detection: variance across judges' totals (simple)
+    const byJudgeTotals: Record<string, number> = {}
+    for (const j of new Set(rows.map(r => r.judgeUserId || 'unknown'))) {
+      let jwTotal = 0
+      let jwWeights = 0
+      for (const r of rubric) {
+        const w = r.weight ?? 1
+        const row = rows.find(x => (x.judgeUserId || 'unknown') === j && x.criterion === r.key)
+        const val = row ? row.value : 0
+        const normalized = r.max > 0 ? val / r.max : 0
+        jwTotal += normalized * w
+        jwWeights += w
+      }
+      byJudgeTotals[j] = jwWeights > 0 ? (jwTotal / jwWeights) * 100 : 0
+    }
+    const judgeScores = Object.values(byJudgeTotals)
+    let variance = 0
+    let conflict = false
+    if (judgeScores.length > 1) {
+      const mean = judgeScores.reduce((a,b)=>a+b,0) / judgeScores.length
+      variance = judgeScores.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / judgeScores.length
+      // Threshold: stddev > 10 points triggers conflict
+      const stddev = Math.sqrt(variance)
+      conflict = stddev > 10
+    }
+
+    // Update in-memory participant and broadcast
+    const existing = hub.state.participants.get(participantId)
+    if (existing) {
+      hub.upsertParticipant({ ...existing, score: finalScore })
+    }
+    return Response.json({ ok: true, total: finalScore, conflict, variance })
+  } catch (e: any) {
+    return Response.json({ error: e?.message || 'error' }, { status: 500 })
+  }
+}
+
+// Helper: GET conflict status for a participant
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url)
+    const participantId = url.searchParams.get('participantId')
+    if (!participantId) return Response.json({ error: 'missing participantId' }, { status: 400 })
+    const evt = await prisma.event.findUnique({ where: { slug: 'demo-event' } })
+    if (!evt) return Response.json({ error: 'no_event' }, { status: 400 })
+    const rows = await prisma.score.findMany({ where: { eventId: evt.id, participantId } })
+    if (rows.length === 0) return Response.json({ conflict: false, variance: 0 })
+    const rules = (evt.rules as any) || {}
+    const rubric: { key: string; label: string; max: number; weight?: number }[] = rules.rubric || [
+      { key: 'innovation', label: 'Innovation', max: 100, weight: 1 },
+      { key: 'impact', label: 'Impact', max: 100, weight: 1 },
+      { key: 'technical', label: 'Technical', max: 100, weight: 1 },
+    ]
+    const byJudgeTotals: Record<string, number> = {}
+    for (const j of new Set(rows.map(r => r.judgeUserId || 'unknown'))) {
+      let jwTotal = 0
+      let jwWeights = 0
+      for (const r of rubric) {
+        const w = r.weight ?? 1
+        const row = rows.find(x => (x.judgeUserId || 'unknown') === j && x.criterion === r.key)
+        const val = row ? row.value : 0
+        const normalized = r.max > 0 ? val / r.max : 0
+        jwTotal += normalized * w
+        jwWeights += w
+      }
+      byJudgeTotals[j] = jwWeights > 0 ? (jwTotal / jwWeights) * 100 : 0
+    }
+    const judgeScores = Object.values(byJudgeTotals)
+    let variance = 0
+    let conflict = false
+    if (judgeScores.length > 1) {
+      const mean = judgeScores.reduce((a,b)=>a+b,0) / judgeScores.length
+      variance = judgeScores.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / judgeScores.length
+      const stddev = Math.sqrt(variance)
+      conflict = stddev > 10
+    }
+    return Response.json({ conflict, variance })
+  } catch (e: any) {
+    return Response.json({ error: e?.message || 'error' }, { status: 500 })
+  }
+}

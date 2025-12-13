@@ -1,0 +1,18 @@
+﻿{
+    "ok":  true,
+    "currentRound":  0,
+    "rounds":  [
+                   {
+                       "name":  "Round 1",
+                       "number":  0,
+                       "duration":  5,
+                       "judgingOpen":  false,
+                       "judgingOpenedAt":  null,
+                       "judgingWindowMinutes":  null,
+                       "roundDurationMinutes":  5,
+                       "timerStartedAt":  "2025-12-12T16:23:20.785Z",
+                       "timerPausedAt":  null,
+                       "timerRunning":  true
+                   }
+               ]
+}
