@@ -111,3 +111,21 @@ Invoke-WebRequest -Method POST http://localhost:3000/api/dev-seed | Out-Null
 Notes:
 - For pooled connections, use Supabase Pooler with: `?pgbouncer=true&connection_limit=1&sslmode=require`.
 - `db push` is fine for dev; switch to Prisma Migrate for production.
+
+## Development status
+
+- This project is actively under development. Bugs and incomplete features are expected; use with caution.
+- Contributions are welcome — feel free to open issues or pull requests. For larger changes, please open an issue first to discuss the approach.
+- Important: a major part of the codebase was generated or assisted by AI and has been integrated by the author. Review generated code carefully when contributing.
+
+## Purpose
+
+- Live Leaderboard provides a real-time, event-scoped leaderboard system for competitions, hackathons, and similar events. It supports participant registration, judge scoring, customizable rubrics, and a stage display for projector output.
+
+## Contributing
+
+- Open an issue to report bugs or request features.
+- Fork the repo, make changes on a branch, and open a pull request. Add tests where appropriate and run existing smoke/performance tests.
+- If you'd like, add a short note in your PR describing any AI-assisted code changes so reviewers can focus on those areas.
+
+Thank you for your interest and help — contributions make this project better for everyone.
