@@ -40,8 +40,31 @@ type Hub = {
   tokens: Map<string, RegisterToken>
 }
 
-const TOP_N = Number(process.env.HUB_TOP_N) || 50
-const DEBOUNCE_MS = Number(process.env.HUB_DEBOUNCE_MS) || 150
+const TOP_N = Number(process.env.HUB_TOP_N) || 20
+const DEBOUNCE_MS = Number(process.env.HUB_DEBOUNCE_MS) || 75
+// keep behavior simple: debounce only
+let redisPub: any = null
+let redisSub: any = null
+const INSTANCE_ID = process.env.HUB_INSTANCE_ID || makeId('ins')
+try {
+  if (process.env.REDIS_URL) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const IORedis = require('ioredis')
+    redisPub = new IORedis(process.env.REDIS_URL)
+    redisSub = new IORedis(process.env.REDIS_URL)
+    redisSub.subscribe('hub:pub')
+    redisSub.on('message', (ch: string, msg: string) => {
+      try {
+        const parsed = JSON.parse(msg)
+        if (parsed && parsed.instanceId === INSTANCE_ID) return
+        // forward published event to local subscribers
+        try { (g.__LEADERBOARD_HUB__ as any)?.broadcast(parsed.type, parsed) } catch {}
+      } catch (e) {}
+    })
+  }
+} catch (e) {
+  // ignore missing redis
+}
 
 function rank(participants: Participant[]): Array<Participant & { rank: number }>{
   const sorted = [...participants].sort((a, b) => {
@@ -116,6 +139,13 @@ if (!g.__LEADERBOARD_HUB__) {
                     if ((s as any).eventSlug && payload.eventSlug && (s as any).eventSlug !== payload.eventSlug) continue
                     try { s.send(payload) } catch {}
                   }
+                  // publish to redis so other instances receive this leaderboard update
+                  try {
+                    if (redisPub && payload.instanceId !== INSTANCE_ID) {
+                      const pub = { ...payload, instanceId: INSTANCE_ID }
+                      redisPub.publish('hub:pub', JSON.stringify(pub)).catch(() => {})
+                    }
+                  } catch (e) {}
                 } catch (err) {
                   // ignore
                 }
@@ -140,6 +170,13 @@ if (!g.__LEADERBOARD_HUB__) {
           }
           try { s.send(payload) } catch {}
         }
+        // publish generic events too so other instances can forward
+        try {
+          if (redisPub && (data as any)?.instanceId !== INSTANCE_ID) {
+            const pub = { ...payload, instanceId: INSTANCE_ID }
+            redisPub.publish('hub:pub', JSON.stringify(pub)).catch(() => {})
+          }
+        } catch (e) {}
       },
     broadcastRoundChange(data) {
       // Use generic broadcast so event-scoped filtering applies
@@ -192,21 +229,41 @@ if (!g.__LEADERBOARD_HUB__) {
         this.broadcast('snapshot', { leaderboard: trimmed })
       }
     },
+    // coalescing map to group rapid updates per participant
+    _coalesce: new Map(),
     updateScore(id, delta) {
       const p = this.state.participants.get(id)
       if (!p) return
+      // apply delta immediately to in-memory participant
       p.score = Math.max(0, p.score + delta)
       this.state.participants.set(id, p)
-      const before = this.state.lastRanks
-      const ranked = rank(Array.from(this.state.participants.values()))
-      const after = new Map(ranked.map(r => [r.id, r.rank]))
-      this.state.lastRanks = after
-      // compute movers only for changed ranks
-      const movers = ranked.filter(r => before.get(r.id) !== r.rank).map(r => ({ id: r.id, from: before.get(r.id) ?? r.rank, to: r.rank }))
-      // throttle/batched broadcast: only broadcast trimmed leaderboard if there are changes
-      if (movers.length > 0 || delta !== 0) {
-        this.broadcast('leaderboard', { leaderboard: ranked, movers })
+
+      // schedule a coalesced broadcast for this participant
+      const existing = (this as any)._coalesce.get(id)
+      if (existing && existing.timer) {
+        clearTimeout(existing.timer)
       }
+
+      const windowMs = 50
+      const timer = setTimeout(() => {
+        try {
+          // compute ranks once when the coalesce window fires
+          const before = this.state.lastRanks
+          const ranked = rank(Array.from(this.state.participants.values()))
+          const after = new Map(ranked.map(r => [r.id, r.rank]))
+          this.state.lastRanks = after
+          const movers = ranked.filter(r => before.get(r.id) !== r.rank).map(r => ({ id: r.id, from: before.get(r.id) ?? r.rank, to: r.rank }))
+          if (movers.length > 0) {
+            this.broadcast('leaderboard', { leaderboard: ranked, movers })
+          }
+        } catch (err) {
+          // ignore
+        } finally {
+          (this as any)._coalesce.delete(id)
+        }
+      }, windowMs)
+
+      (this as any)._coalesce.set(id, { timer })
     },
     getSorted() { return Array.from(this.state.participants.values()).sort((a,b)=>b.score-a.score) },
     getRanks() { return this.state.lastRanks },
