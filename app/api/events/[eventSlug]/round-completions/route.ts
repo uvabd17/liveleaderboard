@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import prisma from '../../../../../../lib/db'
+import { db } from '@/lib/db'
 
 function toCsv(rows: any[]) {
   const header = ['id','participantId','roundNumber','judgeUserId','completedAt','durationSeconds','comments']
@@ -25,7 +25,7 @@ export async function GET(req: Request, { params }: { params: { eventSlug: strin
   const participantId = url.searchParams.get('participantId') || undefined
   const judgeUserId = url.searchParams.get('judgeUserId') || undefined
 
-  const event = await prisma.event.findUnique({ where: { slug: eventSlug } })
+  const event = await db.event.findUnique({ where: { slug: eventSlug } })
   if (!event) return NextResponse.json({ error: 'event not found' }, { status: 404 })
 
   const where: any = { eventId: event.id }
@@ -33,14 +33,37 @@ export async function GET(req: Request, { params }: { params: { eventSlug: strin
   if (participantId) where.participantId = participantId
   if (judgeUserId) where.judgeUserId = judgeUserId
 
-  const rows = await prisma.roundCompletion.findMany({ where, orderBy: { completedAt: 'desc' } })
+  const rows = await db.roundCompletion.findMany({ where, orderBy: { completedAt: 'desc' } })
 
-  // Aggregate judge comments for each completion (fetch scores/comments by participant+round)
-  const rowsWithComments = await Promise.all(rows.map(async (r) => {
-    const commentsWhere: any = { eventId: r.eventId, participantId: r.participantId }
-    if (r.judgeUserId) commentsWhere.judgeUserId = r.judgeUserId
-    const comments = await prisma.score.findMany({ where: commentsWhere, select: { judgeUserId: true, comment: true } })
-    return { ...r, comments }
+  // Optimize: Fetch all comments in one query instead of N+1
+  const participantIds = rows.map(r => r.participantId)
+  const allComments = participantIds.length > 0 
+    ? await db.score.findMany({
+        where: {
+          eventId: event.id,
+          participantId: { in: participantIds },
+          comment: { not: null }
+        },
+        select: { participantId: true, judgeUserId: true, comment: true }
+      })
+    : []
+
+  // Group comments by participantId
+  const commentsByParticipant = new Map<string, Array<{ judgeUserId: string | null; comment: string | null }>>()
+  for (const comment of allComments) {
+    if (!commentsByParticipant.has(comment.participantId)) {
+      commentsByParticipant.set(comment.participantId, [])
+    }
+    commentsByParticipant.get(comment.participantId)!.push({
+      judgeUserId: comment.judgeUserId,
+      comment: comment.comment
+    })
+  }
+
+  // Map comments to completions
+  const rowsWithComments = rows.map(r => ({
+    ...r,
+    comments: commentsByParticipant.get(r.participantId) || []
   }))
 
   if (format === 'csv') {

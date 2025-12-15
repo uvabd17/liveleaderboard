@@ -1,5 +1,7 @@
 import { prisma } from '../../../lib/db'
 import { hub } from '../../../lib/hub'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,8 +42,10 @@ export async function GET(request: Request) {
 // POST: manage round transitions
 export async function POST(request: Request) {
   try {
-    if (process.env.NODE_ENV !== 'development') {
-      return Response.json({ error: 'forbidden' }, { status: 403 })
+    // Require admin authentication
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user) {
+      return Response.json({ error: 'unauthenticated' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -65,8 +69,26 @@ export async function POST(request: Request) {
     if (!slug) {
       return Response.json({ error: 'eventSlug required' }, { status: 400 })
     }
-    const evt = await prisma.event.findUnique({ where: { slug } })
+    const evt = await prisma.event.findUnique({ where: { slug }, include: { organization: true } })
     if (!evt) return Response.json({ error: 'no_event' }, { status: 400 })
+
+    // Verify user has access to this event (must be org member or owner)
+    const userId = session.user.id as string
+    const user = await prisma.user.findUnique({ 
+      where: { id: userId },
+      include: { ownedOrgs: true }
+    })
+    
+    if (!user) {
+      return Response.json({ error: 'user_not_found' }, { status: 404 })
+    }
+
+    const isOwner = evt.organization.ownerId === userId
+    const isOrgMember = user.orgId === evt.orgId || user.ownedOrgs.some(org => org.id === evt.orgId)
+    
+    if (!isOwner && !isOrgMember) {
+      return Response.json({ error: 'forbidden - not authorized for this event' }, { status: 403 })
+    }
 
     const rules = (evt.rules as any) || {}
     let roundsConfig: any[] = (rules.rounds || []).map((r: any) => ({
@@ -182,6 +204,7 @@ export async function POST(request: Request) {
 
     // Broadcast round change
     hub.broadcastRoundChange({
+      eventSlug: slug,
       currentRound,
       roundsConfig,
       eliminationConfig,

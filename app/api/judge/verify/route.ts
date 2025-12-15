@@ -26,7 +26,42 @@ export async function POST(request: Request) {
     if (!judge) return Response.json({ error: 'not_found' }, { status: 404 })
     if (judge.expiresAt && judge.expiresAt < new Date()) return Response.json({ error: 'expired' }, { status: 400 })
 
-    return Response.json({ ok: true, judgeId: judge.id, judgeName: judge.name || 'Judge', role: judge.role })
+    // Check if judge is assigned to multiple events
+    const allJudges = await prisma.judge.findMany({
+      where: { 
+        code: code.toUpperCase(), 
+        active: true 
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            slug: true,
+            name: true
+          }
+        }
+      }
+    })
+
+    const validJudges = allJudges.filter(j => {
+      if (j.expiresAt && j.expiresAt < new Date()) return false
+      return true
+    })
+
+    const uniqueEvents = Array.from(
+      new Map(validJudges.map(j => [j.event.id, j.event])).values()
+    )
+
+    return Response.json({ 
+      ok: true, 
+      judgeId: judge.id, 
+      judgeName: judge.name || 'Judge', 
+      role: judge.role,
+      eventSlug: evt.slug,
+      eventName: evt.name,
+      hasMultipleEvents: uniqueEvents.length > 1,
+      events: uniqueEvents.length > 1 ? uniqueEvents : undefined
+    })
   } catch (e: any) {
     return Response.json({ error: e?.message || 'error' }, { status: 500 })
   }

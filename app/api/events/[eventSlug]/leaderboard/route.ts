@@ -7,6 +7,9 @@ export async function GET(
 ) {
   try {
     const { eventSlug } = params
+    const url = new URL(req.url)
+    const page = Number(url.searchParams.get('page') || '1')
+    const size = Number(url.searchParams.get('size') || '200')
 
     const event = await db.event.findUnique({
       where: { slug: eventSlug },
@@ -26,22 +29,26 @@ export async function GET(
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
-    // Fetch participants with scores
-    const participants = await db.participant.findMany({
-      where: { eventId: event.id },
-      include: {
-        scores: {
-          select: { value: true }
-        }
-      }
-    })
+    // Fetch participants basic info
+    const participants = await db.participant.findMany({ where: { eventId: event.id }, select: { id: true, name: true, kind: true } })
 
-    // Calculate total scores and ranks
+    // Aggregate scores per participant (single groupBy query)
+    const scoreGroups = await db.score.groupBy({
+      by: ['participantId'],
+      where: { eventId: event.id },
+      _sum: { value: true }
+    })
+    const scoreMap: Record<string, number> = {}
+    for (const g of scoreGroups) {
+      if (g.participantId) scoreMap[g.participantId] = Number(g._sum.value || 0)
+    }
+
+    // Build participantsWithScores array
     const participantsWithScores = participants.map(p => ({
       id: p.id,
       name: p.name,
       kind: p.kind,
-      totalScore: p.scores.reduce((sum, score) => sum + score.value, 0),
+      totalScore: scoreMap[p.id] || 0,
       rank: 0,
       previousRank: 0,
       momentum: 0,
@@ -76,13 +83,18 @@ export async function GET(
     })
 
     // Assign ranks
-    participantsWithScores.forEach((p, index) => {
-      p.rank = index + 1
-    })
+    participantsWithScores.forEach((p, index) => { p.rank = index + 1 })
+
+    // Pagination: compute total and slice
+    const total = participantsWithScores.length
+    const start = Math.max(0, (page - 1) * size)
+    const end = start + size
+    const pageItems = participantsWithScores.slice(start, end)
 
     return NextResponse.json({
       event,
-      participants: participantsWithScores
+      participants: pageItems,
+      total
     })
   } catch (error) {
     console.error('Failed to fetch leaderboard:', error)

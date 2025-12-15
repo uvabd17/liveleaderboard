@@ -2,8 +2,10 @@
 import Card from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { EventNavigation } from '@/components/event-navigation';
+import { CircularTimerControl } from '@/components/circular-timer-control';
 import Link from 'next/link';
 import React, { useEffect, useState } from "react";
+import toast from 'react-hot-toast'
 
 interface Round {
   name: string;
@@ -20,6 +22,7 @@ type EditState = {
   idx: number;
   name: string;
   timer: number;
+  judgingWindowMinutes: number | null;
 } | null;
 
 const fetchRounds = async (eventSlug: string) => {
@@ -52,6 +55,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
   const [currentRoundIdx, setCurrentRoundIdx] = useState<number>(0)
   const [name, setName] = useState("");
   const [timer, setTimer] = useState(0);
+  const [judgingWindow, setJudgingWindow] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [edit, setEdit] = useState<EditState>(null);
@@ -69,79 +73,20 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
       .catch((e) => setError(e.message));
   }, [eventSlug]);
 
-  useEffect(() => {
-    fetchRounds(eventSlug)
-      .then((data) => setCurrentRoundIdx(data.currentRound ?? 0))
-      .catch(()=>{})
-  }, [eventSlug])
-
-  const handleCreateRound = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  // helper to refresh rounds
+  const refreshRounds = async () => {
+    setLoading(true)
     try {
-      const res = await createOrUpdateRound(eventSlug, {
-        number: rounds.length,
-        name,
-        roundDurationMinutes: timer,
-      });
-      setRounds(res.rounds || []);
-      setName("");
-      setTimer(0);
+      const data = await fetchRounds(eventSlug)
+      setRounds(data.rounds || [])
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message || String(e))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleEditRound = (idx: number) => {
-    setEdit({ idx, name: rounds[idx].name, timer: rounds[idx].roundDurationMinutes });
-  };
-
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!edit) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await createOrUpdateRound(eventSlug, {
-        number: edit.idx,
-        name: edit.name,
-        roundDurationMinutes: edit.timer,
-      });
-      setRounds(res.rounds || []);
-      setEdit(null);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteRound = async (idx: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Remove round at idx and update config
-      const newRounds = rounds.filter((_, i) => i !== idx);
-      // Re-upload all rounds with new indices
-      for (let i = 0; i < newRounds.length; i++) {
-        await createOrUpdateRound(eventSlug, {
-          number: i,
-          name: newRounds[i].name,
-          roundDurationMinutes: newRounds[i].roundDurationMinutes,
-        });
-      }
-      setRounds(newRounds);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  async function postRoundsAction(payload: any) {
+  const postRoundsAction = async (payload: any) => {
     setLoading(true)
     setError(null)
     try {
@@ -150,33 +95,38 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, eventSlug }),
       })
-      if (!res.ok) throw new Error('Action failed')
-      const data = await res.json()
-      setRounds(data.rounds || [])
-      setCurrentRoundIdx(data.currentRound ?? currentRoundIdx)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json?.error || 'Action failed')
+      // Update rounds and current round from response when present
+      if (json?.rounds) setRounds(json.rounds)
+      if (typeof json?.currentRound === 'number') setCurrentRoundIdx(json.currentRound)
+      // Show user-friendly toast feedback
+      try {
+        const a = (payload && payload.action) || 'saved'
+        if (a === 'set') toast.success('Round activated')
+        else if (a === 'next') toast.success('Advanced to next round')
+        else if (a === 'prev') toast.success('Moved to previous round')
+        else if (a === 'judging') toast.success('Judging state updated')
+        else if (a === 'pause') toast.success('Timer paused')
+        else if (a === 'resume') toast.success('Timer resumed')
+        else if (a === 'delete') toast.success('Round deleted')
+        else toast.success('Saved')
+      } catch {}
+      return json
     } catch (e: any) {
       setError(e?.message || String(e))
+      throw e
     } finally {
       setLoading(false)
     }
   }
 
-  async function exportCsv(roundNumber?: number) {
+  const exportCsv = async (roundNumber?: number) => {
     setLoading(true)
+    setError(null)
     try {
-      const targetDesc = roundNumber !== undefined ? `round ${roundNumber}` : 'all rounds'
-      const filters: string[] = []
-      if (participantFilter) filters.push(`participant=${participantFilter}`)
-      if (judgeFilter) filters.push(`judge=${judgeFilter}`)
-      const filterDesc = filters.length ? ` with ${filters.join(' & ')}` : ''
-      const ok = confirm(`Download CSV for ${targetDesc}${filterDesc}?`)
-      if (!ok) return
-
       const params = new URLSearchParams()
-      if (roundNumber !== undefined) params.set('roundNumber', String(roundNumber))
-      params.set('format', 'csv')
-      if (participantFilter) params.set('participantId', participantFilter)
-      if (judgeFilter) params.set('judgeUserId', judgeFilter)
+      if (typeof roundNumber === 'number') params.set('roundNumber', String(roundNumber))
       const res = await fetch(`/api/events/${eventSlug}/round-completions?${params.toString()}`)
       if (!res.ok) throw new Error('Export failed')
       const blob = await res.blob()
@@ -188,15 +138,24 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
-    } catch (e) {
-      setError((e as any)?.message || 'Export failed')
+    } catch (e: any) {
+      setError(e?.message || 'Export failed')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSetCurrent = (idx: number) => {
-    postRoundsAction({ action: 'set', roundNumber: idx })
+  const handleSetCurrent = async (idx: number) => {
+    // optimistic UI: mark active immediately
+    const prev = currentRoundIdx
+    setCurrentRoundIdx(idx)
+    try {
+      await postRoundsAction({ action: 'set', roundNumber: idx })
+    } catch (e) {
+      // revert on error and refresh actual state
+      await refreshRounds()
+      setCurrentRoundIdx(prev)
+    }
   }
 
   const handleNext = () => postRoundsAction({ action: 'next' })
@@ -210,155 +169,185 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
     postRoundsAction({ action: 'judging', judging: { roundNumber: idx, open: false } })
   }
 
+  const handleEditRound = (idx: number) => {
+    const r = rounds[idx]
+    setEdit({ idx, name: r.name, timer: r.roundDurationMinutes, judgingWindowMinutes: r.judgingWindowMinutes ?? null })
+  }
+
+  const handleDeleteRound = (idx: number) => {
+    // backend expected to handle delete action
+    if (!confirm('Delete this round?')) return
+    postRoundsAction({ action: 'delete', roundNumber: idx })
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!edit) return
+    setLoading(true)
+    setError(null)
+    try {
+      await createOrUpdateRound(eventSlug, { number: edit.idx, name: edit.name, roundDurationMinutes: edit.timer, judgingWindowMinutes: edit.judgingWindowMinutes })
+      setEdit(null)
+      await refreshRounds()
+    } catch (e: any) {
+      setError(e?.message || String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateRound = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      await createOrUpdateRound(eventSlug, { number: rounds.length, name, roundDurationMinutes: timer, judgingWindowMinutes: judgingWindow })
+      setName('')
+      setTimer(0)
+      setJudgingWindow(null)
+      await refreshRounds()
+    } catch (e: any) {
+      setError(e?.message || String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Render
   return (
     <>
       <EventNavigation />
-      <main className="min-h-screen bg-slate-900 py-8 px-2 md:px-0">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6 flex items-center gap-2">
-            <Link href={`/e/${eventSlug}/admin`} className="text-slate-400 hover:text-white flex items-center gap-1 font-medium">
-              ← Back to Admin
-            </Link>
-            <h1 className="text-3xl font-bold text-white ml-4">Manage Rounds</h1>
-          </div>
-          <Card className="mb-8 bg-slate-800 border-slate-700">
-            {edit ? (
-              <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
-                <label className="text-slate-300 text-sm">Round Name</label>
-                <input
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
-                  placeholder="Round Name"
-                  value={edit.name}
-                  onChange={(e) => setEdit({ ...edit, name: e.target.value })}
-                  required
-                />
-                <label className="text-slate-300 text-sm">Timer (minutes)</label>
-                <input
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
-                  type="number"
-                  min={0}
-                  placeholder="Timer (minutes)"
-                  value={edit.timer}
-                  onChange={(e) => setEdit({ ...edit, timer: Number(e.target.value) })}
-                  required
-                />
-                <div className="flex gap-2 mt-2">
-                  <Button type="submit" variant="default" disabled={loading}>
-                    {loading ? "Saving..." : "Save"}
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => setEdit(null)} disabled={loading}>
-                    Cancel
-                  </Button>
-                </div>
-                {error && <div className="text-red-400 mt-2">{error}</div>}
-              </form>
-            ) : (
-              <form onSubmit={handleCreateRound} className="flex flex-col gap-4">
-                <label className="text-slate-300 text-sm">Round Name</label>
-                <input
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
-                  placeholder="Round Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-                <label className="text-slate-300 text-sm">Timer (minutes)</label>
-                <input
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
-                  type="number"
-                  min={0}
-                  placeholder="Timer (minutes)"
-                  value={timer}
-                  onChange={(e) => setTimer(Number(e.target.value))}
-                  required
-                />
-                <Button type="submit" variant="default" disabled={loading}>
-                  {loading ? "Creating..." : "Create Round"}
-                </Button>
-                {error && <div className="text-red-400 mt-2">{error}</div>}
-              </form>
-            )}
-          </Card>
-          {selectedCompletions !== null && (
-            <Card className="mt-6 bg-slate-800 border-slate-700">
-              <h3 className="text-lg font-semibold text-white mb-2">Round Completions</h3>
-              {completionsLoading ? (
-                <div className="text-slate-400">Loading…</div>
-              ) : selectedCompletions.length === 0 ? (
-                <div className="text-slate-400">No completions yet for this round.</div>
-              ) : (
-                <ul className="space-y-2">
-                  {selectedCompletions.map((c: any) => (
-                    <li key={c.id} className="flex justify-between text-sm text-white/90">
-                      <div>{c.participantId}</div>
-                      <div className="text-slate-400">{c.judgeUserId} · {new Date(c.completedAt).toLocaleString()} · {c.durationSeconds ?? '-'}s</div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          )}
-          <Card className="bg-slate-800 border-slate-700">
-            <h2 className="text-xl font-semibold text-white mb-4">Rounds</h2>
-            <div className="mb-4 flex gap-2 items-center">
-              <Button variant="default" size="sm" onClick={() => exportCsv(undefined)} disabled={loading}>Export All CSV</Button>
-              <input placeholder="participantId filter" value={participantFilter} onChange={(e) => setParticipantFilter(e.target.value)} className="px-2 py-1 bg-slate-700 border border-slate-600 text-sm text-white rounded" />
-              <input placeholder="judgeUserId filter" value={judgeFilter} onChange={(e) => setJudgeFilter(e.target.value)} className="px-2 py-1 bg-slate-700 border border-slate-600 text-sm text-white rounded" />
+      <main className="min-h-screen bg-slate-900 py-8 px-4 md:px-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Top Header */}
+          <div className="flex items-start md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-white">Rounds & Timer</h1>
+              <p className="text-slate-400 text-sm">Manage rounds and the single global timer</p>
             </div>
-            {rounds.length === 0 ? (
-              <p className="text-slate-400">No rounds created yet.</p>
-            ) : (
-              <ul className="space-y-3">
-                {rounds.map((round, idx) => {
-                  const timeLeft = timers[idx] ?? (round.roundDurationMinutes * 60);
-                  const min = Math.floor(timeLeft / 60);
-                  const sec = timeLeft % 60;
-                  return (
-                    <li key={idx} className="flex flex-col md:flex-row md:justify-between md:items-center bg-slate-700 rounded-lg p-4 border border-slate-600">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handlePrev}
+                disabled={loading || currentRoundIdx <= 0}
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              >
+                ← Prev
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleNext}
+                disabled={loading || currentRoundIdx >= rounds.length - 1}
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              >
+                Next →
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Rounds list */}
+            <div className="md:col-span-2 space-y-4">
+              <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-lg font-semibold text-white">Rounds</h2>
+                  <div className="text-right">
+                    <Button variant="outline" size="sm" onClick={() => exportCsv(undefined)} disabled={loading} className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs">
+                      Export CSV
+                    </Button>
+                    <div className="text-xs text-slate-400 mt-1">Exports completions CSV for all rounds. Use per-round Export for single-round reports.</div>
+                  </div>
+                </div>
+
+                {rounds.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400">No rounds configured</div>
+                ) : (
+                  <div className="space-y-3">
+                    {rounds.map((round, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-700 rounded">
+                        <div>
+                          <div className="text-white font-medium">{round.name}</div>
+                          <div className="text-sm text-slate-400">{round.roundDurationMinutes} min • {round.judgingOpen ? 'Judging Open' : 'Judging Closed'}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" onClick={() => handleEditRound(idx)} className="text-xs px-2 py-1">Edit</Button>
+                          <Button size="sm" onClick={() => handleSetCurrent(idx)} disabled={loading || currentRoundIdx === idx} className="text-xs px-2 py-1">Activate Round</Button>
+                          {round.judgingOpen ? (
+                            <Button size="sm" onClick={() => handleCloseJudging(idx)} disabled={loading} className="text-xs px-2 py-1">Close Judging</Button>
+                          ) : (
+                            <Button size="sm" onClick={() => handleOpenJudging(idx, round.judgingWindowMinutes ?? null)} disabled={loading} className="text-xs px-2 py-1">Open Judging</Button>
+                          )}
+                          <Button size="sm" onClick={() => handleDeleteRound(idx)} variant="destructive" className="text-xs px-2 py-1">Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sidebar: Timer + Create */}
+            <div className="space-y-4">
+              <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 flex flex-col items-center">
+                <h3 className="text-sm text-slate-300 mb-2">Current Round Timer</h3>
+                {rounds.length > 0 ? (
+                  <CircularTimerControl
+                    round={rounds[currentRoundIdx]}
+                    roundIdx={currentRoundIdx}
+                    currentRoundIdx={currentRoundIdx}
+                    onStartTimer={() => handleSetCurrent(currentRoundIdx)}
+                    onPauseTimer={async () => { await postRoundsAction({ action: 'pause', roundNumber: currentRoundIdx }) }}
+                    onResumeTimer={async () => { await postRoundsAction({ action: 'resume', roundNumber: currentRoundIdx }) }}
+                    onStopTimer={async () => { await postRoundsAction({ action: 'pause', roundNumber: currentRoundIdx }); await postRoundsAction({ action: 'set', roundNumber: -1 }) }}
+                    loading={loading}
+                  />
+                ) : (
+                  <div className="text-slate-400 text-sm">No current round</div>
+                )}
+              </div>
+
+              <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+                <h3 className="text-sm text-slate-300 mb-2">{edit ? 'Edit Round' : 'Create Round'}</h3>
+                {edit ? (
+                  <form onSubmit={handleEditSubmit} className="space-y-2">
+                    <input value={edit.name} onChange={(e)=>setEdit({...edit, name:e.target.value})} className="w-full px-2 py-1 bg-slate-700 text-white rounded" />
+                    <div className="flex gap-2">
+                      <input type="number" value={edit.timer} onChange={(e)=>setEdit({...edit, timer:Number(e.target.value)})} className="w-1/2 px-2 py-1 bg-slate-700 text-white rounded" />
+                      <input type="number" value={edit.judgingWindowMinutes||''} onChange={(e)=>setEdit({...edit, judgingWindowMinutes: e.target.value===''?null:Number(e.target.value)})} className="w-1/2 px-2 py-1 bg-slate-700 text-white rounded" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" className="text-sm">Save</Button>
+                      <Button type="button" variant="secondary" onClick={()=>setEdit(null)} className="text-sm">Cancel</Button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleCreateRound} className="space-y-2">
+                    <div className="space-y-2">
                       <div>
-                        <span className="font-semibold text-white">{round.name}</span>
-                        <span className="text-slate-400 ml-2">({round.roundDurationMinutes} min)</span>
-                        {currentRoundIdx === idx && (
-                          <span className="ml-3 inline-block px-2 py-1 text-xs bg-green-700 text-white rounded">Current</span>
-                        )}
+                        <label className="block text-sm text-slate-300 mb-1">Round name</label>
+                        <input placeholder="Round name" value={name} onChange={(e)=>setName(e.target.value)} className="w-full px-2 py-1 bg-slate-700 text-white rounded" />
                       </div>
-                      <div className="flex items-center gap-4 mt-2 md:mt-0">
-                        <span className="text-sm text-slate-400">Duration: {round.roundDurationMinutes} min</span>
-                        <Button variant="ghost" size="sm" onClick={() => handleEditRound(idx)} disabled={loading}>Edit</Button>
-                        <Button variant="secondary" size="sm" onClick={() => handleSetCurrent(idx)} disabled={loading}>Set Current / Start</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenJudging(idx, round.judgingWindowMinutes ?? null)} disabled={loading}>Open Judging</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleCloseJudging(idx)} disabled={loading}>Close Judging</Button>
-                        <Button variant="ghost" size="sm" onClick={async () => { await postRoundsAction({ action: 'pause', roundNumber: idx }) }} disabled={loading}>Pause</Button>
-                        <Button variant="ghost" size="sm" onClick={async () => { await postRoundsAction({ action: 'resume', roundNumber: idx }) }} disabled={loading}>Resume</Button>
-                        <Button variant="ghost" size="sm" onClick={async () => {
-                          setCompletionsLoading(true)
-                          try {
-                            const params = new URLSearchParams()
-                            params.set('roundNumber', String(idx))
-                            if (participantFilter) params.set('participantId', participantFilter)
-                            if (judgeFilter) params.set('judgeUserId', judgeFilter)
-                            const res = await fetch(`/api/events/${eventSlug}/round-completions?${params.toString()}`)
-                            const json = await res.json()
-                            setSelectedCompletions(json.rows || [])
-                          } catch (e) {
-                            setSelectedCompletions([])
-                          } finally {
-                            setCompletionsLoading(false)
-                          }
-                        }} disabled={loading}>View Completions</Button>
-                        <Button variant="ghost" size="sm" onClick={async () => { await exportCsv(idx) }} disabled={loading}>Export CSV</Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDeleteRound(idx)} disabled={loading}>Delete</Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-sm text-slate-300 mb-1">Duration (minutes)</label>
+                          <input type="number" placeholder="Minutes" value={timer} onChange={(e)=>setTimer(Number(e.target.value))} className="w-full px-2 py-1 bg-slate-700 text-white rounded" />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-slate-300 mb-1">Judging window (minutes)</label>
+                          <input type="number" placeholder="Judging window" value={judgingWindow||''} onChange={(e)=>setJudgingWindow(e.target.value===''?null:Number(e.target.value))} className="w-full px-2 py-1 bg-slate-700 text-white rounded" />
+                        </div>
                       </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Card>
+                      <Button type="submit" className="w-full">Create</Button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </>
-  );
-};
+  )
+}
 
 export default AdminRoundsPage;

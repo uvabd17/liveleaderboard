@@ -17,6 +17,9 @@ export async function GET(
 
     // Find participant by access token in profile
     // Note: Prisma JSON filtering is limited, so we fetch and filter
+    // TODO: Optimize with separate ParticipantToken table or JSONB index
+    // For now, we fetch all participants - this is inefficient but works
+    // In production with 500+ participants, this should be optimized
     const participantsList = await db.participant.findMany({
       include: {
         event: {
@@ -24,7 +27,6 @@ export async function GET(
             organization: true,
           },
         },
-        scores: true,
       },
     })
 
@@ -39,25 +41,37 @@ export async function GET(
 
     const participant = participants[0]
 
-    // Calculate total score
-    const totalScore = participant.scores.reduce((sum, score) => sum + score.value, 0)
+    // Calculate total score using aggregation (optimized)
+    const scoreAgg = await db.score.aggregate({
+      where: { eventId: participant.eventId, participantId: participant.id },
+      _sum: { value: true }
+    })
+    const totalScore = scoreAgg._sum.value ?? 0
 
-    // Get leaderboard position
+    // Get leaderboard position (optimized)
     const eventParticipants = await db.participant.findMany({
       where: { eventId: participant.eventId },
-      include: { scores: true },
+      select: { id: true, name: true }
     })
 
-    const ranked = eventParticipants
-      .map(p => ({
-        id: p.id,
-        name: p.name,
-        totalScore: p.scores.reduce((sum, s) => sum + s.value, 0),
-      }))
-      .sort((a, b) => {
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
-        return a.name.localeCompare(b.name)
+    const ranked = await Promise.all(
+      eventParticipants.map(async (p) => {
+        const pScoreAgg = await db.score.aggregate({
+          where: { eventId: participant.eventId, participantId: p.id },
+          _sum: { value: true }
+        })
+        return {
+          id: p.id,
+          name: p.name,
+          totalScore: pScoreAgg._sum.value ?? 0,
+        }
       })
+    )
+
+    ranked.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
+      return a.name.localeCompare(b.name)
+    })
 
     const rank = ranked.findIndex(p => p.id === participant.id) + 1
 

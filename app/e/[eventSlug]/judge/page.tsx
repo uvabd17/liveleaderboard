@@ -28,8 +28,16 @@ interface Event {
   slug: string
   rules: {
     rubric: Criterion[]
+    rounds?: any[]
   }
   currentRound?: number
+}
+
+interface Round {
+  name: string
+  judgingOpen: boolean
+  judgingWindowMinutes?: number | null
+  roundDurationMinutes: number
 }
 
 export default function JudgeConsolePage() {
@@ -41,6 +49,7 @@ export default function JudgeConsolePage() {
 
   const [event, setEvent] = useState<Event | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
+  const [rounds, setRounds] = useState<Round[]>([])
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null)
   const [selectedCompleted, setSelectedCompleted] = useState<boolean>(false)
   const [selectedRoundNumber, setSelectedRoundNumber] = useState<number>(1)
@@ -49,6 +58,7 @@ export default function JudgeConsolePage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [completedParticipants, setCompletedParticipants] = useState<Set<string>>(new Set())
   
   
   const cache = EventCache.getInstance()
@@ -71,6 +81,101 @@ export default function JudgeConsolePage() {
     }
   }, [status, role, eventSlug, router])
 
+  // Listen for server-sent events scoped to this event to keep rounds in sync
+  useEffect(() => {
+    if (!eventSlug) return
+    const es = new EventSource(`/api/sse?eventSlug=${encodeURIComponent(eventSlug)}`)
+    es.onmessage = (ev) => {
+      try {
+        const payload = JSON.parse(ev.data)
+        if (payload?.type === 'round-change') {
+          const incomingRounds = Array.isArray(payload.roundsConfig) ? payload.roundsConfig : []
+          // Normalize incoming rounds shape
+          const normalized = incomingRounds.map((r: any) => ({
+            ...r,
+            judgingOpen: !!r.judgingOpen,
+            judgingWindowMinutes: typeof r.judgingWindowMinutes === 'number' ? r.judgingWindowMinutes : null,
+            roundDurationMinutes: r.roundDurationMinutes ?? r.duration ?? null,
+            judgingOpenedAt: r.judgingOpenedAt ?? null,
+          }))
+          setRounds(normalized)
+          if (typeof payload.currentRound === 'number') {
+            setSelectedRoundNumber((payload.currentRound ?? 0) + 1)
+          }
+        }
+      } catch (e) {
+        // ignore malformed SSE data
+      }
+    }
+    es.onerror = () => {
+      try { es.close() } catch {}
+    }
+    return () => es.close()
+  }, [eventSlug])
+
+  // Subscribe to SSE for real-time round updates scoped to this event
+  useEffect(() => {
+    if (!eventSlug) return
+    const es = new EventSource(`/api/sse?eventSlug=${encodeURIComponent(eventSlug)}`)
+    es.onmessage = (ev) => {
+      try {
+        const payload = JSON.parse(ev.data)
+        if (payload?.type === 'round-change') {
+          if (Array.isArray(payload.roundsConfig)) {
+            setRounds(payload.roundsConfig)
+          }
+          if (typeof payload.currentRound === 'number') {
+            // update selected round to the activated round
+            setSelectedRoundNumber(payload.currentRound + 1)
+          }
+        }
+      } catch (err) {
+        // ignore parse errors
+      }
+    }
+    es.onerror = () => {
+      try { es.close() } catch {}
+    }
+    return () => es.close()
+  }, [eventSlug])
+
+  // Listen for rubric updates (scoring-schema) and reload rubric live
+  useEffect(() => {
+    if (!eventSlug) return
+    const es = new EventSource(`/api/sse?eventSlug=${encodeURIComponent(eventSlug)}`)
+    es.onmessage = (ev) => {
+      try {
+        const payload = JSON.parse(ev.data)
+        if (payload?.type === 'scoring-schema') {
+          // fetch latest scoring schema and update event.rules.rubric
+          fetch(`/api/scoring-schema?eventSlug=${encodeURIComponent(eventSlug)}`)
+            .then(r => r.ok ? r.json() : Promise.reject(r))
+            .then((d) => {
+              const latest = d.rubric || []
+              setEvent(prev => prev ? { ...prev, rules: { ...(prev.rules || {}), rubric: latest } } : prev)
+              // reinitialize scores for current displayRubric
+              const normalized = (latest || []).map((r: any) => ({
+                key: r.key ?? r.name,
+                label: r.label ?? r.name,
+                maxPoints: Number(r.max ?? r.maxPoints ?? 100),
+                weight: Number(r.weight ?? 1),
+                description: r.description ?? '',
+                rounds: Array.isArray(r.rounds) ? r.rounds.map((v: any) => Number(v)) : null,
+              }))
+              const visible = normalized.filter((c: any) => !c.rounds || c.rounds.includes(selectedRoundNumber))
+              const initialScores: Record<string, number> = {}
+              visible.forEach((c: any) => { initialScores[c.key] = scores[c.key] ?? 0 })
+              setScores(initialScores)
+              try { toast('Rubric updated', { icon: '🔁' }) } catch {}
+            })
+            .catch(() => {})
+        }
+      } catch (err) {}
+    }
+    es.onerror = () => { try { es.close() } catch {} }
+    return () => es.close()
+  }, [eventSlug, selectedRoundNumber])
+
   const fetchJudgeData = async () => {
     // Try cache first
     const cacheKey = `judge_data_${eventSlug}`
@@ -80,8 +185,8 @@ export default function JudgeConsolePage() {
       setEvent(cached.event)
       setParticipants(cached.participants)
       const initialScores: Record<string, number> = {}
-      cached.event.rules?.rubric?.forEach((criterion: Criterion) => {
-        initialScores[criterion.key ?? (criterion.name as any)] = 0
+      cached.event.rules?.rubric?.forEach((criterion: any) => {
+        initialScores[criterion.key || criterion.name || 'unknown'] = 0
       })
       setScores(initialScores)
       // set selected round to current round from cache
@@ -90,19 +195,22 @@ export default function JudgeConsolePage() {
     }
 
     try {
-      const [eventRes, participantsRes] = await Promise.all([
+      const [eventRes, participantsRes, roundsRes] = await Promise.all([
         fetch(`/api/events/${eventSlug}`),
-        fetch(`/api/events/${eventSlug}/participants`)
+        fetch(`/api/events/${eventSlug}/participants`),
+        fetch(`/api/rounds?eventSlug=${eventSlug}`)
       ])
 
+      let eventData: any = null
+
       if (eventRes.ok) {
-        const eventData = await eventRes.json()
+        eventData = await eventRes.json()
         setEvent(eventData.event)
         
         // Initialize scores with 0
         const initialScores: Record<string, number> = {}
-        eventData.event.rules?.rubric?.forEach((criterion: Criterion) => {
-          initialScores[criterion.key ?? (criterion.name as any)] = 0
+        eventData.event.rules?.rubric?.forEach((criterion: any) => {
+          initialScores[criterion.key || criterion.name || 'unknown'] = 0
         })
         setScores(initialScores)
 
@@ -118,18 +226,43 @@ export default function JudgeConsolePage() {
           // ensure selected round reflects currentRound
           setSelectedRoundNumber((eventData.event.currentRound ?? 0) + 1)
         }
-      }
-
-        // watch selection to fetch completion status for the selected participant
-        useEffect(() => {
-          if (!selectedParticipant) {
-            setSelectedCompleted(false)
-            return
+        if (roundsRes.ok) {
+          const roundsData = await roundsRes.json()
+          const fetchedRounds = roundsData.rounds || []
+          setRounds(fetchedRounds)
+          
+          // Auto-select first open round if none selected
+          if (fetchedRounds.length > 0 && !selectedRoundNumber) {
+            const firstOpenRound = fetchedRounds.findIndex((r: Round) => r.judgingOpen)
+            if (firstOpenRound >= 0) {
+              setSelectedRoundNumber(firstOpenRound + 1)
+            }
           }
-          fetch(`/api/judge/score?participantId=${selectedParticipant}&roundNumber=${selectedRoundNumber}`).then(r => r.json()).then(d => {
-            setSelectedCompleted(!!d.completedCurrentRound)
-          }).catch(()=>{})
-        }, [selectedParticipant, selectedRoundNumber])
+        }      }
+
+        // Fetch completion status for all participants in the selected round
+        const fetchCompletions = async () => {
+          try {
+            const res = await fetch(`/api/events/${eventSlug}/round-completions?roundNumber=${selectedRoundNumber}`)
+            if (res.ok) {
+              const data = await res.json()
+              const completed = new Set<string>()
+              if (Array.isArray(data.rows)) {
+                data.rows.forEach((r: any) => {
+                  if (r.participantId) completed.add(r.participantId)
+                })
+              }
+              setCompletedParticipants(completed)
+            }
+          } catch (e) {
+            console.error('Failed to fetch completions', e)
+          }
+        }
+
+        // Fetch completions when round changes
+        if (eventData?.event) {
+          fetchCompletions()
+        }
     } catch (error) {
       console.error('Failed to fetch judge data:', error)
       toast.error('Failed to load judging data')
@@ -158,6 +291,13 @@ export default function JudgeConsolePage() {
       return
     }
 
+    // Check if judging is open for this round
+    const currentRound = rounds[selectedRoundNumber - 1]
+    if (!currentRound?.judgingOpen) {
+      toast.error('Judging is not open for this round')
+      return
+    }
+
     setSubmitting(true)
     try {
       const response = await fetch('/api/judge/score', {
@@ -176,14 +316,28 @@ export default function JudgeConsolePage() {
         toast.success('Scores submitted successfully!')
         setScores({})
         setComment('')
+        // Mark participant as completed for this round
+        if (selectedParticipant) {
+          setCompletedParticipants(prev => new Set([...prev, selectedParticipant]))
+          setSelectedCompleted(true)
+        }
         setSelectedParticipant(null)
         // Re-initialize scores
-        event?.rules?.rubric?.forEach((criterion: Criterion) => {
-          setScores(prev => ({ ...prev, [criterion.key ?? (criterion.name as any)]: 0 }))
+        event?.rules?.rubric?.forEach((criterion: any) => {
+          setScores(prev => ({ ...prev, [criterion.key || criterion.name || 'unknown']: 0 }))
         })
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Failed to submit scores')
+        const errorMessage = error.message || error.error || 'Failed to submit scores'
+        toast.error(errorMessage)
+        
+        // If round already completed error, refresh completion status
+        if (error.error === 'round_already_completed') {
+          if (selectedParticipant) {
+            setCompletedParticipants(prev => new Set([...prev, selectedParticipant]))
+            setSelectedCompleted(true)
+          }
+        }
       }
     } catch (error) {
       toast.error('An error occurred')
@@ -191,6 +345,83 @@ export default function JudgeConsolePage() {
       setSubmitting(false)
     }
   }
+
+  // Normalize rubric shape (support older/newer schema shapes)
+  const rawRubric = event?.rules?.rubric || []
+  const rubric = rawRubric.map((r: any) => ({
+    key: r.key ?? r.name ?? (r.label ? r.label.toLowerCase().replace(/\s+/g, '_') : Math.random().toString(36).slice(2,8)),
+    label: r.label ?? r.name ?? r.key ?? 'Criterion',
+    maxPoints: Number(r.max ?? r.maxPoints ?? 100),
+    weight: Number(r.weight ?? 1),
+    description: r.description ?? '',
+    rounds: Array.isArray(r.rounds) ? r.rounds.map((v: any) => Number(v)) : null,
+    scale: r.scale ?? (r.type === 'range' ? 'range' : 'number')
+  }))
+  const roundsConfig = rounds
+  const currentRoundNumber = (event?.currentRound ?? 0) + 1
+  const displayRubric = rubric.filter((c) => !c.rounds || c.rounds.includes(selectedRoundNumber))
+
+  const totalPossibleScore = displayRubric.reduce((sum, c) => sum + (c.maxPoints || 0), 0)
+  const currentTotal = Object.values(scores).reduce((sum, s) => sum + s, 0)
+
+  useEffect(() => {
+    if (!event) return
+    // initialize scores for the currently selected round's rubric
+    const initial: Record<string, number> = {}
+    displayRubric.forEach((c) => {
+      initial[c.key] = scores[c.key] ?? 0
+    })
+    setScores(initial)
+    
+    // Fetch completion status for all participants when round changes
+    if (eventSlug && selectedRoundNumber) {
+      fetch(`/api/events/${eventSlug}/round-completions?roundNumber=${selectedRoundNumber}`)
+        .then(r => r.json())
+        .then(data => {
+          const completed = new Set<string>()
+          if (Array.isArray(data.rows)) {
+            data.rows.forEach((r: any) => {
+              if (r.participantId) completed.add(r.participantId)
+            })
+          }
+          setCompletedParticipants(completed)
+        })
+        .catch(() => {})
+    }
+    
+    // Clear selected participant when round changes
+    setSelectedParticipant(null)
+    setSelectedCompleted(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoundNumber, event?.rules?.rubric?.length])
+
+  // Watch selected participant to fetch its completion status
+  useEffect(() => {
+    if (!selectedParticipant) {
+      setSelectedCompleted(false)
+      return
+    }
+    // Check if participant is in completed set
+    if (completedParticipants.has(selectedParticipant)) {
+      setSelectedCompleted(true)
+      return
+    }
+    // Also fetch from API to be sure
+    fetch(`/api/judge/score?participantId=${selectedParticipant}&roundNumber=${selectedRoundNumber}`)
+      .then(r => r.json())
+      .then(d => {
+        setSelectedCompleted(!!d.completedCurrentRound)
+      })
+      .catch(() => {})
+  }, [selectedParticipant, selectedRoundNumber, completedParticipants])
+
+  // Filter participants by search query
+  const filteredParticipants = participants.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.kind.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const selectedParticipantData = participants.find(p => p.id === selectedParticipant)
 
   // Block admin access
   try {
@@ -275,42 +506,6 @@ export default function JudgeConsolePage() {
     )
   }
 
-  // Normalize rubric shape (support older/newer schema shapes)
-  const rawRubric = event.rules?.rubric || []
-  const rubric = rawRubric.map((r: any) => ({
-    key: r.key ?? r.name ?? (r.label ? r.label.toLowerCase().replace(/\s+/g, '_') : Math.random().toString(36).slice(2,8)),
-    label: r.label ?? r.name ?? r.key ?? 'Criterion',
-    maxPoints: Number(r.max ?? r.maxPoints ?? 100),
-    weight: Number(r.weight ?? 1),
-    description: r.description ?? '',
-    rounds: Array.isArray(r.rounds) ? r.rounds : null,
-    scale: r.scale ?? (r.type === 'range' ? 'range' : 'number')
-  }))
-  const roundsConfig = Array.isArray((event.rules as any)?.rounds) ? (event.rules as any).rounds : []
-  const currentRoundNumber = (event.currentRound ?? 0) + 1
-  const displayRubric = rubric.filter((c) => !c.rounds || c.rounds.includes(selectedRoundNumber))
-
-  const totalPossibleScore = displayRubric.reduce((sum, c) => sum + (c.maxPoints || 0), 0)
-  const currentTotal = Object.values(scores).reduce((sum, s) => sum + s, 0)
-
-  useEffect(() => {
-    // initialize scores for the currently selected round's rubric
-    const initial: Record<string, number> = {}
-    displayRubric.forEach((c) => {
-      initial[c.key] = scores[c.key] ?? 0
-    })
-    setScores(initial)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRoundNumber, event?.rules?.rubric?.length])
-
-  // Filter participants by search query
-  const filteredParticipants = participants.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.kind.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const selectedParticipantData = participants.find(p => p.id === selectedParticipant)
-
   return (
     <div className="min-h-screen bg-slate-900">
       <EventNavigation />
@@ -330,21 +525,35 @@ export default function JudgeConsolePage() {
               <p className="text-slate-400 text-sm">{event.name}</p>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-200 text-xs font-semibold">
-                  Round {selectedRoundNumber}{roundsConfig.length ? ` / ${roundsConfig.length}` : ''}
+                  Round {selectedRoundNumber}{rounds.length ? ` / ${rounds.length}` : ''}
                 </span>
-                {roundsConfig.length > 0 && (
+                {selectedRoundNumber > 0 && rounds[selectedRoundNumber - 1] && (
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    rounds[selectedRoundNumber - 1].judgingOpen
+                      ? 'bg-green-500/10 border border-green-500/30 text-green-200'
+                      : 'bg-red-500/10 border border-red-500/30 text-red-200'
+                  }`}>
+                    {rounds[selectedRoundNumber - 1].judgingOpen ? '🟢 Judging Open' : '🔴 Judging Closed'}
+                  </span>
+                )}
+                {rounds.length > 0 && (
                   <div className="flex gap-2 items-center">
-                    <label className="text-slate-400 text-xs">Select round</label>
-                    <select
-                      value={selectedRoundNumber}
-                      onChange={(e) => setSelectedRoundNumber(Number(e.target.value))}
-                      className="bg-slate-700 border border-slate-600 text-white rounded px-2 py-1 text-sm"
-                    >
-                      {roundsConfig.map((r: any, idx: number) => (
-                        <option key={idx} value={idx + 1}>{r.name || `Round ${idx + 1}`}</option>
-                      ))}
-                    </select>
-                  </div>
+                      <label className="text-slate-400 text-xs">Select round</label>
+                      <select
+                        value={selectedRoundNumber}
+                        onChange={(e) => setSelectedRoundNumber(Number(e.target.value))}
+                        className="bg-slate-700 border border-slate-600 text-white rounded px-2 py-1 text-sm"
+                      >
+                        {rounds.map((r: Round, idx: number) => (
+                          r.judgingOpen
+                            ? <option key={idx} value={idx + 1}>{r.name || `Round ${idx + 1}`}</option>
+                            : null
+                        ))}
+                        {rounds.filter(r => r.judgingOpen).length === 0 && (
+                          <option disabled>No rounds open for judging</option>
+                        )}
+                      </select>
+                    </div>
                 )}
               </div>
             </div>
@@ -409,34 +618,78 @@ export default function JudgeConsolePage() {
             </div>
           )}
 
+          {/* Round Selection Warning */}
+          {rounds.length > 0 && !selectedRoundNumber && (
+            <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="text-yellow-400 font-semibold mb-1">⚠️ Please Select a Round</div>
+              <div className="text-slate-400 text-sm">You must select a round before you can score participants.</div>
+            </div>
+          )}
+
+          {/* No Rounds Open Warning */}
+          {rounds.length > 0 && rounds.filter(r => r.judgingOpen).length === 0 && (
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <div className="text-red-400 font-semibold mb-1">🔒 No Rounds Open for Judging</div>
+              <div className="text-slate-400 text-sm">Please wait for the admin to open judging for a round.</div>
+            </div>
+          )}
+
           {/* Participant List (show only when no participant selected) */}
           {!selectedParticipant && (
             <div className="max-h-96 overflow-y-auto">
-              {filteredParticipants.length === 0 ? (
+              {!selectedRoundNumber && roundsConfig.length > 0 ? (
+                <div className="p-8 text-center">
+                  <div className="text-4xl mb-4">🔢</div>
+                  <p className="text-slate-400 mb-2">Please select a round above to start scoring</p>
+                </div>
+              ) : filteredParticipants.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">
                   {searchQuery ? 'No participants match your search' : 'No participants registered yet'}
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {filteredParticipants.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setSelectedParticipant(p.id)}
-                      className="w-full px-4 py-3 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-left transition-colors group"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="text-white font-medium group-hover:text-blue-400 transition-colors">
-                            {p.name}
+                  {filteredParticipants.map((p) => {
+                    const isCompleted = completedParticipants.has(p.id)
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          if (!isCompleted && selectedRoundNumber) {
+                            setSelectedParticipant(p.id)
+                          } else if (!selectedRoundNumber) {
+                            toast.error('Please select a round first')
+                          }
+                        }}
+                        disabled={isCompleted || !selectedRoundNumber}
+                        className={`w-full px-4 py-3 border rounded-lg text-left transition-colors group ${
+                          isCompleted || !selectedRoundNumber
+                            ? 'bg-slate-800/50 border-slate-700/50 cursor-not-allowed opacity-60'
+                            : 'bg-slate-700 hover:bg-slate-600 border-slate-600'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1">
+                            <div className={`font-medium transition-colors flex items-center gap-2 ${
+                              isCompleted 
+                                ? 'text-slate-500 line-through' 
+                                : 'text-white group-hover:text-blue-400'
+                            }`}>
+                              {p.name}
+                              {isCompleted && (
+                                <span className="text-green-400 text-xs font-semibold">✓ Completed</span>
+                              )}
+                            </div>
+                            <div className="text-slate-400 text-sm capitalize">{p.kind}</div>
                           </div>
-                          <div className="text-slate-400 text-sm capitalize">{p.kind}</div>
+                          {!isCompleted && (
+                            <div className="text-slate-500 group-hover:text-blue-400 transition-colors">
+                              →
+                            </div>
+                          )}
                         </div>
-                        <div className="text-slate-500 group-hover:text-blue-400 transition-colors">
-                          →
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -530,14 +783,27 @@ export default function JudgeConsolePage() {
             </div>
 
             {/* Submit Button */}
-            <button
-              onClick={handleSubmit}
-              disabled={submitting || !selectedParticipant}
-              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
-              style={{ minHeight: '56px' }}
-            >
-              {submitting ? 'Submitting Scores...' : '✓ Submit Scores'}
-            </button>
+            {selectedCompleted ? (
+              <div className="w-full py-4 px-6 rounded-lg bg-green-500/10 border-2 border-green-500/30 text-center" style={{ minHeight: '56px' }}>
+                <div className="text-green-400 font-semibold mb-1">✓ Round Already Completed</div>
+                <div className="text-slate-400 text-sm">This participant has already been scored for this round. Rescoring is not allowed.</div>
+              </div>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || !selectedParticipant || selectedCompleted || !selectedRoundNumber}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+                style={{ minHeight: '56px' }}
+              >
+                {submitting ? 'Submitting Scores...' : '✓ Submit Scores'}
+              </button>
+            )}
+            
+            {!selectedRoundNumber && (
+              <div className="mt-2 text-center text-yellow-400 text-sm">
+                ⚠️ Please select a round before scoring
+              </div>
+            )}
           </div>
         )}
 

@@ -23,6 +23,7 @@ model User {
   createdJudgeInvites       JudgeInvite[]       @relation("JudgeInviteCreatedBy")
   usedJudgeInvites          JudgeInvite[]       @relation("JudgeInviteUsedBy")
   createdRegistrationTokens RegistrationToken[]
+  auditLogs                 AuditLog[]
 
   @@index([email])
 }
@@ -67,9 +68,11 @@ model Event {
   judges             Judge[]
   judgeInvites       JudgeInvite[]
   registrationTokens RegistrationToken[]
+  auditLogs          AuditLog[]
 
   @@index([slug])
   @@index([orgId])
+  @@index([orgId, slug])
   @@index([visibility])
 }
 
@@ -91,6 +94,7 @@ model Participant {
   scores    Score[]
   roundCompletions RoundCompletion[]
   @@unique([eventId, normalizedName, kind])
+  @@index([eventId])
 }
 
 model Score {
@@ -109,6 +113,9 @@ model Score {
 
   @@index([eventId])
   @@index([participantId])
+  @@index([eventId, participantId])
+  @@index([eventId, criterion])
+  @@index([eventId, judgeUserId])
 }
 
 model Judge {
@@ -183,5 +190,30 @@ model RoundCompletion {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
   @@index([eventId, roundNumber])
+  @@index([eventId, participantId, roundNumber])
+  @@index([eventId, completedAt])
   @@unique([eventId, participantId, roundNumber])
+}
+
+// Audit log for admin actions
+model AuditLog {
+  id            String   @id @default(cuid())
+  eventId       String?
+  userId        String
+  action        String   // 'score_adjust', 'round_manage', 'participant_create', etc.
+  entityType    String?  // 'Score', 'Round', 'Participant', etc.
+  entityId      String?
+  details       Json?    // Additional action details
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  event         Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([eventId, createdAt])
 }

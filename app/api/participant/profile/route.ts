@@ -15,7 +15,11 @@ export async function PUT(request: Request) {
 
     // Find participant by access token
     // Note: Prisma JSON filtering is limited, so we fetch and filter
-    const allParticipants = await db.participant.findMany()
+    // TODO: Optimize with separate ParticipantToken table or JSONB index
+    // This is inefficient for large datasets - should be optimized for production
+    const allParticipants = await db.participant.findMany({
+      select: { id: true, profile: true }
+    })
     const participants = allParticipants.filter(p => {
       const profile = p.profile as any
       return profile && profile.accessToken === token

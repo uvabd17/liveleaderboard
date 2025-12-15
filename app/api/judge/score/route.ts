@@ -75,13 +75,74 @@ export async function POST(request: Request) {
 
     const judgeId = session?.user?.id || 'anonymous-judge'
 
-    // Validate rubric keys from event.rules
+    // Validate roundNumber is provided
+    if (typeof roundNumber !== 'number' || isNaN(roundNumber) || roundNumber < 1) {
+      return NextResponse.json({ error: 'roundNumber required and must be >= 1' }, { status: 400 })
+    }
+
+    // Check if judging is open for this round
+    const rounds = Array.isArray(rules.rounds) ? rules.rounds : []
+    const roundIdx = Math.max(0, Number(roundNumber) - 1)
+    const roundCfg = rounds[roundIdx]
+    if (!roundCfg?.judgingOpen && !isAdminSession) {
+      return NextResponse.json({ 
+        error: 'judging_not_open_for_round', 
+        message: `Judging is not open for round ${roundNumber}` 
+      }, { status: 403 })
+    }
+
+    // Check if round is already completed for this participant (prevent rescoring)
+    const existingCompletion = await db.roundCompletion.findUnique({
+      where: {
+        eventId_participantId_roundNumber: {
+          eventId: event.id,
+          participantId,
+          roundNumber: roundNumber
+        }
+      }
+    })
+
+    if (existingCompletion && !isAdminSession) {
+      return NextResponse.json({ 
+        error: 'round_already_completed', 
+        message: 'This round has already been completed for this participant. Rescoring is not allowed.' 
+      }, { status: 403 })
+    }
+
+    // Validate rubric keys from event.rules - FILTER BY ROUND NUMBER
     const rulesRubric = (event.rules as any)?.rubric || []
-    const rubricKeys = Array.isArray(rulesRubric) ? rulesRubric.map((r: any) => r.key ?? r.name ?? r.label) : []
-    // Filter scoresMap to only known rubric keys (allow server-side mapping)
+    const rubricForRound = Array.isArray(rulesRubric) 
+      ? rulesRubric.filter((r: any) => {
+          // If rounds array is null/undefined, criterion applies to all rounds
+          if (!r.rounds || !Array.isArray(r.rounds)) return true
+          // Otherwise, check if this roundNumber is in the rounds array
+          return r.rounds.includes(roundNumber)
+        })
+      : []
+    
+    const rubricKeys = rubricForRound.map((r: any) => r.key ?? r.name ?? r.label)
+    
+    // Filter scoresMap to only known rubric keys for this round
     const filteredEntries = Object.entries(scoresMap).filter(([k]) => rubricKeys.includes(k))
     if (filteredEntries.length === 0) {
-      return NextResponse.json({ error: 'no_valid_criteria' }, { status: 400 })
+      return NextResponse.json({ 
+        error: 'no_valid_criteria_for_round', 
+        message: `No valid criteria found for round ${roundNumber}. Please ensure you're scoring criteria assigned to this round.` 
+      }, { status: 400 })
+    }
+
+    // Validate that all required criteria for this round are provided
+    const requiredCriteria = rubricForRound.filter((r: any) => r.required !== false)
+    const providedKeys = filteredEntries.map(([k]) => k)
+    const missingRequired = requiredCriteria
+      .map((r: any) => r.key ?? r.name ?? r.label)
+      .filter((key: string) => !providedKeys.includes(key))
+    
+    if (missingRequired.length > 0) {
+      return NextResponse.json({ 
+        error: 'missing_required_criteria', 
+        message: `Missing required criteria for round ${roundNumber}: ${missingRequired.join(', ')}` 
+      }, { status: 400 })
     }
 
     // Store scores for each criterion
@@ -169,23 +230,34 @@ export async function POST(request: Request) {
       }
     }
 
-    // Calculate updated leaderboard
+    // Calculate updated leaderboard using aggregation (optimized query)
     const participants = await db.participant.findMany({
       where: { eventId: event.id },
-      include: {
-        scores: true
+      select: {
+        id: true,
+        name: true,
+        kind: true
       }
     })
 
-    const leaderboard = participants.map(p => ({
-      id: p.id,
-      name: p.name,
-      kind: p.kind,
-      score: p.scores.reduce((sum, s) => sum + s.value, 0),
-      rank: 0
-    }))
+    // Get total scores using aggregation for each participant
+    const leaderboard = await Promise.all(
+      participants.map(async (p) => {
+        const scoreAgg = await db.score.aggregate({
+          where: { eventId: event.id, participantId: p.id },
+          _sum: { value: true }
+        })
+        return {
+          id: p.id,
+          name: p.name,
+          kind: p.kind,
+          score: scoreAgg._sum.value ?? 0,
+          rank: 0
+        }
+      })
+    )
 
-    leaderboard.sort((a, b) => b.totalScore - a.totalScore)
+    leaderboard.sort((a, b) => b.score - a.score)
     leaderboard.forEach((p, index) => { p.rank = index + 1 })
 
     // Broadcast update via SSE (use 'leaderboard' type so clients listen properly)

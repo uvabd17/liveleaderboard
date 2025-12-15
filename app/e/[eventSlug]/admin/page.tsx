@@ -56,6 +56,9 @@ export default function EventAdminPage() {
   const [judges, setJudges] = useState<Array<any>>([])
   const [registrationLink, setRegistrationLink] = useState<string | null>(null)
   const [registrationLinkLoading, setRegistrationLinkLoading] = useState<boolean>(false)
+  const [roundCompletions, setRoundCompletions] = useState<Record<string, Set<number>>>({}) // participantId -> Set of completed round numbers
+  const [selectedRoundFilter, setSelectedRoundFilter] = useState<number | null>(null)
+  const [completionSort, setCompletionSort] = useState<'all' | 'completed' | 'incomplete'>('all')
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -98,6 +101,28 @@ export default function EventAdminPage() {
       if (leaderboardRes.ok) {
         const leaderboardData = await leaderboardRes.json()
         setParticipants(leaderboardData.participants)
+      }
+
+      // Fetch round completions for all participants
+      try {
+        const completionsRes = await fetch(`/api/events/${eventSlug}/round-completions`)
+        if (completionsRes.ok) {
+          const completionsData = await completionsRes.json()
+          const completionMap: Record<string, Set<number>> = {}
+          if (Array.isArray(completionsData.rows)) {
+            completionsData.rows.forEach((r: any) => {
+              if (r.participantId && r.roundNumber) {
+                if (!completionMap[r.participantId]) {
+                  completionMap[r.participantId] = new Set()
+                }
+                completionMap[r.participantId].add(r.roundNumber)
+              }
+            })
+          }
+          setRoundCompletions(completionMap)
+        }
+      } catch (err) {
+        console.warn('failed to fetch completions', err)
       }
 
       try {
@@ -358,6 +383,20 @@ export default function EventAdminPage() {
                     <div className="text-4xl">✍️</div>
                     <div className="text-white font-medium">Manual Register</div>
                   </button>
+                  <Link
+                    href={`/e/${eventSlug}/admin/score-adjust`}
+                    className="flex flex-col items-center gap-2 p-6 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                  >
+                    <div className="text-4xl">✏️</div>
+                    <div className="text-white font-medium">Adjust Scores</div>
+                  </Link>
+                  <Link
+                    href={`/e/${eventSlug}/admin/rounds`}
+                    className="flex flex-col items-center gap-2 p-6 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                  >
+                    <div className="text-4xl">🔄</div>
+                    <div className="text-white font-medium">Rounds & Timers</div>
+                  </Link>
                 </div>
               </div>
 
@@ -410,14 +449,45 @@ export default function EventAdminPage() {
           {/* Participants Tab */}
           {activeTab === 'participants' && (
             <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-              <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-white">Participants</h2>
-                <button
-                  onClick={() => setShowManualRegister(true)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
-                >
-                  + Add Participant
-                </button>
+              <div className="p-6 border-b border-slate-700">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-white">Participants</h2>
+                  <button
+                    onClick={() => setShowManualRegister(true)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                  >
+                    + Add Participant
+                  </button>
+                </div>
+                
+                {/* Filters */}
+                <div className="flex gap-4 items-center flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-slate-400">Filter by Round:</label>
+                    <select
+                      value={selectedRoundFilter ?? ''}
+                      onChange={(e) => setSelectedRoundFilter(e.target.value ? Number(e.target.value) : null)}
+                      className="bg-slate-700 border border-slate-600 text-white rounded px-3 py-1 text-sm"
+                    >
+                      <option value="">All Rounds</option>
+                      {Array.isArray(rules?.rounds) && rules.rounds.map((r: any, idx: number) => (
+                        <option key={idx} value={idx + 1}>Round {idx + 1}: {r.name || `Round ${idx + 1}`}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-slate-400">Sort:</label>
+                    <select
+                      value={completionSort}
+                      onChange={(e) => setCompletionSort(e.target.value as any)}
+                      className="bg-slate-700 border border-slate-600 text-white rounded px-3 py-1 text-sm"
+                    >
+                      <option value="all">All</option>
+                      <option value="completed">Completed First</option>
+                      <option value="incomplete">Incomplete First</option>
+                    </select>
+                  </div>
+                </div>
               </div>
               
               {participants.length === 0 ? (
@@ -431,30 +501,89 @@ export default function EventAdminPage() {
                     Generate Registration QR
                   </button>
                 </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-slate-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Rank</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Name</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Type</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-slate-300">Score</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-700">
-                      {participants.map((participant) => (
-                        <tr key={participant.id} className="hover:bg-slate-700/50">
-                          <td className="px-6 py-4 text-slate-300">#{participant.rank}</td>
-                          <td className="px-6 py-4 font-medium text-white">{participant.name}</td>
-                          <td className="px-6 py-4 text-slate-400 capitalize">{participant.kind}</td>
-                          <td className="px-6 py-4 text-right font-bold text-blue-400">{participant.totalScore}</td>
+              ) : (() => {
+                // Filter and sort participants
+                const currentRound = event?.currentRound ?? 0
+                const filterRound = selectedRoundFilter ?? (currentRound > 0 ? currentRound + 1 : null)
+                
+                let filtered = participants.map(p => {
+                  const completedRounds = roundCompletions[p.id] || new Set<number>()
+                  const isCompleted = filterRound ? completedRounds.has(filterRound) : false
+                  const completedCount = completedRounds.size
+                  const totalRounds = Array.isArray(rules?.rounds) ? rules.rounds.length : 0
+                  
+                  return { ...p, isCompleted, completedCount, totalRounds }
+                })
+                
+                // Apply completion filter
+                if (completionSort === 'completed') {
+                  filtered.sort((a, b) => {
+                    if (a.isCompleted !== b.isCompleted) return a.isCompleted ? -1 : 1
+                    return a.rank - b.rank
+                  })
+                } else if (completionSort === 'incomplete') {
+                  filtered.sort((a, b) => {
+                    if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1
+                    return a.rank - b.rank
+                  })
+                }
+                
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Rank</th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Name</th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Type</th>
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-slate-300">Score</th>
+                          <th className="px-6 py-3 text-center text-sm font-semibold text-slate-300">Rounds Completed</th>
+                          {filterRound && (
+                            <th className="px-6 py-3 text-center text-sm font-semibold text-slate-300">
+                              Round {filterRound} Status
+                            </th>
+                          )}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody className="divide-y divide-slate-700">
+                        {filtered.map((participant) => {
+                          const completedRounds = roundCompletions[participant.id] || new Set<number>()
+                          const isCompleted = filterRound ? completedRounds.has(filterRound) : false
+                          const completedCount = completedRounds.size
+                          const totalRounds = Array.isArray(rules?.rounds) ? rules.rounds.length : 0
+                          
+                          return (
+                            <tr key={participant.id} className={`hover:bg-slate-700/50 ${isCompleted ? 'bg-green-500/5' : ''}`}>
+                              <td className="px-6 py-4 text-slate-300">#{participant.rank}</td>
+                              <td className="px-6 py-4 font-medium text-white">{participant.name}</td>
+                              <td className="px-6 py-4 text-slate-400 capitalize">{participant.kind}</td>
+                              <td className="px-6 py-4 text-right font-bold text-blue-400">{participant.totalScore}</td>
+                              <td className="px-6 py-4 text-center">
+                                <span className="text-slate-300 text-sm">
+                                  {completedCount} / {totalRounds || '?'}
+                                </span>
+                              </td>
+                              {filterRound && (
+                                <td className="px-6 py-4 text-center">
+                                  {isCompleted ? (
+                                    <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-300">
+                                      ✓ Completed
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-500/20 text-yellow-300">
+                                      ⏳ Pending
+                                    </span>
+                                  )}
+                                </td>
+                              )}
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              })()}
             </div>
           )}
 

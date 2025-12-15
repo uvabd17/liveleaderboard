@@ -1,4 +1,5 @@
 import { prisma } from '../../../lib/db'
+import { hub } from '../../../lib/hub'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -66,6 +67,10 @@ export async function POST(request: Request) {
     if (!isOwner && !sameOrg) return Response.json({ error: 'forbidden' }, { status: 403 })
     const rules = { ...(evt.rules as any || {}), rubric }
     await prisma.event.update({ where: { id: evt.id }, data: { rules } })
+    try {
+      // Broadcast rubric change to SSE subscribers scoped to this event
+      try { hub.broadcast('scoring-schema', { eventSlug: slug, rubric }) } catch (e) { /* ignore hub errors */ }
+    } catch {}
     return Response.json({ ok: true })
   } catch (e: any) {
     return Response.json({ error: e?.message || 'error' }, { status: 500 })

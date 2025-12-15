@@ -83,19 +83,15 @@ export function ProtectedPage({ requiredRole, children }: ProtectedPageProps) {
         <h2>Access Denied</h2>
         <p className="small">You need {requiredRole} access to view this page.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20 }}>
-          {role !== 'admin' && requiredRole !== 'judge' && (
-            <Button onClick={() => {
-              const pwd = prompt('Enter admin password:')
-              if (pwd === 'admin123') {
-                localStorage?.setItem('user-role', 'admin')
-                window.location.reload()
-              }
-            }}>Unlock as Admin</Button>
-          )}
           {role !== 'judge' && requiredRole === 'judge' && (
             <Button variant="secondary" onClick={() => {
               window.location.href = '/judge/access'
             }}>Access as Judge</Button>
+          )}
+          {role !== 'admin' && requiredRole === 'admin' && (
+            <Button variant="secondary" onClick={() => {
+              window.location.href = '/auth/signin'
+            }}>Sign In as Admin</Button>
           )}
         </div>
       </Card>
