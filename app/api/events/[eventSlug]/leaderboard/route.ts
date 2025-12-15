@@ -39,22 +39,14 @@ export async function GET(
     `
     const total = (totalCountRes && totalCountRes[0] && Number(totalCountRes[0].count)) || 0
 
-    // Fetch page of participants joined with their total score (aggregated in DB)
-    const participantsWithScores: any[] = await db.$queryRaw`
-      SELECT p."id", p."name", p."kind",
-             COALESCE(s.total, 0) as "totalScore"
-      FROM "Participant" p
-      LEFT JOIN (
-        SELECT "participantId" as id, SUM(value) as total
-        FROM "Score"
-        WHERE "eventId" = ${event.id}
-        GROUP BY "participantId"
-      ) s ON s.id = p."id"
-      WHERE p."eventId" = ${event.id}
-      ORDER BY s.total DESC NULLS LAST
-      LIMIT ${size} OFFSET ${start}
-    `
-    // normalize rows
+    // Fetch page of participants using denormalized totalScore for fast reads
+    const participantsWithScores = await db.participant.findMany({
+      where: { eventId: event.id },
+      orderBy: { totalScore: 'desc' },
+      take: size,
+      skip: start,
+      select: { id: true, name: true, kind: true, totalScore: true }
+    })
     const normalizedParticipants = participantsWithScores.map((p: any) => ({
       id: p.id,
       name: p.name,

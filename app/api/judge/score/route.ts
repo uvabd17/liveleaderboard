@@ -184,6 +184,23 @@ export async function POST(request: Request) {
 
     await Promise.all(scorePromises)
 
+    // Update denormalized totalScore for this participant (single aggregate)
+    try {
+      const agg = await db.score.aggregate({
+        where: { eventId: event.id, participantId },
+        _sum: { value: true }
+      })
+      const total = Math.floor(Number(agg._sum.value ?? 0))
+      try {
+        await db.participant.update({ where: { id: participantId }, data: { totalScore: total } })
+      } catch (e) {
+        // best effort: ignore update failures
+        console.error('Failed to update participant.totalScore', e)
+      }
+    } catch (e) {
+      console.error('Failed to aggregate scores for totalScore', e)
+    }
+
     // If a roundNumber was provided, record this participant's completion for that round
     if (typeof roundNumber === 'number' && !isNaN(roundNumber)) {
       try {
@@ -231,35 +248,25 @@ export async function POST(request: Request) {
     }
 
     // Calculate updated leaderboard using aggregation (optimized query)
-    // Compute trimmed leaderboard (single grouped query) and broadcast only top-N
+    // Compute trimmed leaderboard using denormalized Participant.totalScore and broadcast only top-N
     const TOP_N = 50
     try {
-      const rows: Array<{ id: string; name: string; kind: string; score: number; createdAt: Date }>
-        = await db.$queryRaw`
-        SELECT p.id, p.name, p.kind, p."createdAt", COALESCE(SUM(s.value), 0)::int AS score
-        FROM "Participant" p
-        LEFT JOIN "Score" s ON s."participantId" = p.id AND s."eventId" = ${event.id}
-        WHERE p."eventId" = ${event.id}
-        GROUP BY p.id, p.name, p.kind, p."createdAt"
-        ORDER BY score DESC, p."createdAt" ASC
-        LIMIT ${TOP_N}
-      `
+      const rows = await db.participant.findMany({
+        where: { eventId: event.id },
+        orderBy: { totalScore: 'desc' },
+        take: TOP_N,
+        select: { id: true, name: true, kind: true, totalScore: true }
+      })
 
-      // Attach ranks (1-based) to the trimmed page
-      const leaderboard = rows.map((r, i) => ({ id: r.id, name: r.name, kind: r.kind as any, score: Number(r.score ?? 0), rank: i + 1 }))
+      const leaderboard = rows.map((r, i) => ({ id: r.id, name: r.name, kind: r.kind as any, score: Number(r.totalScore ?? 0), rank: i + 1 }))
 
-      // Broadcast trimmed leaderboard snapshot to reduce payload sizes
       try {
-        hub.broadcast('leaderboard', {
-          eventSlug,
-          leaderboard,
-          timestamp: new Date().toISOString()
-        })
+        hub.broadcast('leaderboard', { eventSlug, leaderboard, timestamp: new Date().toISOString() })
       } catch (err) {
-        // Best-effort broadcast; ignore failures
+        // ignore
       }
     } catch (err) {
-      console.error('Failed to compute trimmed leaderboard', err)
+      console.error('Failed to fetch trimmed leaderboard from participants', err)
     }
 
     // If we recorded a round completion above, broadcast a specific event for it

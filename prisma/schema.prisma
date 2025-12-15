@@ -87,6 +87,7 @@ model Participant {
   kind      ParticipantKind
   name      String
   normalizedName String
+  totalScore Int             @default(0)
   profile   Json?
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
@@ -95,6 +96,7 @@ model Participant {
   roundCompletions RoundCompletion[]
   @@unique([eventId, normalizedName, kind])
   @@index([eventId])
+  @@index([eventId, totalScore])
 }
 
 model Score {
