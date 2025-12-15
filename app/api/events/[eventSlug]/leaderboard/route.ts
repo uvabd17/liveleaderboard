@@ -29,26 +29,37 @@ export async function GET(
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
-    // Fetch participants basic info
-    const participants = await db.participant.findMany({ where: { eventId: event.id }, select: { id: true, name: true, kind: true } })
+    // Efficiently fetch paginated participants with total scores using a single SQL query
+    const start = Math.max(0, (page - 1) * size)
+    // total participants count
+    const totalCountRes: any = await db.$queryRaw`
+      SELECT COUNT(*)::int as count
+      FROM "Participant"
+      WHERE "eventId" = ${event.id}
+    `
+    const total = (totalCountRes && totalCountRes[0] && Number(totalCountRes[0].count)) || 0
 
-    // Aggregate scores per participant (single groupBy query)
-    const scoreGroups = await db.score.groupBy({
-      by: ['participantId'],
-      where: { eventId: event.id },
-      _sum: { value: true }
-    })
-    const scoreMap: Record<string, number> = {}
-    for (const g of scoreGroups) {
-      if (g.participantId) scoreMap[g.participantId] = Number(g._sum.value || 0)
-    }
-
-    // Build participantsWithScores array
-    const participantsWithScores = participants.map(p => ({
+    // Fetch page of participants joined with their total score (aggregated in DB)
+    const participantsWithScores: any[] = await db.$queryRaw`
+      SELECT p."id", p."name", p."kind",
+             COALESCE(s.total, 0) as "totalScore"
+      FROM "Participant" p
+      LEFT JOIN (
+        SELECT "participantId" as id, SUM(value) as total
+        FROM "Score"
+        WHERE "eventId" = ${event.id}
+        GROUP BY "participantId"
+      ) s ON s.id = p."id"
+      WHERE p."eventId" = ${event.id}
+      ORDER BY s.total DESC NULLS LAST
+      LIMIT ${size} OFFSET ${start}
+    `
+    // normalize rows
+    const normalizedParticipants = participantsWithScores.map((p: any) => ({
       id: p.id,
       name: p.name,
       kind: p.kind,
-      totalScore: scoreMap[p.id] || 0,
+      totalScore: Number(p.totalScore || 0),
       rank: 0,
       previousRank: 0,
       momentum: 0,
@@ -71,25 +82,27 @@ export async function GET(
       }
     }
 
-    // Sort by total score descending (and by total duration ascending when speed+score)
-    participantsWithScores.sort((a, b) => {
-      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
-      if (mode === 'speed+score') {
+    // If speed+score mode, we need to factor duration into ordering. For now, if mode === 'speed+score',
+    // fetch durations and adjust ordering in-memory for the current page.
+    if (mode === 'speed+score') {
+      const currentRound = Number(evtFull?.currentRound ?? 0)
+      const completions = await db.roundCompletion.findMany({ where: { eventId: event.id }, select: { participantId: true, roundNumber: true, durationSeconds: true } })
+      for (const c of completions) {
+        if (c.durationSeconds == null) continue
+        if (c.roundNumber > currentRound) continue
+        durationMap[c.participantId] = (durationMap[c.participantId] || 0) + (c.durationSeconds || 0)
+      }
+      normalizedParticipants.sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
         const da = durationMap[a.id] || Infinity
         const dbv = durationMap[b.id] || Infinity
         return da - dbv
-      }
-      return 0
-    })
+      })
+    }
 
-    // Assign ranks
-    participantsWithScores.forEach((p, index) => { p.rank = index + 1 })
-
-    // Pagination: compute total and slice
-    const total = participantsWithScores.length
-    const start = Math.max(0, (page - 1) * size)
-    const end = start + size
-    const pageItems = participantsWithScores.slice(start, end)
+    // Assign ranks (global rank is approximate when using pagination — for exact ranks across all participants,
+    // a full ordering would be required; here we set ranks relative to the page slice start)
+    const pageItems = normalizedParticipants.map((p: any, i: number) => ({ ...p, rank: (page - 1) * size + i + 1 }))
 
     return NextResponse.json({
       event,

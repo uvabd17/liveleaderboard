@@ -231,41 +231,36 @@ export async function POST(request: Request) {
     }
 
     // Calculate updated leaderboard using aggregation (optimized query)
-    const participants = await db.participant.findMany({
-      where: { eventId: event.id },
-      select: {
-        id: true,
-        name: true,
-        kind: true
-      }
-    })
+    // Compute trimmed leaderboard (single grouped query) and broadcast only top-N
+    const TOP_N = 50
+    try {
+      const rows: Array<{ id: string; name: string; kind: string; score: number; createdAt: Date }>
+        = await db.$queryRaw`
+        SELECT p.id, p.name, p.kind, p."createdAt", COALESCE(SUM(s.value), 0)::int AS score
+        FROM "Participant" p
+        LEFT JOIN "Score" s ON s."participantId" = p.id AND s."eventId" = ${event.id}
+        WHERE p."eventId" = ${event.id}
+        GROUP BY p.id, p.name, p.kind, p."createdAt"
+        ORDER BY score DESC, p."createdAt" ASC
+        LIMIT ${TOP_N}
+      `
 
-    // Get total scores using aggregation for each participant
-    const leaderboard = await Promise.all(
-      participants.map(async (p) => {
-        const scoreAgg = await db.score.aggregate({
-          where: { eventId: event.id, participantId: p.id },
-          _sum: { value: true }
+      // Attach ranks (1-based) to the trimmed page
+      const leaderboard = rows.map((r, i) => ({ id: r.id, name: r.name, kind: r.kind as any, score: Number(r.score ?? 0), rank: i + 1 }))
+
+      // Broadcast trimmed leaderboard snapshot to reduce payload sizes
+      try {
+        hub.broadcast('leaderboard', {
+          eventSlug,
+          leaderboard,
+          timestamp: new Date().toISOString()
         })
-        return {
-          id: p.id,
-          name: p.name,
-          kind: p.kind,
-          score: scoreAgg._sum.value ?? 0,
-          rank: 0
-        }
-      })
-    )
-
-    leaderboard.sort((a, b) => b.score - a.score)
-    leaderboard.forEach((p, index) => { p.rank = index + 1 })
-
-    // Broadcast update via SSE (use 'leaderboard' type so clients listen properly)
-    hub.broadcast('leaderboard', {
-      eventSlug,
-      leaderboard: leaderboard,
-      timestamp: new Date().toISOString()
-    })
+      } catch (err) {
+        // Best-effort broadcast; ignore failures
+      }
+    } catch (err) {
+      console.error('Failed to compute trimmed leaderboard', err)
+    }
 
     // If we recorded a round completion above, broadcast a specific event for it
     if (typeof roundNumber === 'number' && !isNaN(roundNumber)) {

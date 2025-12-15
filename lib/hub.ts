@@ -40,6 +40,9 @@ type Hub = {
   tokens: Map<string, RegisterToken>
 }
 
+const TOP_N = Number(process.env.HUB_TOP_N) || 50
+const DEBOUNCE_MS = Number(process.env.HUB_DEBOUNCE_MS) || 150
+
 function rank(participants: Participant[]): Array<Participant & { rank: number }>{
   const sorted = [...participants].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score
@@ -72,13 +75,13 @@ if (!g.__LEADERBOARD_HUB__) {
     subscribers: new Map(),
     tokens: new Map(),
     subscribe(send, close, eventSlug?: string) {
-      const id = makeId('sub')
-      const sub: Subscriber = { id, send, close, eventSlug } as any
+        const id = makeId('sub')
+        const sub: Subscriber = { id, send, close, eventSlug } as any
       this.subscribers.set(id, sub)
       // send initial snapshot (include eventSlug so clients can filter)
       try {
-        const snap = hub.getSnapshot()
-        send({ ...snap, eventSlug: eventSlug ?? null })
+          const snap = hub.getSnapshot(TOP_N, eventSlug)
+          send({ ...snap, eventSlug: eventSlug ?? null })
       } catch (err) {
         try { send(hub.getSnapshot()) } catch {}
       }
@@ -89,16 +92,56 @@ if (!g.__LEADERBOARD_HUB__) {
         }
       }
     },
-    broadcast(event, data) {
-      const payload = { type: event, ...data }
-      for (const s of this.subscribers.values()) {
-        // Filter by eventSlug if present
-        if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) {
-          continue
+      // pending broadcasts keyed by eventSlug (null for global)
+      (async _flushPending(key: string | null) {}) as any,
+      broadcast(event, data) {
+        // For leaderboard events, debounce and trim to TOP_N to reduce payloads
+        if (event === 'leaderboard') {
+          try {
+            const key = data?.eventSlug ?? '__all__'
+            const map = (this as any)._pendingBroadcasts || new Map()
+            map.set(key, { event, data })
+            ;(this as any)._pendingBroadcasts = map
+            if (!map.get(key)._timer) {
+              map.get(key)._timer = setTimeout(() => {
+                try {
+                  const item = map.get(key)
+                  map.delete(key)
+                  if (!item) return
+                  const payload = { type: item.event, ...item.data }
+                  // trim leaderboard if present
+                  if (Array.isArray(payload.leaderboard)) {
+                    payload.leaderboard = payload.leaderboard.slice(0, TOP_N)
+                  }
+                  for (const s of this.subscribers.values()) {
+                    if ((s as any).eventSlug && payload.eventSlug && (s as any).eventSlug !== payload.eventSlug) continue
+                    try { s.send(payload) } catch {}
+                  }
+                } catch (err) {
+                  // ignore
+                }
+              }, DEBOUNCE_MS)
+            }
+          } catch (err) {
+            // fallback immediate send
+            const payload = { type: event, ...data }
+            for (const s of this.subscribers.values()) {
+              if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) continue
+              try { s.send(payload) } catch {}
+            }
+          }
+          return
         }
-        try { s.send(payload) } catch {}
-      }
-    },
+
+        const payload = { type: event, ...data }
+        for (const s of this.subscribers.values()) {
+          // Filter by eventSlug if present
+          if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) {
+            continue
+          }
+          try { s.send(payload) } catch {}
+        }
+      },
     broadcastRoundChange(data) {
       // Use generic broadcast so event-scoped filtering applies
       this.broadcast('round-change', data)
@@ -142,11 +185,12 @@ if (!g.__LEADERBOARD_HUB__) {
       // update ranks cache
       const ranked = rank(Array.from(this.state.participants.values()))
       this.state.lastRanks = new Map(ranked.map(r => [r.id, r.rank]))
-      // throttle: only broadcast if changed
-      const current = JSON.stringify(ranked)
+      // trim to TOP_N for snapshots
+      const trimmed = ranked.slice(0, TOP_N)
+      const current = JSON.stringify(trimmed)
       if ((this as any)._lastSnapshot !== current) {
         (this as any)._lastSnapshot = current
-        this.broadcast('snapshot', { leaderboard: ranked })
+        this.broadcast('snapshot', { leaderboard: trimmed })
       }
     },
     updateScore(id, delta) {
@@ -160,16 +204,17 @@ if (!g.__LEADERBOARD_HUB__) {
       this.state.lastRanks = after
       // compute movers only for changed ranks
       const movers = ranked.filter(r => before.get(r.id) !== r.rank).map(r => ({ id: r.id, from: before.get(r.id) ?? r.rank, to: r.rank }))
-      // throttle: only broadcast if ranks changed
+      // throttle/batched broadcast: only broadcast trimmed leaderboard if there are changes
       if (movers.length > 0 || delta !== 0) {
         this.broadcast('leaderboard', { leaderboard: ranked, movers })
       }
     },
     getSorted() { return Array.from(this.state.participants.values()).sort((a,b)=>b.score-a.score) },
     getRanks() { return this.state.lastRanks },
-    getSnapshot() {
+    getSnapshot(topN?: number, eventSlug?: string) {
       const ranked = rank(Array.from(this.state.participants.values()))
-      return { type: 'snapshot' as const, leaderboard: ranked }
+      const trimmed = typeof topN === 'number' ? ranked.slice(0, topN) : ranked
+      return { type: 'snapshot' as const, leaderboard: trimmed }
     },
     createRegisterToken() {
       const token = makeId('tok')
