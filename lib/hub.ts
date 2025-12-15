@@ -34,7 +34,7 @@ type Hub = {
   updateScore: (id: string, delta: number) => void
   getSorted: () => Participant[]
   getRanks: () => Map<string, number>
-  getSnapshot: () => { type: 'snapshot'; leaderboard: Array<Participant & { rank: number }> }
+  getSnapshot: (topN?: number, eventSlug?: string) => { type: 'snapshot'; leaderboard: Array<Participant & { rank: number }> }
   createRegisterToken: () => RegisterToken
   registerWithToken: (token: string, name: string, kind: 'team' | 'individual') => Participant | null
   tokens: Map<string, RegisterToken>
@@ -93,7 +93,6 @@ if (!g.__LEADERBOARD_HUB__) {
       }
     },
       // pending broadcasts keyed by eventSlug (null for global)
-      (async _flushPending(key: string | null) {}) as any,
       broadcast(event, data) {
         // For leaderboard events, debounce and trim to TOP_N to reduce payloads
         if (event === 'leaderboard') {
