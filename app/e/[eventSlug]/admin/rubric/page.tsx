@@ -44,24 +44,24 @@ export default function EventRubricPage() {
 
   useEffect(() => {
     loadRubric()
-    // load available rounds from backend if present
-    ;(async () => {
-      try {
-        const res = await fetch(`/api/rounds?eventSlug=${eventSlug}`)
-        if (res.ok) {
-          const data = await res.json()
-          const fetched = (data.rounds || []).map((r: any, i: number) => ({
-            number: i + 1,
-            name: r.name,
-            roundDurationMinutes: r.roundDurationMinutes,
-            judgingOpen: r.judgingOpen,
-          }))
-          if (fetched.length > 0) setRounds(fetched)
+      // load available rounds from backend if present
+      ; (async () => {
+        try {
+          const res = await fetch(`/api/rounds?eventSlug=${eventSlug}`)
+          if (res.ok) {
+            const data = await res.json()
+            const fetched = (data.rounds || []).map((r: any, i: number) => ({
+              number: i + 1,
+              name: r.name,
+              roundDurationMinutes: r.roundDurationMinutes,
+              judgingOpen: r.judgingOpen,
+            }))
+            if (fetched.length > 0) setRounds(fetched)
+          }
+        } catch (err) {
+          // ignore — keep local rounds input
         }
-      } catch (err) {
-        // ignore — keep local rounds input
-      }
-    })()
+      })()
   }, [eventSlug])
   async function loadRubric() {
     setLoading(true)
@@ -131,7 +131,7 @@ export default function EventRubricPage() {
       const arr = [...prev]
       const target = direction === 'up' ? index - 1 : index + 1
       if (target < 0 || target >= arr.length) return prev
-      ;[arr[index], arr[target]] = [arr[target], arr[index]]
+        ;[arr[index], arr[target]] = [arr[target], arr[index]]
       return arr
     })
   }
@@ -219,8 +219,13 @@ export default function EventRubricPage() {
     : criteria.map((c, i) => ({ c, i }))
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6 text-white">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen pb-20 relative">
+      {/* Background gradients */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+      </div>
+      <div className="max-w-6xl mx-auto p-6 relative z-10">
         <div className="flex items-center justify-between mb-6">
           <div>
             <button onClick={() => router.push(`/e/${eventSlug}/admin`)} className="text-sm text-slate-300 mb-1">← Back to Admin</button>
@@ -228,8 +233,8 @@ export default function EventRubricPage() {
             <p className="text-sm text-slate-400">Event: <span className="font-mono text-indigo-300">{eventSlug}</span></p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setCompact(c => !c)} className="text-sm px-3 py-1 rounded bg-slate-800 border">{compact ? 'Compact' : 'Spacious'}</button>
-            <button onClick={() => setShowRawJson(s => !s)} className="text-sm px-3 py-1 rounded bg-slate-800 border">{showRawJson ? 'Hide JSON' : 'Show JSON'}</button>
+            <button onClick={() => setCompact(c => !c)} className="text-sm px-3 py-1 rounded glass-panel border-white/10 hover:bg-white/5">{compact ? 'Compact' : 'Spacious'}</button>
+            <button onClick={() => setShowRawJson(s => !s)} className="text-sm px-3 py-1 rounded glass-panel border-white/10 hover:bg-white/5">{showRawJson ? 'Hide JSON' : 'Show JSON'}</button>
             <Button variant="secondary" onClick={loadRubric}>Reset</Button>
             <Button onClick={saveRubric} disabled={saving}>{saving ? 'Saving...' : 'Save Rubric'}</Button>
           </div>
@@ -237,38 +242,38 @@ export default function EventRubricPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <aside className="md:col-span-1">
-            <div className="bg-slate-800 rounded p-4 space-y-3 border border-slate-700">
+            <div className="glass-panel p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium">Rounds</div>
                 <div className="text-xs text-slate-400">{rounds.length}</div>
               </div>
               <div className={`${compact ? 'space-y-1' : 'space-y-2'}`}>
                 {rounds.map(r => (
-                  <button key={r.number} onClick={() => setSelectedRound(r.number)} className={`w-full text-left px-3 py-2 rounded ${selectedRound===r.number ? 'bg-indigo-700 border-indigo-500' : 'bg-slate-900 border-slate-800'} text-sm border`}> 
+                  <button key={r.number} onClick={() => setSelectedRound(r.number)} className={`w-full text-left px-3 py-2 rounded ${selectedRound === r.number ? 'bg-indigo-700 border-indigo-500' : 'bg-slate-900 border-slate-800'} text-sm border`}>
                     <div className="font-medium">{r.name || `Round ${r.number}`}</div>
                     <div className="text-xs text-slate-400">{r.roundDurationMinutes ? `${r.roundDurationMinutes} min` : 'Duration —'}</div>
                   </button>
                 ))}
-                <button onClick={() => setSelectedRound(0)} className={`w-full text-left px-3 py-2 rounded ${selectedRound===0 ? 'bg-indigo-700 border-indigo-500' : 'bg-slate-900 border-slate-800'} text-sm border`}>All Rounds</button>
+                <button onClick={() => setSelectedRound(0)} className={`w-full text-left px-3 py-2 rounded ${selectedRound === 0 ? 'bg-indigo-700 border-indigo-500' : 'bg-slate-900 border-slate-800'} text-sm border`}>All Rounds</button>
               </div>
               {/* Round assignments panel removed — not required anymore */}
             </div>
           </aside>
 
           <main className="md:col-span-2 space-y-4">
-            <div className="bg-slate-800 rounded p-4 border border-slate-700">
+            <div className="glass-panel p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-medium">Criteria {selectedRound && selectedRound > 0 ? `(Round ${selectedRound})` : ''}</div>
                 <div className="flex items-center gap-2">
                   <Button onClick={() => addCriterion()}>+ Add Criterion</Button>
                   {selectedRound > 0 && <Button variant="secondary" onClick={createCriterionForSelectedRound}>+ Create for Round</Button>}
-                  <Button variant="ghost" onClick={() => setShowTemplates(s=>!s)}>Templates</Button>
+                  <Button variant="ghost" onClick={() => setShowTemplates(s => !s)}>Templates</Button>
                 </div>
               </div>
 
               {showTemplates && (
                 <div className="mb-3 grid grid-cols-2 gap-2">
-                  {TEMPLATES.map((t,i)=>(<button key={i} onClick={() => addCriterion(t)} className="px-3 py-2 border rounded text-sm bg-slate-900">+ {t.label}</button>))}
+                  {TEMPLATES.map((t, i) => (<button key={i} onClick={() => addCriterion(t)} className="px-3 py-2 border border-white/10 rounded text-sm bg-white/5 hover:bg-white/10">+ {t.label}</button>))}
                 </div>
               )}
 
@@ -279,7 +284,7 @@ export default function EventRubricPage() {
                       <div className="text-xs text-slate-400 mb-2">Assigned (criteria already applied to this round)</div>
                       <div className="space-y-2">
                         {criteria.map((criterion, origIdx) => ({ criterion, origIdx })).filter(({ criterion }) => appliesToRound(criterion, selectedRound)).map(({ criterion, origIdx }) => (
-                          <div key={origIdx} className={`p-2 rounded border ${compact? 'text-sm' : ''} border-slate-700 bg-slate-900 flex justify-between items-center`}>
+                          <div key={origIdx} className={`p-2 rounded border ${compact ? 'text-sm' : ''} border-white/10 bg-white/5 flex justify-between items-center`}>
                             <div className="flex-1">
                               <div className={`font-medium ${!criterion.label ? 'text-amber-300' : 'text-white'}`}>{criterion.label || criterion.key}</div>
                               <div className="text-xs text-slate-400">Max {criterion.max} • {criterion.weight}x <span className="font-mono text-xs ml-2">{criterion.key}</span></div>
@@ -296,7 +301,7 @@ export default function EventRubricPage() {
                       <div className="text-xs text-slate-400 mb-2">Unassigned (criteria not applied to this round)</div>
                       <div className="space-y-2">
                         {criteria.map((criterion, origIdx) => ({ criterion, origIdx })).filter(({ criterion }) => !appliesToRound(criterion, selectedRound)).map(({ criterion, origIdx }) => (
-                          <div key={origIdx} className={`p-2 rounded border ${compact? 'text-sm' : ''} border-slate-700 bg-slate-900 flex justify-between items-center`}>
+                          <div key={origIdx} className={`p-2 rounded border ${compact ? 'text-sm' : ''} border-white/10 bg-white/5 flex justify-between items-center opacity-60 hover:opacity-100`}>
                             <div className="flex-1">
                               <div className={`font-medium ${!criterion.label ? 'text-amber-300' : 'text-white'}`}>{criterion.label || criterion.key}</div>
                               <div className="text-xs text-slate-400">Max {criterion.max} • {criterion.weight}x <span className="font-mono text-xs ml-2">{criterion.key}</span></div>
@@ -311,7 +316,7 @@ export default function EventRubricPage() {
                   </div>
                 ) : (
                   criteria.map((criterion, idx) => (
-                    <div key={idx} className={`p-3 rounded border ${compact? 'text-sm' : ''} border-slate-700 bg-slate-900 flex justify-between items-center`}>
+                    <div key={idx} className={`p-3 rounded border ${compact ? 'text-sm' : ''} border-white/10 bg-white/5 flex justify-between items-center`}>
                       <div className="flex-1 cursor-pointer" onClick={() => setEditingIndex(idx)}>
                         <div className={`font-medium ${!criterion.label ? 'text-amber-300' : 'text-white'}`}>{criterion.label || '(Untitled)'}</div>
                         <div className="text-xs text-slate-400">Max: {criterion.max} • Weight: {criterion.weight}x</div>
@@ -328,16 +333,16 @@ export default function EventRubricPage() {
             </div>
 
             {editingIndex !== null && (
-              <div className="bg-slate-800 rounded p-4 border border-slate-700">
+              <div className="glass-panel p-4">
                 <h3 className="text-sm font-medium mb-2">Edit Criterion</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <input type="text" value={criteria[editingIndex].label} onChange={e => updateCriterion(editingIndex, { label: e.target.value })} className="col-span-2 p-2 bg-slate-900 border border-slate-700 rounded" placeholder="Criterion label" />
-                  <input type="number" min={1} value={criteria[editingIndex].max} onChange={e => updateCriterion(editingIndex, { max: Number(e.target.value) })} className="p-2 bg-slate-900 border border-slate-700 rounded" />
+                  <input type="text" value={criteria[editingIndex].label} onChange={e => updateCriterion(editingIndex, { label: e.target.value })} className="col-span-2 glass-input p-2 rounded" placeholder="Criterion label" />
+                  <input type="number" min={1} value={criteria[editingIndex].max} onChange={e => updateCriterion(editingIndex, { max: Number(e.target.value) })} className="glass-input p-2 rounded" />
                 </div>
                 <div className="mt-3">
                   <div className="text-xs mb-2">Apply to rounds</div>
                   <div className="flex gap-2 flex-wrap">
-                    {rounds.map(r => { const num=r.number; const isSelected=(criteria[editingIndex].rounds||[]).includes(num); return (<button key={num} onClick={() => toggleRoundForCriterion(editingIndex, num)} className={`px-3 py-1 rounded text-sm ${isSelected? 'bg-indigo-600 text-white':'bg-slate-900 text-slate-300 border border-slate-700'}`}>{r.name||`Round ${num}`}</button>) })}
+                    {rounds.map(r => { const num = r.number; const isSelected = (criteria[editingIndex].rounds || []).includes(num); return (<button key={num} onClick={() => toggleRoundForCriterion(editingIndex, num)} className={`px-3 py-1 rounded text-sm ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-700'}`}>{r.name || `Round ${num}`}</button>) })}
                   </div>
                 </div>
                 <div className="mt-4 flex gap-2">

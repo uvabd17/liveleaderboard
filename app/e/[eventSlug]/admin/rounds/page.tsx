@@ -111,7 +111,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
         else if (a === 'resume') toast.success('Timer resumed')
         else if (a === 'delete') toast.success('Round deleted')
         else toast.success('Saved')
-      } catch {}
+      } catch { }
       return json
     } catch (e: any) {
       setError(e?.message || String(e))
@@ -217,7 +217,12 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
   return (
     <>
       <EventNavigation />
-      <main className="min-h-screen bg-slate-900 py-8 px-4 md:px-8">
+      <main className="min-h-screen py-8 px-4 md:px-8 relative">
+        {/* Background gradients */}
+        <div className="fixed inset-0 pointer-events-none -z-10">
+          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+        </div>
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Top Header */}
           <div className="flex items-start md:items-center justify-between gap-4">
@@ -248,7 +253,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Rounds list */}
             <div className="md:col-span-2 space-y-4">
-              <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+              <div className="glass-panel p-4">
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-lg font-semibold text-white">Rounds</h2>
                   <div className="text-right">
@@ -264,7 +269,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                 ) : (
                   <div className="space-y-3">
                     {rounds.map((round, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-700 rounded">
+                      <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded">
                         <div>
                           <div className="text-white font-medium">{round.name}</div>
                           <div className="text-sm text-slate-400">{round.roundDurationMinutes} min • {round.judgingOpen ? 'Judging Open' : 'Judging Closed'}</div>
@@ -288,7 +293,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
 
             {/* Sidebar: Timer + Create */}
             <div className="space-y-4">
-              <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 flex flex-col items-center">
+              <div className="glass-panel p-4 flex flex-col items-center">
                 <h3 className="text-sm text-slate-300 mb-2">Current Round Timer</h3>
                 {rounds.length > 0 ? (
                   <CircularTimerControl
@@ -306,18 +311,18 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                 )}
               </div>
 
-              <div className="bg-slate-800 rounded-lg border border-slate-700 p-4">
+              <div className="glass-panel p-4">
                 <h3 className="text-sm text-slate-300 mb-2">{edit ? 'Edit Round' : 'Create Round'}</h3>
                 {edit ? (
                   <form onSubmit={handleEditSubmit} className="space-y-2">
-                    <input value={edit.name} onChange={(e)=>setEdit({...edit, name:e.target.value})} className="w-full px-2 py-1 bg-slate-700 text-white rounded" />
+                    <input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} className="glass-input w-full px-2 py-1" />
                     <div className="flex gap-2">
-                      <input type="number" value={edit.timer} onChange={(e)=>setEdit({...edit, timer:Number(e.target.value)})} className="w-1/2 px-2 py-1 bg-slate-700 text-white rounded" />
-                      <input type="number" value={edit.judgingWindowMinutes||''} onChange={(e)=>setEdit({...edit, judgingWindowMinutes: e.target.value===''?null:Number(e.target.value)})} className="w-1/2 px-2 py-1 bg-slate-700 text-white rounded" />
+                      <input type="number" value={edit.timer} onChange={(e) => setEdit({ ...edit, timer: Number(e.target.value) })} className="glass-input w-1/2 px-2 py-1" />
+                      <input type="number" value={edit.judgingWindowMinutes || ''} onChange={(e) => setEdit({ ...edit, judgingWindowMinutes: e.target.value === '' ? null : Number(e.target.value) })} className="glass-input w-1/2 px-2 py-1" />
                     </div>
                     <div className="flex gap-2">
                       <Button type="submit" className="text-sm">Save</Button>
-                      <Button type="button" variant="secondary" onClick={()=>setEdit(null)} className="text-sm">Cancel</Button>
+                      <Button type="button" variant="secondary" onClick={() => setEdit(null)} className="text-sm">Cancel</Button>
                     </div>
                   </form>
                 ) : (
@@ -325,16 +330,16 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                     <div className="space-y-2">
                       <div>
                         <label className="block text-sm text-slate-300 mb-1">Round name</label>
-                        <input placeholder="Round name" value={name} onChange={(e)=>setName(e.target.value)} className="w-full px-2 py-1 bg-slate-700 text-white rounded" />
+                        <input placeholder="Round name" value={name} onChange={(e) => setName(e.target.value)} className="glass-input w-full px-2 py-1" />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="block text-sm text-slate-300 mb-1">Duration (minutes)</label>
-                          <input type="number" placeholder="Minutes" value={timer} onChange={(e)=>setTimer(Number(e.target.value))} className="w-full px-2 py-1 bg-slate-700 text-white rounded" />
+                          <input type="number" placeholder="Minutes" value={timer} onChange={(e) => setTimer(Number(e.target.value))} className="glass-input w-full px-2 py-1" />
                         </div>
                         <div>
                           <label className="block text-sm text-slate-300 mb-1">Judging window (minutes)</label>
-                          <input type="number" placeholder="Judging window" value={judgingWindow||''} onChange={(e)=>setJudgingWindow(e.target.value===''?null:Number(e.target.value))} className="w-full px-2 py-1 bg-slate-700 text-white rounded" />
+                          <input type="number" placeholder="Judging window" value={judgingWindow || ''} onChange={(e) => setJudgingWindow(e.target.value === '' ? null : Number(e.target.value))} className="glass-input w-full px-2 py-1" />
                         </div>
                       </div>
                       <Button type="submit" className="w-full">Create</Button>

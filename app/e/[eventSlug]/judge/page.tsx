@@ -59,8 +59,8 @@ export default function JudgeConsolePage() {
   const [submitting, setSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [completedParticipants, setCompletedParticipants] = useState<Set<string>>(new Set())
-  
-  
+
+
   const cache = EventCache.getInstance()
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function JudgeConsolePage() {
       }
     }
     es.onerror = () => {
-      try { es.close() } catch {}
+      try { es.close() } catch { }
     }
     return () => es.close()
   }, [eventSlug])
@@ -134,7 +134,7 @@ export default function JudgeConsolePage() {
       }
     }
     es.onerror = () => {
-      try { es.close() } catch {}
+      try { es.close() } catch { }
     }
     return () => es.close()
   }, [eventSlug])
@@ -166,13 +166,13 @@ export default function JudgeConsolePage() {
               const initialScores: Record<string, number> = {}
               visible.forEach((c: any) => { initialScores[c.key] = scores[c.key] ?? 0 })
               setScores(initialScores)
-              try { toast('Rubric updated', { icon: '🔁' }) } catch {}
+              try { toast('Rubric updated', { icon: '🔁' }) } catch { }
             })
-            .catch(() => {})
+            .catch(() => { })
         }
-      } catch (err) {}
+      } catch (err) { }
     }
-    es.onerror = () => { try { es.close() } catch {} }
+    es.onerror = () => { try { es.close() } catch { } }
     return () => es.close()
   }, [eventSlug, selectedRoundNumber])
 
@@ -180,7 +180,7 @@ export default function JudgeConsolePage() {
     // Try cache first
     const cacheKey = `judge_data_${eventSlug}`
     const cached = cache.get(cacheKey)
-    
+
     if (cached) {
       setEvent(cached.event)
       setParticipants(cached.participants)
@@ -206,7 +206,7 @@ export default function JudgeConsolePage() {
       if (eventRes.ok) {
         eventData = await eventRes.json()
         setEvent(eventData.event)
-        
+
         // Initialize scores with 0
         const initialScores: Record<string, number> = {}
         eventData.event.rules?.rubric?.forEach((criterion: any) => {
@@ -217,7 +217,7 @@ export default function JudgeConsolePage() {
         if (participantsRes.ok) {
           const participantsData = await participantsRes.json()
           setParticipants(participantsData.participants)
-          
+
           // Cache the data
           cache.set(cacheKey, {
             event: eventData.event,
@@ -230,7 +230,7 @@ export default function JudgeConsolePage() {
           const roundsData = await roundsRes.json()
           const fetchedRounds = roundsData.rounds || []
           setRounds(fetchedRounds)
-          
+
           // Auto-select first open round if none selected
           if (fetchedRounds.length > 0 && !selectedRoundNumber) {
             const firstOpenRound = fetchedRounds.findIndex((r: Round) => r.judgingOpen)
@@ -238,31 +238,32 @@ export default function JudgeConsolePage() {
               setSelectedRoundNumber(firstOpenRound + 1)
             }
           }
-        }      }
+        }
+      }
 
-        // Fetch completion status for all participants in the selected round
-        const fetchCompletions = async () => {
-          try {
-            const res = await fetch(`/api/events/${eventSlug}/round-completions?roundNumber=${selectedRoundNumber}`)
-            if (res.ok) {
-              const data = await res.json()
-              const completed = new Set<string>()
-              if (Array.isArray(data.rows)) {
-                data.rows.forEach((r: any) => {
-                  if (r.participantId) completed.add(r.participantId)
-                })
-              }
-              setCompletedParticipants(completed)
+      // Fetch completion status for all participants in the selected round
+      const fetchCompletions = async () => {
+        try {
+          const res = await fetch(`/api/events/${eventSlug}/round-completions?roundNumber=${selectedRoundNumber}`)
+          if (res.ok) {
+            const data = await res.json()
+            const completed = new Set<string>()
+            if (Array.isArray(data.rows)) {
+              data.rows.forEach((r: any) => {
+                if (r.participantId) completed.add(r.participantId)
+              })
             }
-          } catch (e) {
-            console.error('Failed to fetch completions', e)
+            setCompletedParticipants(completed)
           }
+        } catch (e) {
+          console.error('Failed to fetch completions', e)
         }
+      }
 
-        // Fetch completions when round changes
-        if (eventData?.event) {
-          fetchCompletions()
-        }
+      // Fetch completions when round changes
+      if (eventData?.event) {
+        fetchCompletions()
+      }
     } catch (error) {
       console.error('Failed to fetch judge data:', error)
       toast.error('Failed to load judging data')
@@ -313,6 +314,13 @@ export default function JudgeConsolePage() {
       })
 
       if (response.ok) {
+        // play subtle success sound
+        try {
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3') // subtle "ding"
+          audio.volume = 0.2
+          audio.play().catch(() => { })
+        } catch (e) { }
+
         toast.success('Scores submitted successfully!')
         setScores({})
         setComment('')
@@ -330,7 +338,7 @@ export default function JudgeConsolePage() {
         const error = await response.json()
         const errorMessage = error.message || error.error || 'Failed to submit scores'
         toast.error(errorMessage)
-        
+
         // If round already completed error, refresh completion status
         if (error.error === 'round_already_completed') {
           if (selectedParticipant) {
@@ -349,7 +357,7 @@ export default function JudgeConsolePage() {
   // Normalize rubric shape (support older/newer schema shapes)
   const rawRubric = event?.rules?.rubric || []
   const rubric = rawRubric.map((r: any) => ({
-    key: r.key ?? r.name ?? (r.label ? r.label.toLowerCase().replace(/\s+/g, '_') : Math.random().toString(36).slice(2,8)),
+    key: r.key ?? r.name ?? (r.label ? r.label.toLowerCase().replace(/\s+/g, '_') : Math.random().toString(36).slice(2, 8)),
     label: r.label ?? r.name ?? r.key ?? 'Criterion',
     maxPoints: Number(r.max ?? r.maxPoints ?? 100),
     weight: Number(r.weight ?? 1),
@@ -372,7 +380,7 @@ export default function JudgeConsolePage() {
       initial[c.key] = scores[c.key] ?? 0
     })
     setScores(initial)
-    
+
     // Fetch completion status for all participants when round changes
     if (eventSlug && selectedRoundNumber) {
       fetch(`/api/events/${eventSlug}/round-completions?roundNumber=${selectedRoundNumber}`)
@@ -386,9 +394,9 @@ export default function JudgeConsolePage() {
           }
           setCompletedParticipants(completed)
         })
-        .catch(() => {})
+        .catch(() => { })
     }
-    
+
     // Clear selected participant when round changes
     setSelectedParticipant(null)
     setSelectedCompleted(false)
@@ -412,7 +420,7 @@ export default function JudgeConsolePage() {
       .then(d => {
         setSelectedCompleted(!!d.completedCurrentRound)
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [selectedParticipant, selectedRoundNumber, completedParticipants])
 
   // Filter participants by search query
@@ -507,11 +515,17 @@ export default function JudgeConsolePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen pb-20 relative">
+      {/* Background gradients */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+      </div>
+
       <EventNavigation />
-      
+
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700">
+      <header className="glass-panel border-b border-white/5 sticky top-0 z-40 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
@@ -528,32 +542,31 @@ export default function JudgeConsolePage() {
                   Round {selectedRoundNumber}{rounds.length ? ` / ${rounds.length}` : ''}
                 </span>
                 {selectedRoundNumber > 0 && rounds[selectedRoundNumber - 1] && (
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    rounds[selectedRoundNumber - 1].judgingOpen
-                      ? 'bg-green-500/10 border border-green-500/30 text-green-200'
-                      : 'bg-red-500/10 border border-red-500/30 text-red-200'
-                  }`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${rounds[selectedRoundNumber - 1].judgingOpen
+                    ? 'bg-green-500/10 border border-green-500/30 text-green-200'
+                    : 'bg-red-500/10 border border-red-500/30 text-red-200'
+                    }`}>
                     {rounds[selectedRoundNumber - 1].judgingOpen ? '🟢 Judging Open' : '🔴 Judging Closed'}
                   </span>
                 )}
                 {rounds.length > 0 && (
                   <div className="flex gap-2 items-center">
-                      <label className="text-slate-400 text-xs">Select round</label>
-                      <select
-                        value={selectedRoundNumber}
-                        onChange={(e) => setSelectedRoundNumber(Number(e.target.value))}
-                        className="bg-slate-700 border border-slate-600 text-white rounded px-2 py-1 text-sm"
-                      >
-                        {rounds.map((r: Round, idx: number) => (
-                          r.judgingOpen
-                            ? <option key={idx} value={idx + 1}>{r.name || `Round ${idx + 1}`}</option>
-                            : null
-                        ))}
-                        {rounds.filter(r => r.judgingOpen).length === 0 && (
-                          <option disabled>No rounds open for judging</option>
-                        )}
-                      </select>
-                    </div>
+                    <label className="text-slate-400 text-xs">Select round</label>
+                    <select
+                      value={selectedRoundNumber}
+                      onChange={(e) => setSelectedRoundNumber(Number(e.target.value))}
+                      className="glass-input py-1 px-2 text-sm max-w-[140px]"
+                    >
+                      {rounds.map((r: Round, idx: number) => (
+                        r.judgingOpen
+                          ? <option key={idx} value={idx + 1}>{r.name || `Round ${idx + 1}`}</option>
+                          : null
+                      ))}
+                      {rounds.filter(r => r.judgingOpen).length === 0 && (
+                        <option disabled>No rounds open for judging</option>
+                      )}
+                    </select>
+                  </div>
                 )}
               </div>
             </div>
@@ -567,13 +580,13 @@ export default function JudgeConsolePage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Participant Selection with Search */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-6">
+        <div className="glass-panel p-6 mb-6">
           <label className="block text-lg font-semibold text-white mb-3">
             🔍 Select Participant to Score
           </label>
-          
+
           {/* Search Bar */}
           <div className="mb-4">
             <input
@@ -581,7 +594,7 @@ export default function JudgeConsolePage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name or type..."
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="glass-input w-full px-4 py-3 placeholder-slate-400"
             />
             {searchQuery && (
               <p className="text-xs text-slate-400 mt-2">
@@ -661,19 +674,17 @@ export default function JudgeConsolePage() {
                           }
                         }}
                         disabled={isCompleted || !selectedRoundNumber}
-                        className={`w-full px-4 py-3 border rounded-lg text-left transition-colors group ${
-                          isCompleted || !selectedRoundNumber
-                            ? 'bg-slate-800/50 border-slate-700/50 cursor-not-allowed opacity-60'
-                            : 'bg-slate-700 hover:bg-slate-600 border-slate-600'
-                        }`}
+                        className={`w-full px-4 py-3 border rounded-lg text-left transition-colors group ${isCompleted || !selectedRoundNumber
+                          ? 'bg-white/5 border-white/5 cursor-not-allowed opacity-60'
+                          : 'bg-white/5 hover:bg-white/10 border-white/5 hover:border-white/10'
+                          }`}
                       >
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
-                            <div className={`font-medium transition-colors flex items-center gap-2 ${
-                              isCompleted 
-                                ? 'text-slate-500 line-through' 
-                                : 'text-white group-hover:text-blue-400'
-                            }`}>
+                            <div className={`font-medium transition-colors flex items-center gap-2 ${isCompleted
+                              ? 'text-slate-500 line-through'
+                              : 'text-white group-hover:text-blue-400'
+                              }`}>
                               {p.name}
                               {isCompleted && (
                                 <span className="text-green-400 text-xs font-semibold">✓ Completed</span>
@@ -699,16 +710,16 @@ export default function JudgeConsolePage() {
         {/* Scoring Rubric */}
         {selectedParticipant && (
           <div className="space-y-6">
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <div className="glass-panel p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-white">Scoring Rubric</h2>
-                
+
               </div>
               <div className="flex gap-4 pb-4 -mx-2 px-2 md:flex-row flex-col md:overflow-x-auto">
                 {displayRubric.map((criterion, index) => (
                   <div
                     key={criterion.key || index}
-                    className="rubric-card md:flex-shrink-0 min-w-0 w-full bg-slate-800 border border-slate-700 rounded-lg p-3"
+                    className="rubric-card md:flex-shrink-0 min-w-0 w-full bg-white/5 border border-white/5 rounded-lg p-3"
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1 pr-2">
@@ -742,11 +753,11 @@ export default function JudgeConsolePage() {
                             handleScoreChange(criterion.key, Math.max(0, Math.min(criterion.maxPoints, v)))
                           }
                         }}
-                        className="w-14 px-2 py-1 rounded-lg bg-slate-700 border-2 border-slate-600 text-white text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-14 px-2 py-1 rounded-lg bg-black/20 border-2 border-white/10 text-white text-2xl font-bold text-center focus:outline-none focus:border-blue-400 transition-colors"
                       />
                     </div>
 
-                    
+
                   </div>
                 ))}
               </div>
@@ -769,14 +780,14 @@ export default function JudgeConsolePage() {
             </div>
 
             {/* Comments */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <div className="glass-panel p-6">
               <label className="block text-lg font-semibold text-white mb-3">
                 Comments (Optional)
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="glass-input w-full px-4 py-3 resize-none"
                 rows={4}
                 placeholder="Provide feedback or notes about this participant..."
               />
@@ -798,7 +809,7 @@ export default function JudgeConsolePage() {
                 {submitting ? 'Submitting Scores...' : '✓ Submit Scores'}
               </button>
             )}
-            
+
             {!selectedRoundNumber && (
               <div className="mt-2 text-center text-yellow-400 text-sm">
                 ⚠️ Please select a round before scoring

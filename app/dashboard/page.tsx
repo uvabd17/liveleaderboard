@@ -6,6 +6,22 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { EventCreationWizard } from '@/components/event-creation-wizard'
 import { BrandingUpload } from '@/components/branding-upload'
+import {
+  BarChart,
+  Calendar,
+  Users,
+  Trophy,
+  Activity,
+  Plus,
+  Settings,
+  ArrowRight,
+  LogOut,
+  Sparkles,
+  Search,
+  Grid,
+  List,
+  Filter
+} from 'lucide-react'
 
 interface Event {
   id: string
@@ -37,7 +53,6 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<'all' | 'active' | 'archived'>('active')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [orgBranding, setOrgBranding] = useState<{ logoUrl?: string; brandColors?: { primary: string; secondary: string; accent: string } } | null>(null)
-  const [showBranding, setShowBranding] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -106,15 +121,16 @@ export default function DashboardPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+          <div className="text-slate-400 font-medium">Loading Dashboard...</div>
+        </div>
       </div>
     )
   }
 
-  if (!session) {
-    return null
-  }
+  if (!session) return null
 
   const filteredEvents = events.filter(event => {
     if (filter === 'all') return true
@@ -124,197 +140,225 @@ export default function DashboardPage() {
   })
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Live Leaderboard</h1>
-              <p className="text-slate-400 text-sm">{session.user?.email}</p>
+    <div className="min-h-[100dvh] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-200">
+
+      {/* Top Navigation Bar */}
+      <nav className="border-b border-white/5 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <Trophy className="w-5 h-5 text-blue-400" />
+            </div>
+            <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+              Live Leaderboard
+            </span>
+            <span className="mx-2 text-slate-700">/</span>
+            <span className="text-sm font-medium text-slate-400 px-2 py-1 rounded-full bg-white/5 border border-white/5">
+              {orgBranding ? 'Custom Branded' : 'Pro Organization'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex flex-col items-end mr-2">
+              <span className="text-sm font-medium text-slate-200">{session.user?.name || 'Organizer'}</span>
+              <span className="text-xs text-slate-500">{session.user?.email}</span>
             </div>
             <button
               onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
-              aria-label="Sign out"
+              className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              title="Sign Out"
             >
-              Sign Out
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="text-slate-400 text-sm mb-1">Total Events</div>
-            <div className="text-3xl font-bold text-white">{stats?.totalEvents || 0}</div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-fade-in-up">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+            <p className="text-slate-400">Manage your competitions and view real-time analytics.</p>
           </div>
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="text-slate-400 text-sm mb-1">Active Events</div>
-            <div className="text-3xl font-bold text-green-400">{stats?.activeEvents || 0}</div>
-          </div>
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="text-slate-400 text-sm mb-1">Total Participants</div>
-            <div className="text-3xl font-bold text-blue-400">{stats?.totalParticipants || 0}</div>
-          </div>
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="text-slate-400 text-sm mb-1">Total Judges</div>
-            <div className="text-3xl font-bold text-purple-400">{stats?.totalJudges || 0}</div>
-          </div>
+
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="glass-button glass-button-primary flex items-center gap-2 shadow-lg shadow-blue-500/20"
+          >
+            <Plus className="w-5 h-5" /> Create New Event
+          </button>
         </div>
 
-        {/* Organization Branding Section */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-white">Organization Branding</h2>
-            <button
-              onClick={() => setShowBranding(!showBranding)}
-              className="text-slate-400 hover:text-white text-sm"
-            >
-              {showBranding ? 'Hide' : 'Show'}
-            </button>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in-up delay-100">
+          {[
+            { label: 'Total Events', value: stats?.totalEvents || 0, icon: <Calendar className="w-5 h-5 text-blue-400" />, color: 'blue' },
+            { label: 'Active Now', value: stats?.activeEvents || 0, icon: <Activity className="w-5 h-5 text-emerald-400" />, color: 'emerald' },
+            { label: 'Participants', value: stats?.totalParticipants || 0, icon: <Users className="w-5 h-5 text-purple-400" />, color: 'purple' },
+            { label: 'Judges', value: stats?.totalJudges || 0, icon: <Trophy className="w-5 h-5 text-amber-400" />, color: 'amber' },
+          ].map((stat, i) => (
+            <div key={i} className="glass-card p-6 flex items-start justify-between group">
+              <div>
+                <p className="text-slate-500 text-sm font-medium mb-1">{stat.label}</p>
+                <p className={`text-3xl font-bold text-${stat.color}-400 group-hover:scale-105 transition-transform origin-left`}>
+                  {stat.value}
+                </p>
+              </div>
+              <div className={`p-3 rounded-xl bg-${stat.color}-500/10 border border-${stat.color}-500/20`}>
+                {stat.icon}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Area */}
+        <div className="grid lg:grid-cols-3 gap-8 animate-fade-in-up delay-200">
+
+          {/* Left Column: Events List */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                My Events <span className="text-xs font-normal text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">{filteredEvents.length}</span>
+              </h2>
+
+              <div className="flex bg-slate-900/50 p-1 rounded-lg border border-white/5">
+                {(['active', 'archived', 'all'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setFilter(tab)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filter === tab
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {filteredEvents.length === 0 ? (
+                <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-800">
+                  <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Calendar className="w-8 h-8 text-slate-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-white mb-2">No events found</h3>
+                  <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                    {filter === 'active' ? "You don't have any active events running right now." : "Get started by creating your first competition."}
+                  </p>
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="text-blue-400 hover:text-blue-300 font-medium text-sm inline-flex items-center gap-1"
+                  >
+                    Create Event <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                filteredEvents.map((event) => (
+                  <div key={event.id} className="glass-card p-5 group hover:border-blue-500/30 transition-all">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
+                            {event.name}
+                          </h3>
+                          {event.archived && (
+                            <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider bg-slate-800 text-slate-400 rounded border border-slate-700">
+                              Archived
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-slate-500">
+                          <span className="font-mono text-xs bg-slate-900/50 px-2 py-0.5 rounded border border-white/5">/e/{event.slug}</span>
+                          <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {event._count.participants}</span>
+                          <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {event._count.judges}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/e/${event.slug}/admin`}
+                          className="px-4 py-2 bg-white/5 hover:bg-blue-600 hover:text-white border border-white/5 text-slate-300 rounded-lg text-sm font-medium transition-all"
+                        >
+                          Manage
+                        </Link>
+                        <Link
+                          href={`/e/${event.slug}`}
+                          className="p-2 bg-slate-900/50 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-white/5 transition-all"
+                          title="View Public Page"
+                        >
+                          <ArrowRight className="w-4 h-4 -rotate-45" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-          {showBranding && (
-            <div className="pt-4 border-t border-slate-700">
+
+          {/* Right Column: Organization Settings */}
+          <div className="space-y-6">
+            <div className="glass-panel p-6 rounded-2xl">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-slate-400" />
+                Organization Branding
+              </h3>
+
+              <p className="text-sm text-slate-400 mb-6">
+                Customize the default look for all your events. Upload a logo and set brand colors.
+              </p>
+
               <BrandingUpload
                 currentLogo={orgBranding?.logoUrl || null}
                 currentColors={orgBranding?.brandColors || null}
                 onUpload={handleOrgBrandingUpload}
                 onRemove={handleOrgBrandingRemove}
-                label="Organization Logo"
+                label="Global Logo"
               />
-              <p className="text-sm text-slate-400 mt-4">
-                Organization branding will be used as a fallback for events that don't have their own branding.
-              </p>
             </div>
-          )}
-        </div>
 
-        {/* Events Section */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white">Events</h2>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{ minHeight: '48px', minWidth: '48px' }}
-              aria-label="Create new event"
-            >
-              ➕ Create Event
-            </button>
+            <div className="glass-panel p-6 rounded-2xl bg-gradient-to-br from-blue-900/20 to-slate-900/50 border-blue-500/10">
+              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-yellow-400" />
+                Pro Tips
+              </h3>
+              <ul className="space-y-3 text-sm text-slate-400">
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                  Enable "Kiosk Mode" for unattended display screens.
+                </li>
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                  Use the "Speed Check" feature to prevent spam submissions.
+                </li>
+                <li className="flex gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                  Invite judges via email for secure access.
+                </li>
+              </ul>
+            </div>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-2 mb-6 border-b border-slate-700">
-            {(['active', 'archived', 'all'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setFilter(tab)}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  filter === tab
-                    ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-slate-400 hover:text-slate-300'
-                }`}
-                aria-label={`Filter ${tab} events`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {/* Events Grid */}
-          {filteredEvents.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🎯</div>
-              <p className="text-slate-400 mb-4">
-                {filter === 'archived' ? 'No archived events' : 'No events yet'}
-              </p>
-              {filter !== 'archived' && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                  style={{ minHeight: '48px' }}
-                  aria-label="Create your first event"
-                >
-                  Create Your First Event
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-slate-700 rounded-lg p-5 border border-slate-600 hover:border-blue-500 transition-all hover:shadow-lg hover:shadow-blue-500/10"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white truncate mb-1">
-                        {event.name}
-                      </h3>
-                      <div className="text-xs text-slate-400 font-mono">
-                        /e/{event.slug}
-                      </div>
-                    </div>
-                    {event.archived && (
-                      <span className="ml-2 px-2 py-1 bg-slate-600 text-slate-300 text-xs rounded flex-shrink-0">
-                        Archived
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex gap-4 text-sm mb-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-400">👥</span>
-                      <span className="text-white font-medium">{event._count.participants}</span>
-                      <span className="text-slate-400">participants</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-400">⚖️</span>
-                      <span className="text-white font-medium">{event._count.judges}</span>
-                      <span className="text-slate-400">judges</span>
-                    </div>
-                  </div>
-
-                  {event.startAt && (
-                    <div className="text-xs text-slate-400 mb-4">
-                      {new Date(event.startAt).toLocaleDateString()}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/e/${event.slug}/admin`}
-                      className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                      style={{ minHeight: '40px' }}
-                      aria-label={`Manage ${event.name}`}
-                    >
-                      Manage
-                    </Link>
-                    <Link
-                      href={`/e/${event.slug}`}
-                      className="flex-1 text-center bg-slate-600 hover:bg-slate-500 text-white px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                      style={{ minHeight: '40px' }}
-                      aria-label={`View ${event.name} leaderboard`}
-                    >
-                      View
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </main>
 
-      {/* Create Event Wizard */}
+      {/* Modals */}
       {showCreateModal && (
-        <EventCreationWizard
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={fetchDashboardData}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <EventCreationWizard
+              onClose={() => setShowCreateModal(false)}
+              onSuccess={() => {
+                fetchDashboardData()
+                setShowCreateModal(false)
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   )

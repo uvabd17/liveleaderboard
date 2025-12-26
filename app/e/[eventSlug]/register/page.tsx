@@ -34,45 +34,59 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-      <div className="max-w-lg w-full bg-card border border-border rounded-lg p-8">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-card-foreground mb-2">Join the Event</h1>
-          <p className="text-muted-foreground text-sm">
-            Enter your details to register for this competition. Make sure your name is unique.
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center relative">
+      {/* Background gradients */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="glass-panel max-w-md w-full p-8 relative z-10 animate-fade-in-up">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Join the Event</h1>
+          <p className="text-slate-300 text-sm">
+            Enter your details to register for this competition.
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-card-foreground mb-1">Participant Name</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Participant Name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Team Rocket"
-              className="w-full px-3 py-2 rounded border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="glass-input w-full"
               required
             />
-            <p className="text-xs text-muted-foreground mt-1">Must be at least 2 characters and unique</p>
+            <p className="text-xs text-slate-400 mt-2">Must be at least 2 characters and unique</p>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-card-foreground mb-1">Registration Type</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Registration Type</label>
             <select
               value={kind}
               onChange={(e) => setKind(e.target.value as any)}
-              className="w-full px-3 py-2 rounded border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="glass-input w-full appearance-none"
             >
-              <option value="team">Team</option>
-              <option value="individual">Individual</option>
+              <option value="team" className="bg-slate-800 text-white">Team</option>
+              <option value="individual" className="bg-slate-800 text-white">Individual</option>
             </select>
           </div>
+
           <button
             type="submit"
-            className="w-full px-4 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="w-full glass-button-primary py-3 rounded-lg font-bold text-lg shadow-lg hover:shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
           >
             {loading ? 'Registering...' : 'Register Now'}
           </button>
-          {!token && <p className="text-sm text-red-400 text-center">Invalid or missing registration token.</p>}
+
+          {!token && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-sm text-center">
+              Invalid or missing registration token.
+            </div>
+          )}
         </form>
       </div>
     </div>

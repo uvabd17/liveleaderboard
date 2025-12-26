@@ -1,51 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-// Simple leaderboard cache: prefer Redis when REDIS_URL is set, otherwise in-memory
-const CACHE_TTL_MS = Number(process.env.LEADERBOARD_CACHE_MS) || 100
-const LEADERBOARD_CACHE: Map<string, { expires: number; data: any }> = new Map()
-const REVALIDATING: Set<string> = new Set()
-let redisClient: any = null
-try {
-  if (process.env.REDIS_URL) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const IORedis = require('ioredis')
-    redisClient = new IORedis(process.env.REDIS_URL)
-  }
-} catch (e) {
-  // ignore - continue with in-memory cache
-}
-
-async function cacheGet(key: string) {
-  if (redisClient) {
-    try {
-      const s = await redisClient.get(`lb:${key}`)
-      if (!s) return null
-      return JSON.parse(s)
-    } catch (e) {
-      return null
-    }
-  }
-  const entry = LEADERBOARD_CACHE.get(key)
-  if (!entry) return null
-  if (entry.expires <= Date.now()) {
-    LEADERBOARD_CACHE.delete(key)
-    return null
-  }
-  return entry.data
-}
-
-async function cacheSet(key: string, data: any, ttl = CACHE_TTL_MS) {
-  if (redisClient) {
-    try {
-      await redisClient.set(`lb:${key}`, JSON.stringify(data), 'PX', String(ttl))
-      return
-    } catch (e) {
-      // ignore and fallback to in-memory
-    }
-  }
-  LEADERBOARD_CACHE.set(key, { expires: Date.now() + ttl, data })
-}
+import { getOrSetWithSWR } from '@/lib/server-cache'
 
 // Fast fallback params: if compute takes longer than this, return a trimmed top-N quickly
 const FALLBACK_TIMEOUT_MS = Number(process.env.LEADERBOARD_FALLBACK_MS) || 200
@@ -61,31 +16,18 @@ export async function GET(
     const page = Number(url.searchParams.get('page') || '1')
     const size = Number(url.searchParams.get('size') || '200')
 
-    // Fetch event rules early so cache key includes leaderboard mode
-    const evtFull = await db.event.findUnique({ where: { slug: eventSlug }, select: { rules: true, currentRound: true } })
+    // Fetch event rules early so cache key includes leaderboard mode and to avoid duplicate event fetches
+    const evtFull = await db.event.findUnique({ where: { slug: eventSlug }, select: { id: true, rules: true, currentRound: true, name: true, slug: true, logoUrl: true, brandColors: true, organization: { select: { name: true } } } })
     const rules = (evtFull?.rules || {}) as any
     const mode = (rules && rules.leaderboardMode) || 'score'
 
     const cacheKey = `${eventSlug}:${page}:${size}:${mode}`
-    const cached = await cacheGet(cacheKey)
-    if (cached) return NextResponse.json(cached)
 
-    const now = Date.now()
-
-    // Helper to compute the leaderboard payload
+    // Use centralized server cache with stale-while-revalidate behavior
+    const CACHE_TTL = Number(process.env.LEADERBOARD_CACHE_MS) || 15000
+    // computeLeaderboard uses evtFull captured above
     async function computeLeaderboard() {
-      const event = await db.event.findUnique({
-        where: { slug: eventSlug },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          logoUrl: true,
-          brandColors: true,
-          organization: { select: { name: true } }
-        }
-      })
-
+      const event = evtFull
       if (!event) throw new Error('Event not found')
 
       const start = Math.max(0, (page - 1) * size)
@@ -135,35 +77,31 @@ export async function GET(
       return { event, participants: pageItems, total }
     }
 
-    // If cache exists but expired (in-memory only case) return stale and trigger background refresh
-    if (!redisClient) {
-      const inMem = LEADERBOARD_CACHE.get(cacheKey)
-      if (inMem && inMem.expires <= now) {
-        if (!REVALIDATING.has(cacheKey)) {
-          REVALIDATING.add(cacheKey)
-          computeLeaderboard()
-            .then((res) => cacheSet(cacheKey, res))
-            .catch(() => {})
-            .finally(() => REVALIDATING.delete(cacheKey))
-        }
-        return NextResponse.json(inMem.data)
-      }
-    }
-
-    // No cache: compute but race with a short timeout to provide a fast trimmed fallback if needed.
-    let computed: any = null
+    // Use cache with SWR semantics; route still provides a fast fallback if compute takes too long.
+    // Race: prefer cached / background-refresh via getOrSetWithSWR, but if not present, fall back to timed compute for quick top-N.
+    let cachedOrComputed: any = null
     try {
-      computed = await Promise.race([
-        computeLeaderboard(),
-        new Promise((res) => setTimeout(() => res({ __fallback: true }), FALLBACK_TIMEOUT_MS))
-      ])
+      const useCache = String(process.env.ENABLE_LEADERBOARD_CACHE || 'true') === 'true'
+      if (useCache) {
+        // Race between cache/SWR compute and fallback timeout
+        cachedOrComputed = await Promise.race([
+          (async () => await getOrSetWithSWR(cacheKey, computeLeaderboard, CACHE_TTL))(),
+          new Promise((res) => setTimeout(() => res({ __fallback: true }), FALLBACK_TIMEOUT_MS))
+        ])
+      } else {
+        // No caching: compute but still respect fallback timeout for fast responses
+        cachedOrComputed = await Promise.race([
+          computeLeaderboard(),
+          new Promise((res) => setTimeout(() => res({ __fallback: true }), FALLBACK_TIMEOUT_MS))
+        ])
+      }
     } catch (e) {
-      computed = { __fallback: true }
+      cachedOrComputed = { __fallback: true }
     }
 
-    if (computed && (computed as any).__fallback) {
+    if (cachedOrComputed && (cachedOrComputed as any).__fallback) {
       try {
-        const event = await db.event.findUnique({ where: { slug: eventSlug }, select: { id: true, name: true, slug: true, logoUrl: true, brandColors: true, organization: { select: { name: true } } } })
+        const event = evtFull
         if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
 
         const top = await db.participant.findMany({ where: { eventId: event.id }, orderBy: { totalScore: 'desc' }, take: FALLBACK_TOP, select: { id: true, name: true, kind: true, totalScore: true } })
@@ -177,24 +115,15 @@ export async function GET(
         const fallbackResp = { event, participants: normalized, total, partial: true }
 
         // trigger background full compute to refresh cache
-        if (!REVALIDATING.has(cacheKey)) {
-          REVALIDATING.add(cacheKey)
-          computeLeaderboard()
-            .then((res) => cacheSet(cacheKey, res))
-            .catch(() => {})
-            .finally(() => REVALIDATING.delete(cacheKey))
-        }
-
+        // background refresh handled by getOrSetWithSWR when called next time; still return fallback immediately
         return NextResponse.json(fallbackResp)
       } catch (e) {
         console.error('Fallback failed:', e)
         return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 })
       }
     }
-
-    // Successful fast compute within timeout: cache and return
-    await cacheSet(cacheKey, computed)
-    return NextResponse.json(computed)
+    // Successful compute (or cached) returned from getOrSetWithSWR
+    return NextResponse.json(cachedOrComputed)
   } catch (error) {
     console.error('Failed to fetch leaderboard:', error)
     return NextResponse.json({ error: 'Failed to fetch leaderboard' }, { status: 500 })

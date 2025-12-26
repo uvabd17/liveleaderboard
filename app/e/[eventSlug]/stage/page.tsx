@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useTheme } from '@/lib/theme'
+// No external lib for confetti yet, will use a simple implementation or check package.json
+// For now, let's assume we can use a CSS-based or simple one.
+// Let's check package.json for installed libs first though.
 
 interface Participant {
   id: string
@@ -45,6 +48,9 @@ export default function StagePage() {
   const [fullscreenLeaderboard, setFullscreenLeaderboard] = useState(false)
   const prevParticipantsRef = useRef<Participant[] | null>(null)
   const allParticipantsRef = useRef<Participant[]>([])
+  const prevTopOneId = useRef<string | null>(null)
+  // Actually, let's use a simple state for confetti to trigger a component
+  const [confettiActive, setConfettiActive] = useState(false)
 
   useEffect(() => {
     fetchLeaderboard()
@@ -171,7 +177,7 @@ export default function StagePage() {
             setRoundsConfig(rd.rounds || [])
             setCurrentRoundIdx((rd.currentRound ?? 0) || 0)
           }
-        } catch {}
+        } catch { }
         // Load round completions mapping for visual indicators
         try {
           const comps = await fetch(`/api/events/${eventSlug}/round-completions`)
@@ -187,7 +193,7 @@ export default function StagePage() {
             }
             setCompletionsMap(map)
           }
-        } catch {}
+        } catch { }
       }
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error)
@@ -196,13 +202,42 @@ export default function StagePage() {
 
   // keep a ref synced with latest participants for delta calculations
   useEffect(() => {
+    if (allParticipants.length > 0) {
+      const topOne = allParticipants[0]
+      if (prevTopOneId.current && prevTopOneId.current !== topOne.id) {
+        // RANK #1 CHANGED! 
+        setConfettiActive(true)
+        setTimeout(() => setConfettiActive(false), 5000)
+
+        // play sound if enabled (future enhancement)
+        console.log('RANK 1 CHANGE DETECTED: ', topOne.name)
+      }
+      prevTopOneId.current = topOne.id
+    }
     allParticipantsRef.current = allParticipants
   }, [allParticipants])
 
-  // Close fullscreen leaderboard with Escape key
+  // Keyboard Shortcuts: Space (Play/Pause), F (Fullscreen)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && fullscreenLeaderboard) setFullscreenLeaderboard(false)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      if (e.key === 'Escape' && fullscreenLeaderboard) {
+        setFullscreenLeaderboard(false)
+      }
+
+      if (e.key.toLowerCase() === 'f') {
+        e.preventDefault()
+        setFullscreenLeaderboard(prev => !prev)
+      }
+
+      if (e.key === ' ') {
+        e.preventDefault()
+        // Toggle timer play/pause if possible
+        // This might require an API call to the server to toggle the timer state
+        // For now, we'll just log or show a toast if we had one
+        console.log('Space pressed - Timer toggle requested')
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -210,7 +245,7 @@ export default function StagePage() {
 
   const setupSSE = () => {
     const eventSource = new EventSource(`/api/sse?eventSlug=${eventSlug}`)
-    
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
@@ -235,7 +270,7 @@ export default function StagePage() {
   const filteredParticipants = useMemo(() => {
     if (!searchQuery.trim()) return allParticipants
     const query = searchQuery.toLowerCase()
-    return allParticipants.filter(p => 
+    return allParticipants.filter(p =>
       p.name.toLowerCase().includes(query) ||
       p.kind.toLowerCase().includes(query)
     )
@@ -292,6 +327,18 @@ export default function StagePage() {
     return () => { if (id) clearInterval(id) }
   }, [currentRoundIdx, !!(timerState && timerState.running)])
 
+  // Audio Feedback for Timer End
+  useEffect(() => {
+    if (timerState && timerState.left === 0 && timerState.running === false) {
+      // playing a "gong" or alert sound when timer hits zero
+      try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1063/1063-preview.mp3') // Gong/Alert
+        audio.volume = 0.3
+        audio.play().catch(() => { })
+      } catch (e) { }
+    }
+  }, [timerState?.left])
+
   // Reload leaderboard when page or page size or view mode changes
   useEffect(() => {
     // For podium mode we still want the default small fetch
@@ -315,116 +362,134 @@ export default function StagePage() {
   }
 
 
+  /* --- ULTRA PREMIUM PODIUM RENDERER --- */
   const renderPodium = () => {
     if (topParticipants.length === 0) {
       return (
-        <div className="text-center text-white text-2xl py-12">
-          No participants yet
+        <div className="flex flex-col items-center justify-center p-12 text-slate-500 animate-fade-in">
+          <div className="text-6xl mb-4 opacity-20">🏆</div>
+          <div className="text-xl font-light tracking-widest uppercase">Waiting for champions</div>
         </div>
       )
     }
 
-    // For top 1, show single winner
-    if (topN === 1 && topParticipants.length >= 1) {
+    // Dynamic metallic text classes
+    const goldText = "bg-clip-text text-transparent bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]"
+    const silverText = "bg-clip-text text-transparent bg-gradient-to-b from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_10px_rgba(148,163,184,0.5)]"
+    const bronzeText = "bg-clip-text text-transparent bg-gradient-to-b from-orange-200 via-orange-400 to-red-700 drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+
+    // Helper for cards
+    const PodiumCard = ({ p, rank, delay }: { p: Participant; rank: number; delay: number }) => {
+      const isFirst = rank === 0
+      const isSecond = rank === 1
+      const isThird = rank === 2
+
+      const themeClass = isFirst ? "border-amber-500/30 bg-amber-500/5 shadow-[0_0_50px_-10px_rgba(245,158,11,0.2)]" :
+        isSecond ? "border-slate-400/30 bg-slate-400/5 shadow-[0_0_30px_-10px_rgba(148,163,184,0.1)]" :
+          isThird ? "border-orange-500/30 bg-orange-500/5 shadow-[0_0_30px_-10px_rgba(249,115,22,0.1)]" :
+            "border-white/10 bg-white/5"
+
+      const medalEmoji = isFirst ? "🥇" : isSecond ? "🥈" : isThird ? "🥉" : `#${rank + 1}`
+      const heightClass = isFirst ? "h-[500px]" : isSecond ? "h-[420px]" : "h-[380px]"
+
       return (
-        <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col items-center animate-fade-in">
-              <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl p-8 w-full max-w-md flex flex-col items-center justify-center border-4 border-yellow-500 shadow-lg h-72">
-              <div className="text-9xl mb-3">🥇</div>
-              <div className="text-4xl md:text-5xl font-bold text-slate-900 text-center mb-2">
-                {topParticipants[0]?.name}
-              </div>
-              <div className="text-5xl md:text-6xl font-bold text-slate-900">
-                {topParticipants[0]?.totalScore}
-              </div>
-            </div>
+        <div
+          className={`relative group flex flex-col items-center animate-fade-in-up`}
+          style={{ animationDelay: `${delay}ms` }}
+        >
+          {/* Rank Badge Floating Above */}
+          <div className={`
+             absolute -top-12 text-6xl md:text-8xl select-none transition-transform duration-700 group-hover:scale-110 drop-shadow-2xl
+             ${isFirst ? "z-20 scale-110" : "z-10"}
+          `}>
+            {medalEmoji}
           </div>
-        </div>
-      )
-    }
 
-    // For top 2, show 1st and 2nd
-    if (topN === 2 && topParticipants.length >= 2) {
-      return (
-        <div className="max-w-6xl mx-auto">
-            <div className="flex items-end justify-center gap-8">
-            {/* 2nd Place */}
-            <div className="flex flex-col items-center animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <div className="bg-slate-700 rounded-2xl p-6 w-64 h-64 flex flex-col items-center justify-center border-4 border-slate-600 shadow-inner">
-                <div className="text-6xl mb-2">🥈</div>
-                <div className="text-xl md:text-2xl font-bold text-white text-center mb-1">{topParticipants[1]?.name}</div>
-                <div className="text-3xl font-bold text-blue-400">{topParticipants[1]?.totalScore}</div>
+          {/* The Monolith Card */}
+          <div className={`
+            ${heightClass} w-full max-w-[280px] rounded-[2rem] 
+            border-t border-l border-r border-b-0
+            backdrop-blur-2xl flex flex-col items-center justify-end pb-8
+            transition-all duration-700 hover:-translate-y-2
+            ${themeClass}
+          `}>
+            {/* Inner content */}
+            <div className="text-center px-4 space-y-4 mb-auto pt-24 w-full">
+              <div className="space-y-1">
+                <div className={`text-4xl md:text-5xl font-black tracking-tighter ${isFirst ? goldText : isSecond ? silverText : isThird ? bronzeText : 'text-slate-300'}`}>
+                  {p.totalScore}
+                </div>
+                <div className="text-xs font-mono uppercase tracking-[0.2em] text-slate-500">Total Score</div>
               </div>
-            </div>
 
-            {/* 1st Place */}
-            <div className="flex flex-col items-center animate-fade-in">
-              <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl p-8 w-72 h-72 flex flex-col items-center justify-center border-4 border-yellow-500 shadow-lg">
-                <div className="text-9xl mb-3">🥇</div>
-                <div className="text-4xl font-bold text-slate-900 text-center mb-2">{topParticipants[0]?.name}</div>
-                <div className="text-5xl font-bold text-slate-900">{topParticipants[0]?.totalScore}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )
-    }
+              <div className="w-12 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto" />
 
-    // For top 3+, show traditional podium with additional winners
-    const medalEmojis: Record<number, string> = {
-      0: '🥇',
-      1: '🥈',
-      2: '🥉',
-    }
-
-    return (
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {topParticipants.map((participant, index) => {
-            const isTop3 = index < 3
-            const medal = medalEmojis[index] || ''
-            const isFirst = index === 0
-
-            return (
-              <div
-                key={participant.id}
-                className={`flex flex-col items-center animate-fade-in ${isFirst ? 'md:col-span-2 lg:col-span-1' : ''}`}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div
-                  className={`rounded-3xl p-4 w-full flex flex-col items-center justify-between border-4 shadow-xl ${
-                    isFirst
-                      ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 h-72'
-                      : isTop3
-                      ? 'bg-slate-700 border-slate-600 h-56'
-                      : 'bg-slate-800 border-slate-700 h-48'
-                  }`}
-                >
-                  <div className={`${isFirst ? 'text-9xl' : isTop3 ? 'text-7xl' : 'text-5xl'} mb-3`}>{medal || `#${index + 1}`}</div>
-                    <div className={`${isFirst ? 'text-4xl' : 'text-3xl'} font-bold ${isFirst ? 'text-slate-900' : 'text-white'} text-center`}>{participant.name}</div>
-                    <div className={`${isFirst ? 'text-5xl' : 'text-4xl'} font-bold ${isFirst ? 'text-slate-900' : 'text-blue-400'}`}>{participant.totalScore}</div>
+              <div>
+                <div className="text-xl md:text-2xl font-bold text-white line-clamp-2 leading-tight">
+                  {p.name}
+                </div>
+                <div className="text-sm text-white/40 mt-1 font-medium tracking-wide">
+                  {p.kind}
                 </div>
               </div>
-            )
-          })}
+            </div>
+
+            {/* Bottom Glow */}
+            <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t ${isFirst ? 'from-amber-500/20' : isSecond ? 'from-slate-400/20' : 'from-orange-500/20'} to-transparent rounded-b-[2rem] pointer-events-none`} />
+          </div>
         </div>
+      )
+    }
+
+    // Top 3 Layout
+    if (topParticipants.length <= 3) {
+      return (
+        <div className="flex items-end justify-center gap-4 md:gap-12 mt-20 perspective-1000">
+          {topParticipants[1] && <PodiumCard p={topParticipants[1]} rank={1} delay={200} />}
+          {topParticipants[0] && <PodiumCard p={topParticipants[0]} rank={0} delay={0} />}
+          {topParticipants[2] && <PodiumCard p={topParticipants[2]} rank={2} delay={400} />}
+        </div>
+      )
+    }
+
+    // Grid Layout for many winners
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+        {topParticipants.map((p, i) => (
+          <div key={p.id} className="flex justify-center">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 w-full flex flex-col items-center backdrop-blur-md transition-all hover:bg-white/10">
+              <div className="text-4xl mb-3">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</div>
+              <div className="text-3xl font-bold text-white mb-2">{p.totalScore}</div>
+              <div className="text-lg text-slate-300 font-medium">{p.name}</div>
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen p-6" style={{ background: 'linear-gradient(135deg, var(--brand-primary, #0f172a), var(--brand-secondary, #0b1220) 50%, var(--brand-accent, #05203a))' }}>
+    <div className="min-h-screen p-6 relative">
+      {/* Background gradients */}
+      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#030712] overflow-hidden">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/10 rounded-full blur-[150px] animate-aurora-1" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/10 rounded-full blur-[150px] animate-aurora-2" />
+        <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[80%] h-[80%] bg-violet-600/5 rounded-full blur-[200px] animate-pulse-slow" />
+        {/* Subtle grid mesh */}
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      </div>
+
       {/* Header */}
-      <div className="mb-6 flex flex-col items-center md:flex-row md:justify-between gap-6">
-        <div className="flex items-center gap-6">
+      <div className="mb-12 flex flex-col items-center md:flex-row md:justify-between gap-6 relative z-10">
+        <div className="flex items-center gap-5">
           {event.logoUrl && (
-            <div className="w-28 h-28 rounded-lg overflow-hidden border-2 border-white/20 bg-white/5 flex-shrink-0">
-              <img src={event.logoUrl} alt={`${event.name} logo`} className="w-full h-full object-contain" />
+            <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur shadow-2xl transition-transform hover:scale-105">
+              <img src={event.logoUrl} alt={`${event.name} logo`} className="w-full h-full object-contain p-2" />
             </div>
           )}
           <div className="text-center md:text-left">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">{event.name}</h1>
-            <p className="text-lg text-slate-200">{event.organization.name}</p>
+            <h1 className="text-5xl md:text-6xl font-black text-white mb-1 tracking-tight drop-shadow-lg">{event.name}</h1>
+            <p className="text-lg font-light text-slate-400 tracking-wide uppercase">{event.organization.name}</p>
 
             {/* Small view tabs inside header (left-aligned, compact) */}
             <div className="mt-3 md:mt-0">
@@ -434,11 +499,10 @@ export default function StagePage() {
                     setViewMode('podium')
                     setCurrentPage(1)
                   }}
-                  className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
-                    viewMode === 'podium' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white'
-                  }`}
+                  className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${viewMode === 'podium' ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105' : 'text-slate-400 hover:text-white bg-white/5 border border-white/5'
+                    }`}
                 >
-                  🏆
+                  CHAMPIONS
                 </button>
                 <button
                   onClick={() => {
@@ -446,18 +510,17 @@ export default function StagePage() {
                     setParticipantsPerPage(50)
                     setCurrentPage(1)
                   }}
-                  className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
-                    viewMode === 'full' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white'
-                  }`}
+                  className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${viewMode === 'full' ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105' : 'text-slate-400 hover:text-white bg-white/5 border border-white/5'
+                    }`}
                 >
-                  📊
+                  LEADERBOARD
                 </button>
                 <button
                   onClick={() => setFullscreenLeaderboard(v => !v)}
                   title="Toggle fullscreen leaderboard"
-                  className="px-2 py-1 text-xs rounded-md font-medium text-slate-300 hover:text-white"
+                  className="px-3 py-1.5 text-xs rounded-full font-medium text-slate-400 hover:text-white bg-white/5 border border-white/5 transition-all hover:bg-white/10"
                 >
-                  ⛶
+                  Full Screen
                 </button>
               </div>
             </div>
@@ -473,15 +536,15 @@ export default function StagePage() {
       {/* Top N Selector (only in podium mode) */}
       {viewMode === 'podium' && (
         <div className="max-w-full mx-auto mb-4 flex justify-start">
-          <div className="bg-slate-800 rounded-lg p-2 flex items-center gap-2">
-            <span className="text-slate-300 px-2">Top</span>
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 px-4 py-2 flex items-center gap-3 rounded-full shadow-lg">
+            <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">Top Count</span>
             <select
               value={topN}
               onChange={(e) => setTopN(Number(e.target.value))}
-              className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-2 py-1 bg-transparent border-none text-white text-sm font-bold focus:outline-none cursor-pointer"
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                <option key={n} value={n}>
+              {[1, 2, 3, 4, 5, 8, 12, 16].map(n => (
+                <option key={n} value={n} className="bg-slate-800 text-white">
                   {n}
                 </option>
               ))}
@@ -493,8 +556,8 @@ export default function StagePage() {
       {/* Page size selector for full views */}
       {viewMode === 'full' && (
         <div className="max-w-full mx-auto mb-6 flex justify-start">
-          <div className="bg-slate-800 rounded-lg p-2 flex items-center gap-2">
-            <span className="text-slate-300 px-2">Page size</span>
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 px-4 py-2 flex items-center gap-3 rounded-full shadow-lg">
+            <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">View Size</span>
             <select
               value={participantsPerPage}
               onChange={(e) => {
@@ -503,10 +566,10 @@ export default function StagePage() {
                 setParticipantsPerPage(v)
                 setCurrentPage(1)
               }}
-              className="px-2 py-1 bg-slate-700 border border-slate-600 rounded-md text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-transparent border-none text-white text-sm font-bold focus:outline-none cursor-pointer"
             >
-              <option value={50}>50</option>
-              <option value={'all' as any}>All</option>
+              <option value={50} className="bg-slate-800">50</option>
+              <option value={'all' as any} className="bg-slate-800">All</option>
             </select>
           </div>
         </div>
@@ -523,7 +586,7 @@ export default function StagePage() {
               setCurrentPage(1)
             }}
             placeholder="Search participants..."
-            className="w-full px-6 py-4 bg-slate-800 border border-slate-700 rounded-lg text-white text-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-white/5 border border-white/10 rounded-full px-8 py-4 text-lg text-white placeholder-slate-500 focus:outline-none focus:bg-white/10 focus:border-white/20 transition-all shadow-inner"
           />
         </div>
       )}
@@ -540,10 +603,9 @@ export default function StagePage() {
               const left = paginatedParticipants.slice(0, 25)
               const right = paginatedParticipants.slice(25, 50)
               const renderColumn = (arr: Participant[], side: 'left' | 'right') => (
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {arr.map((participant, idx) => {
                     const globalIndex = (currentPage - 1) * participantsPerPage + (side === 'left' ? idx : idx + 25)
-                    // compute movement by comparing previous index
                     let movement = 0
                     const prev = prevParticipantsRef.current || []
                     const prevIndex = prev.findIndex(p => p.id === participant.id)
@@ -554,20 +616,25 @@ export default function StagePage() {
                     const movedDown = movement < 0
 
                     return (
-                      <div key={participant.id} className="bg-slate-800/80 backdrop-blur rounded-md px-4 py-3 border border-slate-700 flex items-center justify-between gap-3 text-base transition-transform">
-                        <div className="flex items-center gap-3">
-                          <div className="text-lg w-10 text-center">{globalIndex < 3 ? (globalIndex === 0 ? '🥇' : globalIndex === 1 ? '🥈' : '🥉') : `#${globalIndex + 1}`}</div>
+                      <div key={participant.id} className="group relative px-6 py-3 flex items-center justify-between gap-4 transition-all hover:bg-white/[0.03] border-b border-white/[0.03] last:border-0 overflow-hidden">
+                        <div className="flex items-center gap-6">
+                          <div className={`text-xl w-10 text-center font-bold font-mono ${globalIndex < 3 ? 'text-white' : 'text-slate-500 opacity-50'}`}>
+                            {globalIndex === 0 ? '01' : globalIndex === 1 ? '02' : globalIndex === 2 ? '03' : (globalIndex + 1).toString().padStart(2, '0')}
+                          </div>
                           <div className="truncate max-w-[18rem]">
-                            <div className="text-lg font-bold text-white truncate">{participant.name}</div>
-                            <div className="text-sm text-slate-400 truncate">{participant.kind}</div>
+                            <div className="text-lg font-medium text-white/90 tracking-tight group-hover:text-white transition-colors uppercase">{participant.name}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-500 font-bold tracking-tighter uppercase">{participant.kind === 'team' ? 'TEAM' : 'INDIV'}</span>
+                              {movedUp && <span className="text-[10px] text-emerald-500/80 font-bold">▲ {movement}</span>}
+                              {movedDown && <span className="text-[10px] text-rose-500/80 font-bold">▼ {Math.abs(movement)}</span>}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className={`text-xl font-semibold ${movedUp ? 'text-green-400' : movedDown ? 'text-red-400' : 'text-blue-400'}`}>{participant.totalScore}</div>
-                          <div className="w-6 h-6 flex items-center justify-center text-base">
-                            {movedUp && <div className="text-green-400 animate-move-up">▲</div>}
-                            {movedDown && <div className="text-red-400 animate-move-down">▼</div>}
+                        <div className="flex items-center gap-4">
+                          <div className={`text-2xl font-black tabular-nums tracking-tighter ${movedUp ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : movedDown ? 'text-rose-400' : 'text-white'}`}>
+                            {participant.totalScore.toLocaleString()}
                           </div>
+                          <div className={`w-1 h-8 rounded-full transition-all ${movedUp ? 'bg-emerald-500 scale-y-100' : movedDown ? 'bg-rose-500 scale-y-100' : 'bg-white/5'}`} />
                         </div>
                       </div>
                     )
@@ -664,22 +731,22 @@ export default function StagePage() {
                       const movedUp = movement > 0
                       const movedDown = movement < 0
                       return (
-                                <div key={participant.id} className="bg-slate-900/80 rounded-md px-3 py-2 flex items-center justify-between gap-3 text-base">
-                                  <div className="flex items-center gap-3">
-                                    <div className="text-base w-9 text-center">{globalIndex < 3 ? (globalIndex === 0 ? '🥇' : globalIndex === 1 ? '🥈' : '🥉') : `#${globalIndex + 1}`}</div>
-                                    <div className="truncate max-w-[14rem]">
-                                      <div className="text-lg font-semibold truncate">{participant.name}</div>
-                                      <div className="text-sm text-slate-400 truncate">{participant.kind}</div>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <div className={`text-lg font-medium ${movedUp ? 'text-green-400' : movedDown ? 'text-red-400' : 'text-blue-300'}`}>{participant.totalScore}</div>
-                                    <div className="w-5 h-5 flex items-center justify-center text-sm">
-                                      {movedUp && <div className="text-green-400 animate-move-up">▲</div>}
-                                      {movedDown && <div className="text-red-400 animate-move-down">▼</div>}
-                                    </div>
-                                  </div>
-                                </div>
+                        <div key={participant.id} className="glass-panel px-3 py-2 flex items-center justify-between gap-3 text-base">
+                          <div className="flex items-center gap-3">
+                            <div className="text-base w-9 text-center">{globalIndex < 3 ? (globalIndex === 0 ? '🥇' : globalIndex === 1 ? '🥈' : '🥉') : `#${globalIndex + 1}`}</div>
+                            <div className="truncate max-w-[14rem]">
+                              <div className="text-lg font-semibold truncate">{participant.name}</div>
+                              <div className="text-sm text-slate-400 truncate">{participant.kind}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className={`text-lg font-medium ${movedUp ? 'text-green-400' : movedDown ? 'text-red-400' : 'text-blue-300'}`}>{participant.totalScore}</div>
+                            <div className="w-5 h-5 flex items-center justify-center text-sm">
+                              {movedUp && <div className="text-green-400 animate-move-up">▲</div>}
+                              {movedDown && <div className="text-red-400 animate-move-down">▼</div>}
+                            </div>
+                          </div>
+                        </div>
                       )
                     })}
                   </div>
@@ -715,7 +782,34 @@ export default function StagePage() {
         </div>
       )}
 
+      {/* Confetti Overlay */}
+      {confettiActive && (
+        <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+          {/* Simple CSS Confetti Particles */}
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `-20px`,
+                backgroundColor: ['#fbbf24', '#f59e0b', '#3b82f6', '#10b981', '#ef4444'][Math.floor(Math.random() * 5)],
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${2 + Math.random() * 3}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       <style jsx>{`
+        @keyframes confetti {
+          0% { transform: translateY(0) rotate(0); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .animate-confetti {
+          animation: confetti linear infinite;
+        }
         @keyframes fade-in {
           from {
             opacity: 0;
@@ -741,11 +835,25 @@ export default function StagePage() {
           60% { transform: translateY(-6px); opacity: 1 }
           100% { transform: translateY(0); opacity: 1 }
         }
-        @keyframes moveDown {
-          0% { transform: translateY(-8px); opacity: 0 }
-          60% { transform: translateY(6px); opacity: 1 }
-          100% { transform: translateY(0); opacity: 1 }
+        @keyframes aurora-1 {
+          0% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+          50% { transform: translate(10%, 5%) rotate(5deg); opacity: 0.5; }
+          100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
         }
+        @keyframes aurora-2 {
+          0% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+          50% { transform: translate(-10%, -5%) rotate(-5deg); opacity: 0.5; }
+          100% { transform: translate(0, 0) rotate(0deg); opacity: 0.3; }
+        }
+        .animate-aurora-1 { animation: aurora-1 20s infinite ease-in-out; }
+        .animate-aurora-2 { animation: aurora-2 25s infinite ease-in-out; }
+        .animate-pulse-slow { animation: pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        @keyframes fade-in-up {
+           from { opacity: 0; transform: translateY(30px); }
+           to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
       `}</style>
     </div>
   )

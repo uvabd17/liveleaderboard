@@ -15,11 +15,8 @@ export async function GET(
       return NextResponse.json({ error: 'Token required' }, { status: 400 })
     }
 
-    // Find participant by access token in profile
-    // Note: Prisma JSON filtering is limited, so we fetch and filter
-    // TODO: Optimize with separate ParticipantToken table or JSONB index
-    // For now, we fetch all participants - this is inefficient but works
-    // In production with 500+ participants, this should be optimized
+
+    // Find participant by access token in profile (still needs optimization for large scale)
     const participantsList = await db.participant.findMany({
       include: {
         event: {
@@ -29,50 +26,43 @@ export async function GET(
         },
       },
     })
-
     const participants = participantsList.filter(p => {
       const profile = p.profile as any
       return profile && profile.accessToken === token
     })
-
     if (participants.length === 0) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 404 })
     }
-
     const participant = participants[0]
 
-    // Calculate total score using aggregation (optimized)
-    const scoreAgg = await db.score.aggregate({
-      where: { eventId: participant.eventId, participantId: participant.id },
-      _sum: { value: true }
+    // Use a single groupBy query to get all participant scores for ranking
+    const scoreGroups = await db.score.groupBy({
+      by: ['participantId'],
+      where: { eventId: participant.eventId },
+      _sum: { value: true },
     })
-    const totalScore = scoreAgg._sum.value ?? 0
+    // Map participantId to totalScore
+    const scoreMap = new Map<string, number>()
+    scoreGroups.forEach(g => {
+      scoreMap.set(g.participantId, g._sum.value ?? 0)
+    })
+    const totalScore = scoreMap.get(participant.id) ?? 0
 
-    // Get leaderboard position (optimized)
+    // Get all participants for the event (names for sorting)
     const eventParticipants = await db.participant.findMany({
       where: { eventId: participant.eventId },
-      select: { id: true, name: true }
+      select: { id: true, name: true },
     })
-
-    const ranked = await Promise.all(
-      eventParticipants.map(async (p) => {
-        const pScoreAgg = await db.score.aggregate({
-          where: { eventId: participant.eventId, participantId: p.id },
-          _sum: { value: true }
-        })
-        return {
-          id: p.id,
-          name: p.name,
-          totalScore: pScoreAgg._sum.value ?? 0,
-        }
-      })
-    )
-
+    // Build ranked list
+    const ranked = eventParticipants.map(p => ({
+      id: p.id,
+      name: p.name,
+      totalScore: scoreMap.get(p.id) ?? 0,
+    }))
     ranked.sort((a, b) => {
       if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
       return a.name.localeCompare(b.name)
     })
-
     const rank = ranked.findIndex(p => p.id === participant.id) + 1
 
     return NextResponse.json({

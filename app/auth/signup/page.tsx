@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
+import { ArrowLeft, Loader2, Trophy, Sparkles } from 'lucide-react'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -56,102 +57,122 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black flex items-center justify-center p-4">
+      {/* Background Ambience */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-500/10 blur-[120px] rounded-full animate-pulse duration-[5000ms]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="w-full max-w-lg relative z-10 animate-fade-in-up">
+        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Live Leaderboard</h1>
-          <p className="text-slate-400">Create your account</p>
+          <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
+            <div className="p-2 rounded-xl bg-white/5 border border-white/10 group-hover:bg-blue-500/10 group-hover:border-blue-500/20 transition-all">
+              <Trophy className="w-6 h-6 text-blue-400" />
+            </div>
+          </Link>
+          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Create your account</h1>
+          <p className="text-slate-400">Join thousands of event organizers</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded" role="alert">
-              {error}
+        {/* Card */}
+        <div className="glass-card p-8 md:p-10 shadow-2xl backdrop-blur-xl bg-slate-900/40">
+          {/* Promo Badge */}
+          <div className="mb-6 flex justify-center">
+            <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 text-blue-300">
+              <Sparkles className="w-3 h-3" /> Start your free trial today
+            </span>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-sm font-medium flex items-center animate-shake">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Organization</label>
+                <input
+                  id="organizationName"
+                  type="text"
+                  value={formData.organizationName}
+                  onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                  required
+                  className="w-full glass-input px-4 py-3"
+                  placeholder="Acme Inc"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
+                <input
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full glass-input px-4 py-3"
+                  placeholder="John Doe"
+                />
+              </div>
             </div>
-          )}
 
-          <div>
-            <label htmlFor="organizationName" className="block text-sm font-medium text-slate-300 mb-2">
-              Organization Name <span className="text-red-400">*</span>
-            </label>
-            <input
-              id="organizationName"
-              type="text"
-              value={formData.organizationName}
-              onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
-              required
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Acme Inc"
-              aria-label="Organization name"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Email address</label>
+              <input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                className="w-full glass-input px-4 py-3"
+                placeholder="name@company.com"
+                autoComplete="email"
+              />
+            </div>
 
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
-              Your Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="John Doe"
-              aria-label="Your name"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+              <input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                minLength={8}
+                className="w-full glass-input px-4 py-3"
+                placeholder="Discreet password"
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-slate-500 mt-2 ml-1">Must be at least 8 characters</p>
+            </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-              Email <span className="text-red-400">*</span>
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="you@example.com"
-              aria-label="Email address"
-            />
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full glass-button glass-button-primary py-3.5 mt-4 flex items-center justify-center gap-2 group shadow-lg shadow-blue-900/20"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Get Started Free
+                  <ArrowLeft className="w-4 h-4 rotate-180 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
+            </button>
+          </form>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-              Password <span className="text-red-400">*</span>
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              minLength={8}
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="••••••••"
-              aria-label="Password"
-              aria-describedby="password-hint"
-            />
-            <p id="password-hint" className="text-xs text-slate-400 mt-1">
-              Must be at least 8 characters
-            </p>
-          </div>
+          <p className="mt-6 text-center text-xs text-slate-500">
+            By joining, you agree to our <Link href="/legal/terms" className="text-slate-400 underline hover:text-white">Terms</Link> and <Link href="/legal/privacy" className="text-slate-400 underline hover:text-white">Privacy Policy</Link>.
+          </p>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-            style={{ minHeight: '48px', minWidth: '48px' }}
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-slate-400">
+        <div className="mt-8 text-center pb-8">
+          <p className="text-slate-400 text-sm">
             Already have an account?{' '}
-            <Link href="/auth/signin" className="text-blue-500 hover:text-blue-400 font-medium">
+            <Link href="/auth/signin" className="text-blue-400 hover:text-blue-300 font-medium transition-colors hover:underline decoration-blue-400/30 underline-offset-4">
               Sign in
             </Link>
           </p>

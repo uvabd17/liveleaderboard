@@ -62,6 +62,8 @@ async function processItem(raw) {
       }
       const payload = { type: 'leaderboard', eventSlug: eventSlug || null, eventId, leaderboard, timestamp: new Date().toISOString(), instanceId: process.env.HUB_INSTANCE_ID || 'worker' }
       try { await redis.publish('hub:pub', JSON.stringify(payload)) } catch (e) {}
+      // also invalidate cached leaderboard keys for this event across instances (prefix invalidation)
+      try { await redis.publish('lb:invalidate', JSON.stringify({ prefix: `lb:${eventSlug}` })) } catch (e) {}
     } catch (e) {
       // ignore
     }

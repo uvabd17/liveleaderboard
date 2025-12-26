@@ -6,14 +6,17 @@ export interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 't
   description?: React.ReactNode
 }
 
-export function Card({ title, description, className, children, ...props }: CardProps) {
+export const Card = React.forwardRef<HTMLDivElement, CardProps>(function Card(
+  { title, description, className, children, ...props }: CardProps,
+  ref
+) {
   return (
-    <div className={cn("bg-card rounded-lg p-6 border border-border", className)} {...props}>
+    <div ref={ref} className={cn("bg-card rounded-lg p-6 border border-border", className)} {...props}>
       {title && <h3 className="text-xl font-semibold text-card-foreground mb-2">{title}</h3>}
       {description && <p className="text-muted-foreground mb-4">{description}</p>}
       {children}
     </div>
   )
-}
+})
 
 export default Card

@@ -25,6 +25,7 @@ type RegisterToken = { token: string; createdAt: number; used: boolean }
 type Hub = {
   state: LeaderboardState
   subscribers: Map<string, Subscriber>
+  _coalesce?: Map<string, any>
   subscribe: (send: (payload: any) => void, close: () => void, eventSlug?: string) => () => void
   broadcast: (event: string, data: any) => void
   broadcastRoundChange: (data: any) => void
@@ -47,26 +48,38 @@ let redisPub: any = null
 let redisSub: any = null
 const INSTANCE_ID = process.env.HUB_INSTANCE_ID || makeId('ins')
 try {
+  if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
+    // eslint-disable-next-line no-console
+    console.warn('[hub] WARNING: REDIS_URL not set in production. Using in-memory hub, which is NOT scalable!')
+  }
   if (process.env.REDIS_URL) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const IORedis = require('ioredis')
-    redisPub = new IORedis(process.env.REDIS_URL)
-    redisSub = new IORedis(process.env.REDIS_URL)
+    const redisOptions = {
+      maxRetriesPerRequest: 0,
+      retryStrategy: () => null,
+      connectTimeout: 2000,
+    }
+    redisPub = new IORedis(process.env.REDIS_URL, redisOptions)
+    redisSub = new IORedis(process.env.REDIS_URL, redisOptions)
+    // prevent uncaught error events during build/start when Redis is not available
+    redisPub.on('error', () => { })
+    redisSub.on('error', () => { })
     redisSub.subscribe('hub:pub')
     redisSub.on('message', (ch: string, msg: string) => {
       try {
         const parsed = JSON.parse(msg)
         if (parsed && parsed.instanceId === INSTANCE_ID) return
         // forward published event to local subscribers
-        try { (g.__LEADERBOARD_HUB__ as any)?.broadcast(parsed.type, parsed) } catch {}
-      } catch (e) {}
+        try { (g.__LEADERBOARD_HUB__ as any)?.broadcast(parsed.type, parsed) } catch { }
+      } catch (e) { }
     })
   }
 } catch (e) {
   // ignore missing redis
 }
 
-function rank(participants: Participant[]): Array<Participant & { rank: number }>{
+function rank(participants: Participant[]): Array<Participant & { rank: number }> {
   const sorted = [...participants].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score
     // tie-breaker: earlier created wins, then lexicographic name
@@ -98,15 +111,15 @@ if (!g.__LEADERBOARD_HUB__) {
     subscribers: new Map(),
     tokens: new Map(),
     subscribe(send, close, eventSlug?: string) {
-        const id = makeId('sub')
-        const sub: Subscriber = { id, send, close, eventSlug } as any
+      const id = makeId('sub')
+      const sub: Subscriber = { id, send, close, eventSlug } as any
       this.subscribers.set(id, sub)
       // send initial snapshot (include eventSlug so clients can filter)
       try {
-          const snap = hub.getSnapshot(TOP_N, eventSlug)
-          send({ ...snap, eventSlug: eventSlug ?? null })
+        const snap = hub.getSnapshot(TOP_N, eventSlug)
+        send({ ...snap, eventSlug: eventSlug ?? null })
       } catch (err) {
-        try { send(hub.getSnapshot()) } catch {}
+        try { send(hub.getSnapshot()) } catch { }
       }
       return () => {
         const s = this.subscribers.get(id)
@@ -115,69 +128,69 @@ if (!g.__LEADERBOARD_HUB__) {
         }
       }
     },
-      // pending broadcasts keyed by eventSlug (null for global)
-      broadcast(event, data) {
-        // For leaderboard events, debounce and trim to TOP_N to reduce payloads
-        if (event === 'leaderboard') {
-          try {
-            const key = data?.eventSlug ?? '__all__'
-            const map = (this as any)._pendingBroadcasts || new Map()
-            map.set(key, { event, data })
-            ;(this as any)._pendingBroadcasts = map
-            if (!map.get(key)._timer) {
-              map.get(key)._timer = setTimeout(() => {
-                try {
-                  const item = map.get(key)
-                  map.delete(key)
-                  if (!item) return
-                  const payload = { type: item.event, ...item.data }
-                  // trim leaderboard if present
-                  if (Array.isArray(payload.leaderboard)) {
-                    payload.leaderboard = payload.leaderboard.slice(0, TOP_N)
-                  }
-                  for (const s of this.subscribers.values()) {
-                    if ((s as any).eventSlug && payload.eventSlug && (s as any).eventSlug !== payload.eventSlug) continue
-                    try { s.send(payload) } catch {}
-                  }
-                  // publish to redis so other instances receive this leaderboard update
-                  try {
-                    if (redisPub && payload.instanceId !== INSTANCE_ID) {
-                      const pub = { ...payload, instanceId: INSTANCE_ID }
-                      redisPub.publish('hub:pub', JSON.stringify(pub)).catch(() => {})
-                    }
-                  } catch (e) {}
-                } catch (err) {
-                  // ignore
-                }
-              }, DEBOUNCE_MS)
-            }
-          } catch (err) {
-            // fallback immediate send
-            const payload = { type: event, ...data }
-            for (const s of this.subscribers.values()) {
-              if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) continue
-              try { s.send(payload) } catch {}
-            }
-          }
-          return
-        }
-
-        const payload = { type: event, ...data }
-        for (const s of this.subscribers.values()) {
-          // Filter by eventSlug if present
-          if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) {
-            continue
-          }
-          try { s.send(payload) } catch {}
-        }
-        // publish generic events too so other instances can forward
+    // pending broadcasts keyed by eventSlug (null for global)
+    broadcast(event, data) {
+      // For leaderboard events, debounce and trim to TOP_N to reduce payloads
+      if (event === 'leaderboard') {
         try {
-          if (redisPub && (data as any)?.instanceId !== INSTANCE_ID) {
-            const pub = { ...payload, instanceId: INSTANCE_ID }
-            redisPub.publish('hub:pub', JSON.stringify(pub)).catch(() => {})
+          const key = data?.eventSlug ?? '__all__'
+          const map = (this as any)._pendingBroadcasts || new Map()
+          map.set(key, { event, data })
+            ; (this as any)._pendingBroadcasts = map
+          if (!map.get(key)._timer) {
+            map.get(key)._timer = (globalThis as any).setTimeout(() => {
+              try {
+                const item = map.get(key)
+                map.delete(key)
+                if (!item) return
+                const payload = { type: item.event, ...item.data }
+                // trim leaderboard if present
+                if (Array.isArray(payload.leaderboard)) {
+                  payload.leaderboard = payload.leaderboard.slice(0, TOP_N)
+                }
+                for (const s of this.subscribers.values()) {
+                  if ((s as any).eventSlug && payload.eventSlug && (s as any).eventSlug !== payload.eventSlug) continue
+                  try { s.send(payload) } catch { }
+                }
+                // publish to redis so other instances receive this leaderboard update
+                try {
+                  if (redisPub && payload.instanceId !== INSTANCE_ID) {
+                    const pub = { ...payload, instanceId: INSTANCE_ID }
+                    redisPub.publish('hub:pub', JSON.stringify(pub)).catch(() => { })
+                  }
+                } catch (e) { }
+              } catch (err) {
+                // ignore
+              }
+            }, DEBOUNCE_MS)
           }
-        } catch (e) {}
-      },
+        } catch (err) {
+          // fallback immediate send
+          const payload = { type: event, ...data }
+          for (const s of this.subscribers.values()) {
+            if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) continue
+            try { s.send(payload) } catch { }
+          }
+        }
+        return
+      }
+
+      const payload = { type: event, ...data }
+      for (const s of this.subscribers.values()) {
+        // Filter by eventSlug if present
+        if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) {
+          continue
+        }
+        try { s.send(payload) } catch { }
+      }
+      // publish generic events too so other instances can forward
+      try {
+        if (redisPub && (data as any)?.instanceId !== INSTANCE_ID) {
+          const pub = { ...payload, instanceId: INSTANCE_ID }
+          redisPub.publish('hub:pub', JSON.stringify(pub)).catch(() => { })
+        }
+      } catch (e) { }
+    },
     broadcastRoundChange(data) {
       // Use generic broadcast so event-scoped filtering applies
       this.broadcast('round-change', data)
@@ -192,7 +205,7 @@ if (!g.__LEADERBOARD_HUB__) {
         { id: makeId('i'), name: 'Charlie', score: 30, kind: 'individual' as const },
         { id: makeId('t'), name: 'Delta Devs', score: 28, kind: 'team' as const },
       ]
-      for (const p of initial) this.upsertParticipant({ ...p, createdAt: now + Math.floor(Math.random()*1000) })
+      for (const p of initial) this.upsertParticipant({ ...p, createdAt: now + Math.floor(Math.random() * 1000) })
     },
     async loadFromDbIfEmpty() {
       if (this.state.participants.size > 0) return
@@ -241,11 +254,11 @@ if (!g.__LEADERBOARD_HUB__) {
       // schedule a coalesced broadcast for this participant
       const existing = (this as any)._coalesce.get(id)
       if (existing && existing.timer) {
-        clearTimeout(existing.timer)
+        ; (globalThis as any).clearTimeout(existing.timer)
       }
 
       const windowMs = 50
-      const timer = setTimeout(() => {
+      var tmr: any = (globalThis as any).setTimeout(() => {
         try {
           // compute ranks once when the coalesce window fires
           const before = this.state.lastRanks
@@ -263,9 +276,9 @@ if (!g.__LEADERBOARD_HUB__) {
         }
       }, windowMs)
 
-      (this as any)._coalesce.set(id, { timer })
+        (this as any)._coalesce.set(id, { timer: tmr })
     },
-    getSorted() { return Array.from(this.state.participants.values()).sort((a,b)=>b.score-a.score) },
+    getSorted() { return Array.from(this.state.participants.values()).sort((a, b) => b.score - a.score) },
     getRanks() { return this.state.lastRanks },
     getSnapshot(topN?: number, eventSlug?: string) {
       const ranked = rank(Array.from(this.state.participants.values()))

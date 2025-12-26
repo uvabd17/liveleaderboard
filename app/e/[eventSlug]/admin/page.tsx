@@ -258,9 +258,15 @@ export default function EventAdminPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen pb-20 relative">
+      {/* Background gradients */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+      </div>
+
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700">
+      <header className="glass-panel border-b border-white/5 sticky top-0 z-40 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
@@ -284,19 +290,18 @@ export default function EventAdminPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Tab Navigation */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 mb-6">
+        <div className="glass-panel mb-6">
           <div className="flex border-b border-slate-700 overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-4 font-medium transition-colors whitespace-nowrap border-b-2 ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-400 bg-blue-500/10'
-                    : 'border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-700/50'
-                }`}
+                className={`px-6 py-4 font-medium transition-colors whitespace-nowrap border-b-2 ${activeTab === tab.id
+                  ? 'border-blue-500 text-blue-400 bg-blue-500/10'
+                  : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 <span className="mr-2">{tab.icon}</span>
                 {tab.label}
@@ -312,36 +317,36 @@ export default function EventAdminPage() {
             <>
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div className="glass-panel p-6">
                   <div className="text-slate-400 text-sm mb-1">Participants</div>
                   <div className="text-3xl font-bold text-white">{event._count.participants}</div>
                 </div>
-                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div className="glass-panel p-6">
                   <div className="text-slate-400 text-sm mb-1">Judges</div>
                   <div className="text-3xl font-bold text-purple-400">{event._count.judges}</div>
                 </div>
-                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div className="glass-panel p-6">
                   <div className="text-slate-400 text-sm mb-1">Avg Score</div>
                   <div className="text-3xl font-bold text-green-400">
-                    {participants.length > 0 
+                    {participants.length > 0
                       ? Math.round(participants.reduce((sum, p) => sum + p.totalScore, 0) / participants.length)
                       : 0
                     }
                   </div>
                 </div>
-                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div className="glass-panel p-6">
                   <div className="text-slate-400 text-sm mb-1">Status</div>
                   <div className="text-2xl font-bold text-green-400">🟢 Active</div>
                 </div>
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+              <div className="glass-panel p-6">
                 <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <button
                     onClick={() => { setShowQR(true); setQrTab('registration') }}
-                    className="flex flex-col items-center gap-2 p-6 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
                   >
                     <div className="text-4xl">📱</div>
                     <div className="text-white font-medium">Generate QR</div>
@@ -364,35 +369,35 @@ export default function EventAdminPage() {
                         toast.error('Failed to create judge invite')
                       }
                     }}
-                    className="flex flex-col items-center gap-2 p-6 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
                   >
                     <div className="text-4xl">✉️</div>
                     <div className="text-white font-medium">Invite Judge</div>
                   </button>
                   <Link
                     href={`/e/${eventSlug}/admin/rubric`}
-                    className="flex flex-col items-center gap-2 p-6 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
                   >
                     <div className="text-4xl">📋</div>
                     <div className="text-white font-medium">Rubric</div>
                   </Link>
                   <button
                     onClick={() => setShowManualRegister(true)}
-                    className="flex flex-col items-center gap-2 p-6 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
                   >
                     <div className="text-4xl">✍️</div>
                     <div className="text-white font-medium">Manual Register</div>
                   </button>
                   <Link
                     href={`/e/${eventSlug}/admin/score-adjust`}
-                    className="flex flex-col items-center gap-2 p-6 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
                   >
                     <div className="text-4xl">✏️</div>
                     <div className="text-white font-medium">Adjust Scores</div>
                   </Link>
                   <Link
                     href={`/e/${eventSlug}/admin/rounds`}
-                    className="flex flex-col items-center gap-2 p-6 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
                   >
                     <div className="text-4xl">🔄</div>
                     <div className="text-white font-medium">Rounds & Timers</div>
@@ -401,27 +406,25 @@ export default function EventAdminPage() {
               </div>
 
               {/* Registration Control */}
-              <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+              <div className="glass-panel p-6">
                 <h2 className="text-xl font-bold text-white mb-4">📝 Registration Control</h2>
-                <div className={`p-5 rounded-lg border-2 transition-all ${
-                  rules?.registrationClosed 
-                    ? 'border-red-500 bg-red-500/10' 
-                    : 'border-green-500 bg-green-500/10'
-                }`}>
+                <div className={`p-5 rounded-lg border-2 transition-all ${rules?.registrationClosed
+                  ? 'border-red-500 bg-red-500/10'
+                  : 'border-green-500 bg-green-500/10'
+                  }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`text-3xl ${rules?.registrationClosed ? 'animate-pulse' : ''}`}>
                         {rules?.registrationClosed ? '🔒' : '✅'}
                       </div>
                       <div>
-                        <h3 className={`text-lg font-bold mb-1 ${
-                          rules?.registrationClosed ? 'text-red-400' : 'text-green-400'
-                        }`}>
+                        <h3 className={`text-lg font-bold mb-1 ${rules?.registrationClosed ? 'text-red-400' : 'text-green-400'
+                          }`}>
                           {rules?.registrationClosed ? 'Registrations Closed' : 'Registrations Open'}
                         </h3>
                         <p className="text-sm text-slate-300">
-                          {rules?.registrationClosed 
-                            ? 'New participants cannot register' 
+                          {rules?.registrationClosed
+                            ? 'New participants cannot register'
                             : 'Participants can register via link or QR code'}
                         </p>
                       </div>
@@ -432,11 +435,10 @@ export default function EventAdminPage() {
                         const next = { ...(rules || {}), registrationClosed: newVal }
                         await updateRules(next)
                       }}
-                      className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${
-                        rules?.registrationClosed
-                          ? 'bg-green-500 hover:bg-green-600 text-white'
-                          : 'bg-red-500 hover:bg-red-600 text-white'
-                      }`}
+                      className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${rules?.registrationClosed
+                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                        : 'bg-red-500 hover:bg-red-600 text-white'
+                        }`}
                     >
                       {rules?.registrationClosed ? '🔓 Open' : '🔒 Close'}
                     </button>
@@ -448,8 +450,8 @@ export default function EventAdminPage() {
 
           {/* Participants Tab */}
           {activeTab === 'participants' && (
-            <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-              <div className="p-6 border-b border-slate-700">
+            <div className="glass-panel overflow-hidden">
+              <div className="p-6 border-b border-white/5">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold text-white">Participants</h2>
                   <button
@@ -459,7 +461,7 @@ export default function EventAdminPage() {
                     + Add Participant
                   </button>
                 </div>
-                
+
                 {/* Filters */}
                 <div className="flex gap-4 items-center flex-wrap">
                   <div className="flex items-center gap-2">
@@ -467,7 +469,7 @@ export default function EventAdminPage() {
                     <select
                       value={selectedRoundFilter ?? ''}
                       onChange={(e) => setSelectedRoundFilter(e.target.value ? Number(e.target.value) : null)}
-                      className="bg-slate-700 border border-slate-600 text-white rounded px-3 py-1 text-sm"
+                      className="glass-input py-1 px-3 text-sm"
                     >
                       <option value="">All Rounds</option>
                       {Array.isArray(rules?.rounds) && rules.rounds.map((r: any, idx: number) => (
@@ -489,7 +491,7 @@ export default function EventAdminPage() {
                   </div>
                 </div>
               </div>
-              
+
               {participants.length === 0 ? (
                 <div className="p-12 text-center">
                   <div className="text-6xl mb-4">👥</div>
@@ -505,16 +507,16 @@ export default function EventAdminPage() {
                 // Filter and sort participants
                 const currentRound = event?.currentRound ?? 0
                 const filterRound = selectedRoundFilter ?? (currentRound > 0 ? currentRound + 1 : null)
-                
+
                 let filtered = participants.map(p => {
                   const completedRounds = roundCompletions[p.id] || new Set<number>()
                   const isCompleted = filterRound ? completedRounds.has(filterRound) : false
                   const completedCount = completedRounds.size
                   const totalRounds = Array.isArray(rules?.rounds) ? rules.rounds.length : 0
-                  
+
                   return { ...p, isCompleted, completedCount, totalRounds }
                 })
-                
+
                 // Apply completion filter
                 if (completionSort === 'completed') {
                   filtered.sort((a, b) => {
@@ -527,11 +529,11 @@ export default function EventAdminPage() {
                     return a.rank - b.rank
                   })
                 }
-                
+
                 return (
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-slate-700">
+                      <thead className="bg-white/5 border-b border-white/5">
                         <tr>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Rank</th>
                           <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Name</th>
@@ -551,9 +553,9 @@ export default function EventAdminPage() {
                           const isCompleted = filterRound ? completedRounds.has(filterRound) : false
                           const completedCount = completedRounds.size
                           const totalRounds = Array.isArray(rules?.rounds) ? rules.rounds.length : 0
-                          
+
                           return (
-                            <tr key={participant.id} className={`hover:bg-slate-700/50 ${isCompleted ? 'bg-green-500/5' : ''}`}>
+                            <tr key={participant.id} className={`hover:bg-white/5 ${isCompleted ? 'bg-green-500/5' : ''}`}>
                               <td className="px-6 py-4 text-slate-300">#{participant.rank}</td>
                               <td className="px-6 py-4 font-medium text-white">{participant.name}</td>
                               <td className="px-6 py-4 text-slate-400 capitalize">{participant.kind}</td>
@@ -589,7 +591,7 @@ export default function EventAdminPage() {
 
           {/* Judges Tab */}
           {activeTab === 'judges' && (
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <div className="glass-panel p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-white">Judges</h2>
                 <button
@@ -626,7 +628,7 @@ export default function EventAdminPage() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-slate-700">
+                    <thead className="bg-white/5 border-b border-white/5">
                       <tr>
                         <th className="px-4 py-3 text-left text-slate-200">Name</th>
                         <th className="px-4 py-3 text-left text-slate-200">Email</th>
@@ -635,9 +637,9 @@ export default function EventAdminPage() {
                         <th className="px-4 py-3 text-left text-slate-200">Expires</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700">
+                    <tbody className="divide-y divide-white/5">
                       {judges.map((j) => (
-                        <tr key={j.id} className="hover:bg-slate-700/40">
+                        <tr key={j.id} className="hover:bg-white/5">
                           <td className="px-4 py-3 text-white font-medium">{j.name || 'Unnamed'}</td>
                           <td className="px-4 py-3 text-slate-300">{j.email || '—'}</td>
                           <td className="px-4 py-3 text-slate-300 capitalize">{j.role || 'judge'}</td>
@@ -660,7 +662,7 @@ export default function EventAdminPage() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <div className="glass-panel p-6">
               <h2 className="text-xl font-bold text-white mb-4">Event Settings</h2>
               <p className="text-slate-400 text-sm mb-4">
                 Configure rounds, timers, judging locks, and elimination controls here. These replace the old round control center and keep everything in one place.
@@ -668,14 +670,14 @@ export default function EventAdminPage() {
               <div className="space-y-4">
                 <Link
                   href={`/e/${eventSlug}/admin/settings`}
-                  className="block p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                  className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
                 >
                   <div className="font-semibold text-white mb-1">⚙️ Advanced Settings</div>
                   <div className="text-sm text-slate-400">Configure rounds, judging modes, and advanced features</div>
                 </Link>
                 <Link
                   href={`/e/${eventSlug}/admin/rubric`}
-                  className="block p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                  className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
                 >
                   <div className="font-semibold text-white mb-1">📋 Scoring Rubric</div>
                   <div className="text-sm text-slate-400">Edit scoring criteria and weights</div>
@@ -686,7 +688,7 @@ export default function EventAdminPage() {
 
           {/* Branding Tab */}
           {activeTab === 'branding' && (
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <div className="glass-panel p-6">
               <h2 className="text-xl font-bold text-white mb-4">Event Branding</h2>
               <p className="text-slate-400 mb-6">
                 Upload a logo and customize your event's branding. Colors will be automatically extracted from your logo.
@@ -719,27 +721,27 @@ export default function EventAdminPage() {
 
             <div className="flex gap-2 mb-4">
               {showLeaderboardTab && (
-                <button 
-                  className={`px-3 py-2 rounded ${qrTab === 'leaderboard' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`} 
+                <button
+                  className={`px-3 py-2 rounded ${qrTab === 'leaderboard' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`}
                   onClick={() => setQrTab('leaderboard')}
                 >
                   Leaderboard
                 </button>
               )}
-              <button 
-                className={`px-3 py-2 rounded ${qrTab === 'stage' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`} 
+              <button
+                className={`px-3 py-2 rounded ${qrTab === 'stage' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`}
                 onClick={() => setQrTab('stage')}
               >
                 Stage
               </button>
-              <button 
-                className={`px-3 py-2 rounded ${qrTab === 'registration' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`} 
+              <button
+                className={`px-3 py-2 rounded ${qrTab === 'registration' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`}
                 onClick={() => setQrTab('registration')}
               >
                 Registration
               </button>
-              <button 
-                className={`px-3 py-2 rounded ${qrTab === 'judge' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`} 
+              <button
+                className={`px-3 py-2 rounded ${qrTab === 'judge' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`}
                 onClick={() => setQrTab('judge')}
               >
                 Judge

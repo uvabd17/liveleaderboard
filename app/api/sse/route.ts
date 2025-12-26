@@ -10,6 +10,10 @@ export async function GET(request: Request) {
   const eventSlug = url.searchParams.get('eventSlug')
   
   let closed = false
+  let keepAlive: ReturnType<typeof setInterval> | null = null
+  let unsubscribe: (() => void) | null = null
+  let attachedAbortListener: (() => void) | null = null
+
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder()
@@ -37,24 +41,29 @@ export async function GET(request: Request) {
           try { controller.close() } catch {}
         }
       }
-      const unsubscribe = hub.subscribe(send, close, eventSlug ?? undefined)
-      const keepAlive = setInterval(() => {
+      unsubscribe = hub.subscribe(send, close, eventSlug ?? undefined)
+      keepAlive = setInterval(() => {
         safeEnqueue(`: keep-alive\n\n`)
       }, 15000)
       // abort on client disconnect
       const signal = (request as any).signal as AbortSignal | undefined
       const onAbort = () => {
-        clearInterval(keepAlive)
-        unsubscribe()
-        close()
+        try { if (keepAlive) clearInterval(keepAlive) } catch {}
+        try { if (unsubscribe) unsubscribe() } catch {}
+        try { close() } catch {}
       }
       if (signal) {
         if (signal.aborted) onAbort()
-        else signal.addEventListener('abort', onAbort, { once: true })
+        else {
+          signal.addEventListener('abort', onAbort, { once: true })
+          attachedAbortListener = onAbort
+        }
       }
     },
     cancel() {
       closed = true
+      try { if (keepAlive) clearInterval(keepAlive) } catch {}
+      try { if (unsubscribe) unsubscribe() } catch {}
     }
   })
 

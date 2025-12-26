@@ -28,12 +28,13 @@ let idempotencyStore: {
     const IORedis = require('ioredis')
     if (process.env.REDIS_URL) {
       const rc = new IORedis(process.env.REDIS_URL)
+      try { rc.on && rc.on('error', () => { }) } catch (e) { }
       idempotencyStore = {
         async has(key: string) {
           try { const v = await rc.get(`idemp:${key}`); return !!v } catch { return false }
         },
         async set(key: string, ttlMs = IDEMP_TTL_MS) {
-          try { await rc.set(`idemp:${key}`, '1', 'PX', `${ttlMs}`) } catch {}
+          try { await rc.set(`idemp:${key}`, '1', 'PX', `${ttlMs}`) } catch { }
         }
       }
     }
@@ -47,6 +48,7 @@ try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const IORedis = require('ioredis')
   if (process.env.REDIS_URL) redisClient = new IORedis(process.env.REDIS_URL)
+  try { redisClient && redisClient.on && redisClient.on('error', () => { }) } catch (e) { }
 } catch (e) {
   // ignore - redis optional
 }
@@ -59,12 +61,12 @@ if (!process.env.REDIS_URL && typeof db !== 'undefined') {
         if (!rows || rows.length === 0) return false
         const expires = new Date(rows[0].expires_at)
         if (expires.getTime() < Date.now()) {
-          try { await db.$executeRaw`DELETE FROM "IdempotencyKey" WHERE "key" = ${key}` } catch {}
+          try { await db.$executeRaw`DELETE FROM "IdempotencyKey" WHERE "key" = ${key}` } catch { }
           return false
         }
         return true
       } catch (err) {
-        try { await db.$executeRawUnsafe('CREATE TABLE IF NOT EXISTS "IdempotencyKey" ("key" text PRIMARY KEY, "expires_at" timestamptz)') } catch {}
+        try { await db.$executeRawUnsafe('CREATE TABLE IF NOT EXISTS "IdempotencyKey" ("key" text PRIMARY KEY, "expires_at" timestamptz)') } catch { }
         return false
       }
     },
@@ -73,11 +75,11 @@ if (!process.env.REDIS_URL && typeof db !== 'undefined') {
         const expires = new Date(Date.now() + ttlMs).toISOString()
         await db.$executeRaw`INSERT INTO "IdempotencyKey" ("key","expires_at") VALUES (${key}, ${expires}) ON CONFLICT ("key") DO UPDATE SET "expires_at" = GREATEST("IdempotencyKey"."expires_at", EXCLUDED."expires_at")`
       } catch (err) {
-        try { await db.$executeRawUnsafe('CREATE TABLE IF NOT EXISTS "IdempotencyKey" ("key" text PRIMARY KEY, "expires_at" timestamptz)') } catch {}
+        try { await db.$executeRawUnsafe('CREATE TABLE IF NOT EXISTS "IdempotencyKey" ("key" text PRIMARY KEY, "expires_at" timestamptz)') } catch { }
         try {
           const expires = new Date(Date.now() + ttlMs).toISOString()
           await db.$executeRaw`INSERT INTO "IdempotencyKey" ("key","expires_at") VALUES (${key}, ${expires}) ON CONFLICT ("key") DO UPDATE SET "expires_at" = GREATEST("IdempotencyKey"."expires_at", EXCLUDED."expires_at")`
-        } catch {}
+        } catch { }
       }
     }
   }
@@ -85,6 +87,7 @@ if (!process.env.REDIS_URL && typeof db !== 'undefined') {
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { NextResponse } from 'next/server'
+import { defaultLimiter } from '../../../../lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -92,7 +95,15 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    
+    // Apply a lightweight rate limit per-judge (or per-IP for anonymous)
+    try {
+      const ip = (request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '').split(',')[0].trim() || undefined
+      const judgeToken = session?.user?.id ? `judge:${session.user.id}` : `ip:${ip ?? 'anon'}`
+      await defaultLimiter.check(Number(process.env.SCORE_RATE_LIMIT || 60), judgeToken)
+    } catch (rlErr) {
+      return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
+    }
+
     const body = await request.json()
     let { eventSlug, participantId, scores, comment, roundNumber, idempotencyKey } = body as any
 
@@ -118,7 +129,15 @@ export async function POST(request: Request) {
     if (Object.keys(scoresMap).length === 0) {
       return NextResponse.json({ error: 'invalid_scores' }, { status: 400 })
     }
-    
+
+    // --- SECURITY: Basic input validation ---
+    // Prevent negative scores unless explicitly allowed (assuming 0 is min for now)
+    for (const k in scoresMap) {
+      if (scoresMap[k] < 0) {
+        return NextResponse.json({ error: 'negative_scores_not_allowed' }, { status: 400 })
+      }
+    }
+
     // Find participant (and derive event if needed)
     const participantRow = await db.participant.findUnique({ where: { id: participantId }, include: { event: true } })
     if (!participantRow) {
@@ -167,9 +186,9 @@ export async function POST(request: Request) {
     const roundIdx = Math.max(0, Number(roundNumber) - 1)
     const roundCfg = rounds[roundIdx]
     if (!roundCfg?.judgingOpen && !isAdminSession) {
-      return NextResponse.json({ 
-        error: 'judging_not_open_for_round', 
-        message: `Judging is not open for round ${roundNumber}` 
+      return NextResponse.json({
+        error: 'judging_not_open_for_round',
+        message: `Judging is not open for round ${roundNumber}`
       }, { status: 403 })
     }
 
@@ -185,31 +204,31 @@ export async function POST(request: Request) {
     })
 
     if (existingCompletion && !isAdminSession) {
-      return NextResponse.json({ 
-        error: 'round_already_completed', 
-        message: 'This round has already been completed for this participant. Rescoring is not allowed.' 
+      return NextResponse.json({
+        error: 'round_already_completed',
+        message: 'This round has already been completed for this participant. Rescoring is not allowed.'
       }, { status: 403 })
     }
 
     // Validate rubric keys from event.rules - FILTER BY ROUND NUMBER
     const rulesRubric = (event.rules as any)?.rubric || []
-    const rubricForRound = Array.isArray(rulesRubric) 
+    const rubricForRound = Array.isArray(rulesRubric)
       ? rulesRubric.filter((r: any) => {
-          // If rounds array is null/undefined, criterion applies to all rounds
-          if (!r.rounds || !Array.isArray(r.rounds)) return true
-          // Otherwise, check if this roundNumber is in the rounds array
-          return r.rounds.includes(roundNumber)
-        })
+        // If rounds array is null/undefined, criterion applies to all rounds
+        if (!r.rounds || !Array.isArray(r.rounds)) return true
+        // Otherwise, check if this roundNumber is in the rounds array
+        return r.rounds.includes(roundNumber)
+      })
       : []
-    
+
     const rubricKeys = rubricForRound.map((r: any) => r.key ?? r.name ?? r.label)
-    
+
     // Filter scoresMap to only known rubric keys for this round
     const filteredEntries = Object.entries(scoresMap).filter(([k]) => rubricKeys.includes(k))
     if (filteredEntries.length === 0) {
-      return NextResponse.json({ 
-        error: 'no_valid_criteria_for_round', 
-        message: `No valid criteria found for round ${roundNumber}. Please ensure you're scoring criteria assigned to this round.` 
+      return NextResponse.json({
+        error: 'no_valid_criteria_for_round',
+        message: `No valid criteria found for round ${roundNumber}. Please ensure you're scoring criteria assigned to this round.`
       }, { status: 400 })
     }
 
@@ -219,12 +238,27 @@ export async function POST(request: Request) {
     const missingRequired = requiredCriteria
       .map((r: any) => r.key ?? r.name ?? r.label)
       .filter((key: string) => !providedKeys.includes(key))
-    
+
     if (missingRequired.length > 0) {
-      return NextResponse.json({ 
-        error: 'missing_required_criteria', 
-        message: `Missing required criteria for round ${roundNumber}: ${missingRequired.join(', ')}` 
+      return NextResponse.json({
+        error: 'missing_required_criteria',
+        message: `Missing required criteria for round ${roundNumber}: ${missingRequired.join(', ')}`
       }, { status: 400 })
+    }
+
+    // --- SECURITY: Max Score Validation ---
+    for (const [key, value] of filteredEntries) {
+      const criteriaDef = rubricForRound.find((r: any) => (r.key ?? r.name ?? r.label) === key)
+      if (criteriaDef && typeof criteriaDef.max === 'number') {
+        if (value > criteriaDef.max) {
+          // Log this attempt?
+          console.warn(`[SECURITY] Score too high: ${value} > ${criteriaDef.max} for ${key} by judge ${judgeId}`)
+          return NextResponse.json({
+            error: 'score_exceeds_max',
+            message: `Score for ${criteriaDef.label || key} (${value}) exceeds maximum allowed (${criteriaDef.max}).`
+          }, { status: 400 })
+        }
+      }
     }
 
     // Enqueue score writes: prefer Redis queue for cross-instance processing, otherwise in-memory batcher
@@ -297,9 +331,22 @@ export async function POST(request: Request) {
           // rounds array is zero-indexed; incoming roundNumber is treated as 1-based
           const roundIdx = Math.max(0, Number(roundNumber) - 1)
           const roundCfg = rounds[roundIdx]
+
           if (roundCfg && roundCfg.timerStartedAt) {
             const started = new Date(roundCfg.timerStartedAt).getTime()
-            durationSeconds = Math.max(0, Math.floor((Date.now() - started) / 1000))
+            const nowTime = Date.now()
+            durationSeconds = Math.max(0, Math.floor((nowTime - started) / 1000))
+
+            // --- SECURITY: Speed Check ---
+            // If the score is submitted impossibly fast after round start (e.g. < 5 seconds), this might be a bot or accidental click
+            // Only enforce if we have a valid start time and not admin
+            if (durationSeconds < 5 && !isAdminSession) {
+              console.warn(`[SECURITY] Speed check failed: duration ${durationSeconds}s for judge ${judgeId}`)
+              return NextResponse.json({
+                error: 'submission_too_fast',
+                message: 'Please take more time to evaluate. Submission rejected as too fast.'
+              }, { status: 400 })
+            }
           }
         } catch (err) {
           // ignore
@@ -350,6 +397,12 @@ export async function POST(request: Request) {
       } catch (err) {
         // ignore
       }
+      // publish cache invalidation for this event so other instances drop cached leaderboards
+      try {
+        if (redisClient && eventSlug) await redisClient.publish('lb:invalidate', JSON.stringify({ prefix: `lb:${eventSlug}` }))
+      } catch (e) {
+        // ignore
+      }
     } catch (err) {
       console.error('Failed to fetch trimmed leaderboard from participants', err)
     }
@@ -371,8 +424,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, queued: true })
   } catch (error) {
     console.error('Score submission error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to submit scores' 
+    return NextResponse.json({
+      error: 'Failed to submit scores'
     }, { status: 500 })
   }
 }
@@ -443,6 +496,7 @@ const SCORE_BATCH: {
     eventSlug?: string
     participantId: string
     judgeUserId: string
+    idempotencyKey?: string | null
     criterion: string
     value: number
     comment?: string | null
@@ -546,7 +600,7 @@ async function flushScoreBatch() {
         for (const it of items) {
           const idk = (it as any).idempotencyKey
           if (idk) {
-            try { await idempotencyStore.set(idk) } catch {}
+            try { await idempotencyStore.set(idk) } catch { }
           }
         }
       } catch (e) {
@@ -576,7 +630,7 @@ async function flushScoreBatch() {
               } catch (e) { meta = null }
               leaderboard.push({ id: member, name: meta?.name ?? null, kind: meta?.kind ?? null, score, rank: leaderboard.length + 1 })
             }
-            try { hub.broadcast('leaderboard', { eventSlug: ev, leaderboard, timestamp: new Date().toISOString() }) } catch (e) {}
+            try { hub.broadcast('leaderboard', { eventSlug: ev, leaderboard, timestamp: new Date().toISOString() }) } catch (e) { }
             continue
           } catch (e) {
             // fallthrough to DB fallback
@@ -585,7 +639,7 @@ async function flushScoreBatch() {
 
         const rows = await db.participant.findMany({ where: { eventId: ev }, orderBy: { totalScore: 'desc' }, take: TOP_N, select: { id: true, name: true, kind: true, totalScore: true } })
         const leaderboard = rows.map((r, i) => ({ id: r.id, name: r.name, kind: r.kind as any, score: Number(r.totalScore ?? 0), rank: i + 1 }))
-        try { hub.broadcast('leaderboard', { eventSlug: ev, leaderboard, timestamp: new Date().toISOString() }) } catch (e) {}
+        try { hub.broadcast('leaderboard', { eventSlug: ev, leaderboard, timestamp: new Date().toISOString() }) } catch (e) { }
       } catch (e) {
         console.error('Failed to fetch trimmed leaderboard for broadcast', ev, e)
       }
