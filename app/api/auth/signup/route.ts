@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { hash } from 'bcrypt'
 import { db } from '@/lib/db'
+import { generateToken, sendVerificationEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   try {
@@ -17,6 +18,15 @@ export async function POST(req: Request) {
     if (password.length < 8) {
       return NextResponse.json(
         { error: 'Password must be at least 8 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
         { status: 400 }
       )
     }
@@ -50,6 +60,10 @@ export async function POST(req: Request) {
     // Hash password
     const hashedPassword = await hash(password, 12)
 
+    // Generate email verification token
+    const verifyToken = generateToken(32)
+    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
     // Create user and organization in transaction
     const result = await db.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -57,6 +71,8 @@ export async function POST(req: Request) {
           email,
           password: hashedPassword,
           name: name || email.split('@')[0],
+          emailVerifyToken: verifyToken,
+          emailVerifyExpires: verifyExpires,
         }
       })
 
@@ -77,6 +93,12 @@ export async function POST(req: Request) {
       return { user, organization }
     })
 
+    // Send verification email (async, don't block response)
+    sendVerificationEmail(email, verifyToken, name || email.split('@')[0])
+      .catch(err => console.error('[signup] Failed to send verification email:', err))
+
+    console.log(`[auth] New user signup: ${email}`)
+
     return NextResponse.json({
       success: true,
       user: {
@@ -88,7 +110,8 @@ export async function POST(req: Request) {
         id: result.organization.id,
         name: result.organization.name,
         slug: result.organization.slug,
-      }
+      },
+      message: 'Account created. Please check your email to verify your account.'
     })
   } catch (error) {
     console.error('Signup error:', error)

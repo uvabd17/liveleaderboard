@@ -16,7 +16,13 @@ model User {
   id                        String              @id @default(cuid())
   email                     String              @unique
   name                      String?
-  password                  String // bcrypt hashed
+  password                  String?             // bcrypt hashed, optional for OAuth users
+  image                     String?             // Profile image from OAuth
+  emailVerified             DateTime?           // Email verification timestamp
+  emailVerifyToken          String?             // Token for email verification
+  emailVerifyExpires        DateTime?           // Token expiry
+  passwordResetToken        String?             // Token for password reset
+  passwordResetExpires      DateTime?           // Token expiry
   orgId                     String?
   createdAt                 DateTime            @default(now())
   updatedAt                 DateTime            @updatedAt
@@ -26,8 +32,32 @@ model User {
   usedJudgeInvites          JudgeInvite[]       @relation("JudgeInviteUsedBy")
   createdRegistrationTokens RegistrationToken[]
   auditLogs                 AuditLog[]
+  accounts                  Account[]           // OAuth accounts
 
   @@index([email])
+  @@index([emailVerifyToken])
+  @@index([passwordResetToken])
+}
+
+// OAuth Account linking (for Google, GitHub, etc.)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Organization {
