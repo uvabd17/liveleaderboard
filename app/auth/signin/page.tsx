@@ -25,7 +25,7 @@ export default function SignInPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [hasGoogleProvider, setHasGoogleProvider] = useState(false)
+  const [hasGoogleProvider, setHasGoogleProvider] = useState(true) // Default to true, will be validated on click
 
   // Check for error in URL params
   useEffect(() => {
