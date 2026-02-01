@@ -220,10 +220,6 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:189',message:'Logo upload started',data:{fileName:file.name,fileSize:file.size,fileType:file.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
-
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file')
       return
@@ -237,35 +233,21 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
     const reader = new FileReader()
     reader.onload = async (event) => {
       const dataUrl = event.target?.result as string
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:202',message:'FileReader loaded, starting color extraction',data:{dataUrlLength:dataUrl?.length,dataUrlPrefix:dataUrl?.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       setLogoData(dataUrl)
       setLogoPreview(dataUrl)
       
       // Extract colors from logo
       try {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:208',message:'Calling extractColorsFromImage',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         const colors = await extractColorsFromImage(dataUrl)
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:210',message:'Color extraction succeeded',data:{primary:colors.primary,secondary:colors.secondary,accent:colors.accent},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         setExtractedColors(colors)
         toast.success('Logo uploaded and colors extracted!')
       } catch (error) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:214',message:'Color extraction failed',data:{error:error instanceof Error?error.message:String(error),errorStack:error instanceof Error?error.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         console.error('Color extraction failed:', error)
         // Continue without color extraction
       }
     }
     reader.onerror = () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:217',message:'FileReader error',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
+      // silently handle file reader errors
     }
     reader.readAsDataURL(file)
   }
@@ -371,63 +353,38 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
     let requestBodyJson: string
     try {
       requestBodyJson = JSON.stringify(requestBody)
-      console.log('[DEBUG] JSON serialization successful, size:', requestBodyJson.length)
     } catch (jsonError) {
-      console.error('[DEBUG] JSON serialization failed:', jsonError)
+      console.error('JSON serialization failed:', jsonError)
       toast.error('Failed to prepare event data. Please check your inputs.')
       setLoading(false)
       return
     }
     
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:274',message:'handleSubmit called, preparing request',data:{hasName:!!basicInfo.name,hasLogo:!!logoUrlToSend,hasColors:!!extractedColors,hasFeatures:!!features,criteriaCount:criteria.length,numberOfRounds:basicInfo.numberOfRounds,requestBodyKeys:Object.keys(requestBody),requestBodySize:requestBodyJson.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     try {
-      console.log('[DEBUG] Sending POST request to /api/events')
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:277',message:'Sending POST to /api/events',data:{bodySize:requestBodyJson.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       const response = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: requestBodyJson,
       })
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:292',message:'Response received',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-
       if (response.ok) {
         const data = await response.json()
-        console.log('[CLIENT] Event created successfully:', data)
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:295',message:'Event created successfully',data:{eventId:data.event?.id,eventName:data.event?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         toast.success(`Event "${data.event.name}" created successfully!`)
         onSuccess()
         onClose()
       } else {
         let error
         const responseText = await response.text()
-        console.error('[CLIENT] Event creation failed - Response status:', response.status)
-        console.error('[CLIENT] Response text:', responseText)
         try {
           error = JSON.parse(responseText)
         } catch (e) {
           error = { error: `HTTP ${response.status}: ${response.statusText}`, details: responseText }
         }
-        console.error('[CLIENT] Event creation failed - Parsed error:', error)
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:299',message:'Event creation failed',data:{status:response.status,error:error.error,errorDetails:error,responseText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         const errorMsg = error.details || error.error || 'Failed to create event'
         toast.error(errorMsg)
       }
     } catch (error) {
-      console.error('[DEBUG] Exception in handleSubmit:', error)
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/c899a439-8621-4806-a624-02a438efe8c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'event-creation-wizard.tsx:302',message:'Exception in handleSubmit',data:{error:error instanceof Error?error.message:String(error),errorStack:error instanceof Error?error.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
+      console.error('Error creating event:', error)
       toast.error('An error occurred: ' + (error instanceof Error ? error.message : String(error)))
     } finally {
       setLoading(false)

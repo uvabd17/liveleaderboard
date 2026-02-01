@@ -51,6 +51,8 @@ export interface OperationsFeatures {
 }
 
 export interface EventFeatures {
+  isEnded?: boolean;
+  timerCollapseThresholdMinutes?: number;
   presentation: PresentationFeatures;
   competitive: CompetitiveFeatures;
   judgeExperience: JudgeExperienceFeatures;
@@ -60,6 +62,8 @@ export interface EventFeatures {
 
 // Default feature configuration (all features disabled by default)
 export const defaultFeatures: EventFeatures = {
+  isEnded: false,
+  timerCollapseThresholdMinutes: 1,
   presentation: {
     teamAvatars: false,
     stageDisplay: false,
@@ -113,6 +117,8 @@ export function mergeFeatures(stored: Partial<EventFeatures> | null | undefined)
   if (!stored) return defaultFeatures;
   
   return {
+    isEnded: stored.isEnded ?? defaultFeatures.isEnded,
+    timerCollapseThresholdMinutes: stored.timerCollapseThresholdMinutes ?? defaultFeatures.timerCollapseThresholdMinutes,
     presentation: {
       ...defaultFeatures.presentation,
       ...stored.presentation,

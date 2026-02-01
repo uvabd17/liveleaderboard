@@ -4,8 +4,11 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { hub } from '@/lib/hub'
 
-export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+export async function GET() {
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
+}
 
 // POST: Admin score adjustment (only after all rounds completed for all teams)
 export async function POST(request: Request) {
@@ -29,14 +32,14 @@ export async function POST(request: Request) {
     }
 
     // Verify admin access
-    const event = await db.event.findUnique({ 
+    const event = await db.event.findUnique({
       where: { slug: eventSlug },
       include: { organization: true }
     })
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
 
     const userId = session.user.id as string
-    const user = await db.user.findUnique({ 
+    const user = await db.user.findUnique({
       where: { id: userId },
       include: { ownedOrgs: true }
     })
@@ -54,9 +57,9 @@ export async function POST(request: Request) {
     const totalRounds = roundsConfig.length
 
     if (totalRounds === 0) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'no_rounds_configured',
-        message: 'No rounds configured. Score adjustments can only be made after all rounds are completed.' 
+        message: 'No rounds configured. Score adjustments can only be made after all rounds are completed.'
       }, { status: 400 })
     }
 
@@ -79,9 +82,9 @@ export async function POST(request: Request) {
           }
         })
         if (!completion) {
-          return NextResponse.json({ 
+          return NextResponse.json({
             error: 'rounds_not_all_completed',
-            message: `Cannot adjust scores yet. Round ${roundNum} is not completed for participant ${participant.id}. All rounds must be completed for all participants before score adjustments are allowed.` 
+            message: `Cannot adjust scores yet. Round ${roundNum} is not completed for participant ${participant.id}. All rounds must be completed for all participants before score adjustments are allowed.`
           }, { status: 403 })
         }
       }
@@ -109,7 +112,7 @@ export async function POST(request: Request) {
         value: Math.floor(newValue),
         updatedAt: new Date(),
         // Store adjustment metadata in comment or create audit log
-        comment: existingScore.comment 
+        comment: existingScore.comment
           ? `${existingScore.comment}\n[ADJUSTED by ${user.name || user.email} at ${new Date().toISOString()}: ${oldValue} → ${newValue}${reason ? ` - Reason: ${reason}` : ''}]`
           : `[ADJUSTED by ${user.name || user.email} at ${new Date().toISOString()}: ${oldValue} → ${newValue}${reason ? ` - Reason: ${reason}` : ''}]`
       }
@@ -169,7 +172,7 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString()
     })
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: 'Score adjusted successfully',
       oldValue,
@@ -177,9 +180,9 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('Score adjustment error:', error)
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Failed to adjust score',
-      message: error?.message 
+      message: error?.message
     }, { status: 500 })
   }
 }

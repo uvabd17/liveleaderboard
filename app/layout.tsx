@@ -1,6 +1,14 @@
 import './globals.css'
 import React from 'react'
 import { Providers } from '../lib/providers'
+import { Outfit } from 'next/font/google'
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  display: 'swap',
+})
 
 export const metadata = {
   title: 'Live Leaderboard - The Real-time Competition Platform',
@@ -12,11 +20,11 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className={`h-full ${outfit.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body className={`min-h-screen bg-background text-foreground antialiased ${outfit.className}`}>
         <Providers>
           {children}
         </Providers>

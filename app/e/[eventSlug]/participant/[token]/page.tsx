@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { BrandingUpload } from '@/components/branding-upload'
 import toast from 'react-hot-toast'
+import { Trophy, Activity, MessageSquare, ChevronRight, Share2, Sparkles, Target, Settings, LayoutDashboard } from 'lucide-react'
+import { BroadcastTicker } from '@/components/broadcast-ticker'
 
 interface Participant {
   id: string
@@ -15,6 +17,11 @@ interface Participant {
     id: string
     name: string
     slug: string
+    brandColors?: {
+      primary: string
+      secondary: string
+      accent: string
+    }
     description: string | null
     startAt: string | null
     endAt: string | null
@@ -55,20 +62,11 @@ export default function ParticipantDashboardPage() {
         const data = await response.json()
         setParticipant(data.participant)
         setTeamName(data.participant.name)
-        
-        // Load team members from profile
+
         const profile = data.participant.profile || {}
-        if (profile.teamMembers && Array.isArray(profile.teamMembers)) {
-          setTeamMembers(profile.teamMembers)
-        } else {
-          setTeamMembers([])
-        }
-        if (profile.idea) {
-          setIdea(profile.idea)
-        } else {
-          setIdea('')
-        }
-        // fetch event config and completions
+        setTeamMembers(Array.isArray(profile.teamMembers) ? profile.teamMembers : [])
+        setIdea(profile.idea || '')
+
         try {
           const [eventRes, compRes] = await Promise.all([
             fetch(`/api/events/${eventSlug}`),
@@ -76,31 +74,27 @@ export default function ParticipantDashboardPage() {
           ])
           if (eventRes.ok) {
             const je = await eventRes.json()
-            const rules = (je.event?.rules || {}) as any
-            setRoundsConfig(Array.isArray(rules.rounds) ? rules.rounds : [])
+            setRoundsConfig(Array.isArray(je.event?.rules?.rounds) ? je.event.rules.rounds : [])
           }
           if (compRes.ok) {
             const jc = await compRes.json()
             setCompletedRounds(Array.isArray(jc.completedRounds) ? jc.completedRounds : [])
           }
 
-          // fetch detailed completion rows for timestamps
           const allCompsRes = await fetch(`/api/events/${eventSlug}/round-completions`)
           if (allCompsRes.ok) {
             const ac = await allCompsRes.json()
             const rows = Array.isArray(ac.rows) ? ac.rows.filter((r: any) => r.participantId === data.participant.id) : []
             setParticipantCompletions(rows)
           }
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) { }
       } else {
         toast.error('Invalid access token')
         router.push(`/e/${eventSlug}`)
       }
     } catch (error) {
-      console.error('Failed to fetch participant data:', error)
-      toast.error('Failed to load dashboard')
+      console.error('Fetch error:', error)
+      toast.error('Connection failed')
     } finally {
       setLoading(false)
     }
@@ -123,17 +117,15 @@ export default function ParticipantDashboardPage() {
       })
 
       if (response.ok) {
-        toast.success('Profile updated!')
+        toast.success('Visual Identity Updated!')
         fetchParticipantData()
-      } else {
-        throw new Error('Update failed')
       }
     } catch (error) {
-      toast.error('Failed to update profile')
+      toast.error('Update failed')
     }
   }
 
-  const handleSaveTeamMembers = async () => {
+  const handleSaveProfileContent = async () => {
     try {
       const response = await fetch('/api/participant/profile', {
         method: 'PUT',
@@ -141,6 +133,7 @@ export default function ParticipantDashboardPage() {
         body: JSON.stringify({
           token,
           profile: {
+            ...participant?.profile,
             teamMembers,
             idea,
           },
@@ -148,319 +141,341 @@ export default function ParticipantDashboardPage() {
       })
 
       if (response.ok) {
-        toast.success('Team members updated!')
+        toast.success('Strategy Updated!')
         setEditing(false)
         fetchParticipantData()
-      } else {
-        throw new Error('Update failed')
       }
     } catch (error) {
-      toast.error('Failed to update team members')
+      toast.error('Save failed')
     }
   }
 
-  const addTeamMember = () => {
-    setTeamMembers([...teamMembers, ''])
-  }
-
-  const removeTeamMember = (index: number) => {
-    setTeamMembers(teamMembers.filter((_, i) => i !== index))
-  }
-
-  const updateTeamMember = (index: number, value: string) => {
-    const updated = [...teamMembers]
-    updated[index] = value
-    setTeamMembers(updated)
-  }
+  const brandPrimary = participant?.event?.brandColors?.primary || '#3b82f6'
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    )
-  }
-
-  if (!participant) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-          <p className="text-slate-400 mb-6">Invalid access token</p>
-          <Link href={`/e/${eventSlug}`} className="text-blue-400 hover:text-blue-300">
-            Back to Leaderboard
-          </Link>
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+          <div className="text-slate-500 font-mono text-[10px] tracking-widest uppercase animate-pulse">Initializing Participant Dashboard...</div>
         </div>
       </div>
     )
   }
 
-  const profile = participant.profile || {}
+  if (!participant) return null
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Participant Dashboard</h1>
-              <p className="text-slate-400 text-sm">{participant.event.name}</p>
+    <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-indigo-500/30 overflow-x-hidden">
+      <BroadcastTicker />
+
+      {/* Background Ambience */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div
+          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] opacity-10"
+          style={{ backgroundColor: brandPrimary }}
+        />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03] bg-center" />
+      </div>
+
+      <header className="sticky top-0 z-40 bg-[#020617]/50 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+              <Sparkles className="w-5 h-5 text-indigo-400" />
             </div>
+            <div>
+              <h1 className="text-xl font-black italic uppercase tracking-tighter text-white leading-none">Participant Dashboard</h1>
+              <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em] mt-1">{participant.event.name}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
             <Link
-              href={`/e/${eventSlug}`}
-              className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
+              href={`/e/${participant.event.slug}`}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-xs font-bold transition-all"
             >
-              Back to Leaderboard
+              <LayoutDashboard className="w-3.5 h-3.5" /> Public Board
             </Link>
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: `${participant.name} @ ${participant.event.name}`,
+                    url: window.location.href
+                  })
+                } else {
+                  navigator.clipboard.writeText(window.location.href)
+                  toast.success('Link copied to clipboard')
+                }
+              }}
+              className="p-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
+            >
+              <Share2 className="w-4 h-4 text-white" />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Overview Section */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-6">
-          <h2 className="text-xl font-bold text-white mb-4">Overview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-slate-700 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Current Rank</div>
-              <div className="text-3xl font-bold text-white">#{participant.rank}</div>
+      <main className="max-w-7xl mx-auto px-6 py-10 space-y-10 animate-fade-in">
+
+        {/* HERO STATS HUD */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="relative overflow-hidden glass-panel rounded-[2rem] p-8 border-white/10 group">
+            <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
+              <Trophy className="w-20 h-20 text-indigo-400" />
             </div>
-            <div className="bg-slate-700 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Total Score</div>
-              <div className="text-3xl font-bold text-blue-400">{participant.totalScore}</div>
-            </div>
-            <div className="bg-slate-700 rounded-lg p-4">
-              <div className="text-slate-400 text-sm mb-1">Type</div>
-              <div className="text-xl font-semibold text-white capitalize">{participant.kind}</div>
+            <div className="relative z-10 space-y-1">
+              <span className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase">Global Ranking</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-6xl font-black text-white italic tracking-tighter">#{participant.rank}</span>
+                <span className="text-sm font-bold text-slate-500 uppercase italic">Overall</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Rounds / Completion Status */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Rounds & Completion</h2>
-            {roundsConfig.length === 0 ? (
-              <div className="text-slate-400">No round configuration available.</div>
-            ) : (
-              <ul className="space-y-3">
-                  {roundsConfig.map((r: any, idx: number) => {
-                  const rn = idx + 1
-                  const completed = completedRounds.includes(rn)
-                  const detail = participantCompletions.find((c: any) => c.roundNumber === rn)
-                  return (
-                    <li key={idx} className="flex justify-between items-center bg-slate-700 p-3 rounded">
-                      <div>
-                        <div className="text-white font-semibold">{r.name || `Round ${rn}`}</div>
-                        <div className="text-slate-400 text-sm">Duration: {r.roundDurationMinutes ?? '-'} min</div>
+          <div className="relative overflow-hidden glass-panel rounded-[2rem] p-8 border-white/10 group">
+            <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
+              <Activity className="w-20 h-20 text-emerald-400" />
+            </div>
+            <div className="relative z-10 space-y-1">
+              <span className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase">Total Performance</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-6xl font-black text-white italic tracking-tighter">{participant.totalScore}</span>
+                <span className="text-sm font-bold text-slate-500 uppercase italic">PTS</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden glass-panel rounded-[2rem] p-8 border-white/10 group">
+            <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
+              <Target className="w-20 h-20 text-blue-400" />
+            </div>
+            <div className="relative z-10 space-y-1">
+              <span className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase">Class / Format</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-black text-white italic tracking-tighter uppercase truncate">{participant.kind}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-[10px] font-black font-mono text-blue-400 uppercase tracking-widest">Active Status</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+          {/* ROUND PROGRESSION */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.3em] uppercase italic">Event Logs</h3>
+              <div className="text-[10px] text-slate-600 font-mono italic">{completedRounds.length} / {roundsConfig.length} COMPLETED</div>
+            </div>
+
+            <div className="space-y-4">
+              {roundsConfig.map((r: any, idx: number) => {
+                const rn = idx + 1
+                const completed = completedRounds.includes(rn)
+                const detail = participantCompletions.find((c: any) => c.roundNumber === rn)
+                return (
+                  <div
+                    key={idx}
+                    className={`glass-panel p-6 rounded-3xl border transition-all duration-300 ${completed ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-white/5 bg-slate-900/40'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between gap-6">
+                      <div className="flex-grow">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-[10px] font-black font-mono px-2 py-0.5 bg-white/5 rounded text-slate-500">PHASE 0{rn}</span>
+                          <h4 className="font-black text-white uppercase italic tracking-tight">{r.name || `Round ${rn}`}</h4>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
+                          {r.roundDurationMinutes} MINUTE WINDOW
+                        </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-1">
                         {completed ? (
-                          <div className="text-green-400 font-semibold">Completed</div>
+                          <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Success</span>
+                          </div>
                         ) : (
-                          <div className="text-yellow-300">Not completed</div>
+                          <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Pending</span>
+                          </div>
                         )}
                         {detail && (
-                          <div className="text-slate-400 text-xs mt-1">{new Date(detail.completedAt).toLocaleString()} · {detail.durationSeconds ?? '-'}s</div>
-                        )}
-                        {detail && Array.isArray(detail.comments) && detail.comments.length > 0 && (
-                          <div className="text-slate-300 text-xs mt-2">
-                            <div className="font-semibold text-slate-200">Judge Comments</div>
-                            <ul className="mt-1 space-y-1">
-                              {detail.comments.map((c: any, i: number) => (
-                                <li key={i} className="text-slate-400">{(c.judgeUserId || 'judge')}: {c.comment || '—'}</li>
-                              ))}
-                            </ul>
-                          </div>
+                          <span className="text-[10px] font-mono text-slate-600">SIG@ {new Date(detail.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         )}
                       </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </div>
-          {/* Profile Section */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Profile</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  {participant.kind === 'team' ? 'Team Name' : 'Name'}
-                </label>
-                <div className="text-lg font-semibold text-white">{participant.name}</div>
-              </div>
+                    </div>
 
-              {/* Logo Upload */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  {participant.kind === 'team' ? 'Team Logo' : 'Photo'}
-                </label>
-                <BrandingUpload
-                  currentLogo={profile.logo || null}
-                  currentColors={profile.brandColors || null}
-                  onUpload={handleProfileUpdate}
-                  label={participant.kind === 'team' ? 'Team Logo' : 'Photo'}
-                />
-              </div>
-
-              {/* Team Members (only for teams) */}
-              {participant.kind === 'team' && (
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-sm font-medium text-slate-300">
-                      Team Members (Dashboard Only)
-                    </label>
-                    {!editing && (
-                      <button
-                        onClick={() => setEditing(true)}
-                        className="text-sm text-blue-400 hover:text-blue-300"
-                      >
-                        Edit
-                      </button>
+                    {detail && detail.comments && detail.comments.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+                          <span className="text-[10px] font-black font-mono text-indigo-400 uppercase tracking-widest">Feedback Intercepted</span>
+                        </div>
+                        <div className="space-y-2">
+                          {detail.comments.map((c: any, i: number) => (
+                            <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/5 italic text-sm text-slate-400 leading-relaxed">
+                              "{c.comment}"
+                              <div className="mt-2 text-[8px] font-mono text-slate-600 uppercase tracking-[0.2em]">{c.judgeUserId || 'JUDGE_01'} // FIELD_REPORT</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  
-                  {editing ? (
-                    <div className="space-y-2">
-                      {teamMembers.map((member, index) => (
-                        <div key={index} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={member}
-                            onChange={(e) => updateTeamMember(index, e.target.value)}
-                            className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
-                            placeholder="Member name"
-                          />
-                          <button
-                            onClick={() => removeTeamMember(index)}
-                            className="px-3 py-2 bg-red-600/20 text-red-400 rounded hover:bg-red-600/30"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={addTeamMember}
-                          className="px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white hover:bg-slate-600"
-                        >
-                          + Add Member
-                        </button>
-                        <button
-                          onClick={handleSaveTeamMembers}
-                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditing(false)
-                            fetchParticipantData()
-                          }}
-                          className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-500"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {teamMembers.length > 0 ? (
-                        teamMembers.map((member, index) => (
-                          <div key={index} className="px-3 py-2 bg-slate-700 rounded text-white">
-                            {member}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-slate-400 text-sm">No team members added yet</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Idea / Solution */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-slate-300">
-                    Idea / Solution (visible to judges)
-                  </label>
-                  <button
-                    onClick={handleSaveTeamMembers}
-                    className="text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    Save
-                  </button>
-                </div>
-                <textarea
-                  value={idea}
-                  onChange={(e) => setIdea(e.target.value)}
-                  placeholder="Briefly describe what you're presenting."
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white min-h-[100px]"
-                />
-              </div>
+                )
+              })}
             </div>
           </div>
 
-          {/* Event Details & Links */}
-          <div className="space-y-6">
-            {/* Event Details */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Event Details</h2>
-              <div className="space-y-3">
-                <div>
-                  <div className="text-sm text-slate-400">Event</div>
-                  <div className="text-white font-medium">{participant.event.name}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-slate-400">Organization</div>
-                  <div className="text-white">{participant.event.organization.name}</div>
-                </div>
-                {participant.event.description && (
-                  <div>
-                    <div className="text-sm text-slate-400">Description</div>
-                    <div className="text-white text-sm">{participant.event.description}</div>
+          {/* IDENTITY & PROFILE */}
+          <div className="space-y-8">
+            <div className="glass-panel p-10 rounded-[2.5rem] border-white/10 bg-gradient-to-br from-indigo-900/10 to-transparent">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.3em] uppercase italic">Participant Identity</h3>
+                <Settings className="w-4 h-4 text-slate-600" />
+              </div>
+
+              <div className="space-y-8">
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="relative group">
+                    <div className="absolute -inset-4 bg-indigo-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="relative">
+                      <BrandingUpload
+                        currentLogo={participant.profile?.logo || null}
+                        currentColors={participant.profile?.brandColors || null}
+                        onUpload={handleProfileUpdate}
+                        label={participant.kind === 'team' ? 'Team Insignia' : 'Identity Photo'}
+                      />
+                    </div>
                   </div>
-                )}
-                {participant.event.startAt && (
-                  <div>
-                    <div className="text-sm text-slate-400">Start Date</div>
-                    <div className="text-white text-sm">
-                      {new Date(participant.event.startAt).toLocaleString()}
+                  <div className="flex-grow text-center md:text-left">
+                    <div className="text-[10px] font-black font-mono text-indigo-400 uppercase mb-1">{participant.kind} REGISTERED</div>
+                    <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">{participant.name}</h2>
+                    <p className="text-xs text-slate-500 font-mono mt-2 truncate max-w-xs">{participant.event.organization.name} // AUTH_OK</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Strategy / Pitch</label>
+                    <button
+                      onClick={handleSaveProfileContent}
+                      className="text-[10px] font-black text-indigo-400 uppercase hover:underline"
+                    >
+                      Update Status
+                    </button>
+                  </div>
+                  <textarea
+                    value={idea}
+                    onChange={(e) => setIdea(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-slate-300 font-medium placeholder:text-slate-800 min-h-[140px] focus:border-indigo-500/30 outline-none transition-all resize-none italic"
+                    placeholder="Describe your solution or presentation focus..."
+                  />
+                </div>
+
+                {participant.kind === 'team' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Squad Roster</label>
+                      <button
+                        onClick={() => setEditing(!editing)}
+                        className={`text-[10px] font-black uppercase hover:underline ${editing ? 'text-emerald-400' : 'text-indigo-400'}`}
+                      >
+                        {editing ? 'FINALIZE' : 'MODIFY'}
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {editing ? (
+                        <>
+                          {teamMembers.map((m, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <input
+                                type="text"
+                                value={m}
+                                onChange={(e) => {
+                                  const n = [...teamMembers]
+                                  n[idx] = e.target.value
+                                  setTeamMembers(n)
+                                }}
+                                className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-indigo-500/30 outline-none"
+                                placeholder="Operator Name"
+                              />
+                              <button
+                                onClick={() => setTeamMembers(teamMembers.filter((_, i) => i !== idx))}
+                                className="px-4 py-3 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/10"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => setTeamMembers([...teamMembers, ''])}
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-dashed border-white/10 rounded-xl text-[10px] font-black font-mono text-slate-500 uppercase transition-all"
+                          >
+                            + Add Operator
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {teamMembers.length > 0 ? teamMembers.map((m, idx) => (
+                            <span key={idx} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-slate-300">
+                              {m}
+                            </span>
+                          )) : (
+                            <span className="text-xs text-slate-600 font-mono italic">NO REGISTERED OPERATORS</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Quick Links */}
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Quick Links</h2>
-              <div className="space-y-3">
-                <Link
-                  href={`/e/${eventSlug}`}
-                  className="block w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center font-medium transition-colors"
-                >
-                  View Leaderboard
-                </Link>
-                <Link
-                  href={`/e/${eventSlug}/stage`}
-                  className="block w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-center font-medium transition-colors"
-                >
-                  Stage Display
-                </Link>
+            <div className="glass-panel p-8 rounded-3xl border-white/5 bg-slate-900/40">
+              <h3 className="text-[10px] font-black font-mono text-slate-500 tracking-[0.2em] uppercase mb-4">Event Operations</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-[10px] text-slate-600 block uppercase font-mono">Org</span>
+                  <span className="text-sm font-bold text-white uppercase">{participant.event.organization.name}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-600 block uppercase font-mono">Start</span>
+                  <span className="text-sm font-bold text-white uppercase">{participant.event.startAt ? new Date(participant.event.startAt).toLocaleDateString() : 'TBD'}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </main>
+
+      <footer className="max-w-7xl mx-auto px-6 py-20 opacity-30">
+        <div className="flex items-center justify-center gap-4 text-[10px] font-black font-mono text-slate-600 uppercase tracking-[0.5em]">
+          <span>Secured Link</span>
+          <div className="w-1 h-1 rounded-full bg-slate-800" />
+          <span>Participant Console v{participant.rank}</span>
+          <div className="w-1 h-1 rounded-full bg-slate-800" />
+          <span>Ready for Sync</span>
+        </div>
+      </footer>
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
     </div>
   )
 }
-
-
-

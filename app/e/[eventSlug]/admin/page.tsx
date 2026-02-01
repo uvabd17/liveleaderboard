@@ -7,6 +7,10 @@ import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import { BrandingUpload } from '@/components/branding-upload'
+import { cn } from '@/lib/utils'
+import { AdminNavbar } from '@/components/ui/admin-navbar'
+import { PageLoading } from '@/components/loading-spinner'
+import { RefreshCw, CheckCircle2, Radio, Send } from 'lucide-react'
 
 interface Event {
   id: string
@@ -33,7 +37,7 @@ interface Participant {
   rank: number
 }
 
-type AdminTab = 'overview' | 'participants' | 'judges' | 'settings' | 'branding'
+type AdminTab = 'overview' | 'participants' | 'judges' | 'settings' | 'broadcast'
 
 export default function EventAdminPage() {
   const params = useParams()
@@ -59,6 +63,104 @@ export default function EventAdminPage() {
   const [roundCompletions, setRoundCompletions] = useState<Record<string, Set<number>>>({}) // participantId -> Set of completed round numbers
   const [selectedRoundFilter, setSelectedRoundFilter] = useState<number | null>(null)
   const [completionSort, setCompletionSort] = useState<'all' | 'completed' | 'incomplete'>('all')
+  const [showBulkImport, setShowBulkImport] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importPreview, setImportPreview] = useState<any[]>([])
+  const [endingEvent, setEndingEvent] = useState(false)
+  const [broadcastMessage, setBroadcastMessage] = useState('')
+  const [broadcastType, setBroadcastType] = useState<'info' | 'warning' | 'urgent'>('info')
+  const [broadcastSending, setBroadcastSending] = useState(false)
+  const [broadcastHistory, setBroadcastHistory] = useState<Array<{ message: string; type: string; timestamp: number }>>([])
+  const [showClosureSuggestion, setShowClosureSuggestion] = useState(false)
+  const [closureDismissed, setClosureDismissed] = useState(false)
+
+  // Check if all rounds are complete based on SCORING, not just timers
+  const checkEventReadyToClose = (participantsCount: number, totalRounds: number, completions: Record<string, Set<number>>) => {
+    if (!participantsCount || !totalRounds || features?.isEnded || closureDismissed) return false
+    let totalCompletions = 0
+    Object.values(completions).forEach(rounds => { totalCompletions += rounds.size })
+    const expectedCompletions = participantsCount * totalRounds
+    return totalCompletions >= expectedCompletions
+  }
+
+  // Check completion status whenever roundCompletions, participants, or rules change
+  useEffect(() => {
+    const totalRounds = Array.isArray(rules?.rounds) ? rules.rounds.length : 0
+    const participantsCount = participants.length
+    if (checkEventReadyToClose(participantsCount, totalRounds, roundCompletions)) {
+      setShowClosureSuggestion(true)
+    }
+  }, [roundCompletions, participants, rules, features?.isEnded, closureDismissed])
+
+  const sendBroadcast = async () => {
+    if (!broadcastMessage.trim()) return
+    setBroadcastSending(true)
+    try {
+      const res = await fetch('/api/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventSlug, message: broadcastMessage.trim(), type: broadcastType })
+      })
+      if (!res.ok) throw new Error('Failed to send broadcast')
+      setBroadcastHistory(prev => [
+        { message: broadcastMessage.trim(), type: broadcastType, timestamp: Date.now() },
+        ...prev.slice(0, 9)
+      ])
+      setBroadcastMessage('')
+      toast.success('Broadcast sent!')
+    } catch (err) {
+      toast.error('Failed to send broadcast')
+    } finally {
+      setBroadcastSending(false)
+    }
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const text = event.target?.result as string
+      const lines = text.split('\n')
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+      const data = lines.slice(1).filter(l => l.trim()).map(line => {
+        const values = line.split(',').map(v => v.trim())
+        const obj: any = {}
+        headers.forEach((h, i) => { obj[h] = values[i] })
+        return {
+          name: obj.name || obj.participant || obj.team || '',
+          kind: (obj.kind || obj.type || 'team').toLowerCase().includes('indiv') ? 'individual' : 'team'
+        }
+      }).filter(p => p.name)
+      setImportPreview(data)
+    }
+    reader.readAsText(file)
+  }
+
+  const handleBulkImport = async () => {
+    if (!importPreview.length || !event?.id) return
+    setImporting(true)
+    try {
+      const res = await fetch('/api/admin/participants/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: event.id, participants: importPreview })
+      })
+      if (res.ok) {
+        toast.success(`Imported ${importPreview.length} participants`)
+        setShowBulkImport(false)
+        setImportPreview([])
+        fetchEventData()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Import failed')
+      }
+    } catch (err) {
+      toast.error('Connection error')
+    } finally {
+      setImporting(false)
+    }
+  }
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -227,11 +329,7 @@ export default function EventAdminPage() {
   }
 
   if (loading || status === 'loading') {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    )
+    return <PageLoading message="Event Admin" submessage="Loading event configuration..." />
   }
 
   if (!event) {
@@ -253,8 +351,8 @@ export default function EventAdminPage() {
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'participants', label: 'Participants', icon: '👥' },
     { id: 'judges', label: 'Judges', icon: '⚖️' },
+    { id: 'broadcast', label: 'Broadcast', icon: '📢' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
-    { id: 'branding', label: 'Branding', icon: '🎨' },
   ]
 
   return (
@@ -265,45 +363,71 @@ export default function EventAdminPage() {
         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
       </div>
 
-      {/* Header */}
-      <header className="glass-panel border-b border-white/5 sticky top-0 z-40 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Link href="/dashboard" className="text-slate-400 hover:text-white">
-                  ← Dashboard
-                </Link>
-                <span className="text-slate-600">/</span>
-                <span className="text-white font-medium">{event.name}</span>
-              </div>
-              <p className="text-sm text-slate-400">{event.organization.name}</p>
-            </div>
-            <Link
-              href={`/e/${eventSlug}`}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              target="_blank"
-            >
-              View Public Page →
-            </Link>
-          </div>
-        </div>
-      </header>
+      <AdminNavbar eventSlug={eventSlug} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24 relative z-10">
+        {/* Event Closure Suggestion Banner */}
+        {showClosureSuggestion && !features?.isEnded && (
+          <div className="mb-6 p-6 bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 rounded-3xl backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+                  <span className="text-2xl">🏁</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">All Rounds Complete!</h3>
+                  <p className="text-sm text-slate-400">Your event appears ready to be finalized. Would you like to end the event?</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setClosureDismissed(true); setShowClosureSuggestion(false) }}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-slate-300 rounded-xl text-sm font-medium"
+                >
+                  Not Yet
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm('End this event? This will show final results on all displays.')) return
+                    setEndingEvent(true)
+                    try {
+                      const res = await fetch(`/api/events/${eventSlug}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ features: { ...features, isEnded: true } })
+                      })
+                      if (res.ok) {
+                        toast.success('Event Ended!')
+                        setShowClosureSuggestion(false)
+                        fetchEventData()
+                      } else { toast.error('Failed to end event') }
+                    } catch (e) { toast.error('Connection error') } finally { setEndingEvent(false) }
+                  }}
+                  disabled={endingEvent}
+                  className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white rounded-xl text-sm font-bold flex items-center gap-2"
+                >
+                  {endingEvent ? <><RefreshCw className="w-4 h-4 animate-spin" />Ending...</> : <><CheckCircle2 className="w-4 h-4" />End Event</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tab Navigation */}
-        <div className="glass-panel mb-6">
-          <div className="flex border-b border-slate-700 overflow-x-auto">
+        <div className="glass-panel mb-6 rounded-3xl overflow-hidden border-white/5">
+          <div className="flex px-2 py-1.5 overflow-x-auto gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-4 font-medium transition-colors whitespace-nowrap border-b-2 ${activeTab === tab.id
-                  ? 'border-blue-500 text-blue-400 bg-blue-500/10'
-                  : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
+                className={cn(
+                  "px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2",
+                  activeTab === tab.id
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                )}
               >
-                <span className="mr-2">{tab.icon}</span>
+                <span className="opacity-70">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -662,44 +786,186 @@ export default function EventAdminPage() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <div className="glass-panel p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Event Settings</h2>
-              <p className="text-slate-400 text-sm mb-4">
-                Configure rounds, timers, judging locks, and elimination controls here. These replace the old round control center and keep everything in one place.
-              </p>
-              <div className="space-y-4">
-                <Link
-                  href={`/e/${eventSlug}/admin/settings`}
-                  className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
-                >
-                  <div className="font-semibold text-white mb-1">⚙️ Advanced Settings</div>
-                  <div className="text-sm text-slate-400">Configure rounds, judging modes, and advanced features</div>
-                </Link>
-                <Link
-                  href={`/e/${eventSlug}/admin/rubric`}
-                  className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
-                >
-                  <div className="font-semibold text-white mb-1">📋 Scoring Rubric</div>
-                  <div className="text-sm text-slate-400">Edit scoring criteria and weights</div>
-                </Link>
+            <div className="space-y-6">
+              <div className="glass-panel p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Event Settings</h2>
+                <p className="text-slate-400 text-sm mb-4">
+                  Configure rounds, timers, judging locks, and elimination controls.
+                </p>
+                <div className="space-y-4">
+                  <Link
+                    href={`/e/${eventSlug}/stage`}
+                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                  >
+                    <div className="font-semibold text-white mb-1">📺 Live Display</div>
+                    <div className="text-sm text-slate-400">View the public live display for this event</div>
+                  </Link>
+                  <Link
+                    href={`/e/${eventSlug}/admin/settings`}
+                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                  >
+                    <div className="font-semibold text-white mb-1">⚙️ Advanced Settings</div>
+                    <div className="text-sm text-slate-400">Configure rounds, judging modes, and advanced features</div>
+                  </Link>
+                  <Link
+                    href={`/e/${eventSlug}/admin/rubric`}
+                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                  >
+                    <div className="font-semibold text-white mb-1">📋 Scoring Rubric</div>
+                    <div className="text-sm text-slate-400">Edit scoring criteria and weights</div>
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Are you sure you want to ' + (features?.isEnded ? 'reopen' : 'end') + ' this event?')) return
+                      setEndingEvent(true)
+                      try {
+                        const res = await fetch(`/api/events/${eventSlug}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ features: { ...features, isEnded: !features?.isEnded } })
+                        })
+                        if (res.ok) {
+                          toast.success(features?.isEnded ? 'Event Reopened' : 'Event Ended')
+                          fetchEventData()
+                        } else { toast.error('Failed to update event') }
+                      } catch (e) { toast.error('Connection error') } finally { setEndingEvent(false) }
+                    }}
+                    disabled={endingEvent}
+                    className={`w-full p-4 rounded-lg transition-colors text-left border ${
+                      features?.isEnded 
+                        ? 'bg-emerald-600/10 hover:bg-emerald-600/20 border-emerald-600/20' 
+                        : 'bg-rose-600/10 hover:bg-rose-600/20 border-rose-600/20'
+                    }`}
+                  >
+                    <div className={`font-semibold mb-1 ${features?.isEnded ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {features?.isEnded ? '🟢 Reopen Event' : '🛑 End Event'}
+                    </div>
+                    <div className={`text-sm ${features?.isEnded ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
+                      {features?.isEnded ? 'Resume the event and hide final results' : 'Close the event and display final results'}
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Event Branding Section (consolidated from old Branding tab) */}
+              <div className="glass-panel p-6">
+                <h2 className="text-xl font-bold text-white mb-4">🎨 Event Branding</h2>
+                <p className="text-slate-400 mb-6">
+                  Upload a logo and customize your event's branding. Colors will be automatically extracted from your logo.
+                </p>
+                <BrandingUpload
+                  currentLogo={event.logoUrl || null}
+                  currentColors={event.brandColors || null}
+                  onUpload={handleBrandingUpload}
+                  onRemove={handleBrandingRemove}
+                  label="Event Logo"
+                />
               </div>
             </div>
           )}
 
-          {/* Branding Tab */}
-          {activeTab === 'branding' && (
-            <div className="glass-panel p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Event Branding</h2>
-              <p className="text-slate-400 mb-6">
-                Upload a logo and customize your event's branding. Colors will be automatically extracted from your logo.
-              </p>
-              <BrandingUpload
-                currentLogo={event.logoUrl || null}
-                currentColors={event.brandColors || null}
-                onUpload={handleBrandingUpload}
-                onRemove={handleBrandingRemove}
-                label="Event Logo"
-              />
+          {/* Broadcast Tab */}
+          {activeTab === 'broadcast' && (
+            <div className="space-y-6">
+              <div className="glass-panel p-8 border-white/5">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
+                    <Radio className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Broadcast Center</h2>
+                    <p className="text-sm text-slate-500">Send real-time announcements to all displays</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Message Type */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Message Type</label>
+                    <div className="flex gap-3">
+                      {[
+                        { type: 'info' as const, label: 'Info', icon: '📢', color: 'blue' },
+                        { type: 'warning' as const, label: 'Warning', icon: '⚠️', color: 'amber' },
+                        { type: 'urgent' as const, label: 'Urgent', icon: '🚨', color: 'rose' }
+                      ].map((opt) => (
+                        <button
+                          key={opt.type}
+                          onClick={() => setBroadcastType(opt.type)}
+                          className={cn(
+                            "flex-1 p-4 rounded-2xl border transition-all flex items-center justify-center gap-3",
+                            broadcastType === opt.type
+                              ? opt.color === 'blue' ? 'bg-blue-600/20 border-blue-500/50 text-blue-400'
+                                : opt.color === 'amber' ? 'bg-amber-600/20 border-amber-500/50 text-amber-400'
+                                : 'bg-rose-600/20 border-rose-500/50 text-rose-400'
+                              : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                          )}
+                        >
+                          <span className="text-xl">{opt.icon}</span>
+                          <span className="text-xs font-bold uppercase tracking-widest">{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Message Input */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Message</label>
+                    <textarea
+                      value={broadcastMessage}
+                      onChange={(e) => setBroadcastMessage(e.target.value)}
+                      placeholder="Type your announcement message..."
+                      className="w-full h-32 p-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-slate-600 resize-none focus:outline-none focus:border-blue-500/50"
+                      maxLength={200}
+                    />
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-slate-600">{broadcastMessage.length}/200 characters</span>
+                    </div>
+                  </div>
+
+                  {/* Send Button */}
+                  <button
+                    onClick={sendBroadcast}
+                    disabled={!broadcastMessage.trim() || broadcastSending}
+                    className={cn(
+                      "w-full py-4 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3",
+                      broadcastMessage.trim()
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white"
+                        : "bg-white/5 text-slate-600 cursor-not-allowed"
+                    )}
+                  >
+                    <Send className="w-4 h-4" />
+                    {broadcastSending ? 'Sending...' : 'Send Broadcast'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Broadcast History */}
+              {broadcastHistory.length > 0 && (
+                <div className="glass-panel p-6 border-white/5">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Recent Broadcasts</h3>
+                  <div className="space-y-3">
+                    {broadcastHistory.map((item, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "p-4 rounded-xl border flex items-start gap-4",
+                          item.type === 'info' ? 'bg-blue-600/10 border-blue-500/20' :
+                          item.type === 'warning' ? 'bg-amber-600/10 border-amber-500/20' :
+                          'bg-rose-600/10 border-rose-500/20'
+                        )}
+                      >
+                        <span className="text-lg">
+                          {item.type === 'info' ? '📢' : item.type === 'warning' ? '⚠️' : '🚨'}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium">{item.message}</p>
+                          <span className="text-xs text-slate-500">{new Date(item.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

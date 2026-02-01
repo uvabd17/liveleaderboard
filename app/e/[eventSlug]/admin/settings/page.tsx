@@ -26,6 +26,7 @@ import {
   Palette
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { extractColorsFromImage } from '@/lib/color-extraction'
 
 // --- Types ---
 
@@ -67,6 +68,7 @@ type EventRules = {
   }
   settings?: EventSettings
   leaderboardMode?: string
+  tieBreakerRule?: 'speed' | 'consistency' | 'max-points' | 'alphabetical'
 }
 
 type FeatureOption = {
@@ -329,6 +331,14 @@ export default function EventSettingsPage() {
         setLogoPreview(data.url)
         setHasChanges(true)
         toast.success('Logo uploaded')
+
+        // Dynamic Branding: Extract colors
+        try {
+          const colors = await extractColorsFromImage(data.url)
+          setRules(prev => ({ ...prev, brandColors: colors }))
+        } catch (e) {
+          console.error('Color extraction failed', e)
+        }
       }
     } catch {
       toast.error('Upload failed')
@@ -350,6 +360,13 @@ export default function EventSettingsPage() {
     const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
     setLogoPreview(dataUrl)
     setHasChanges(true)
+
+    // Dynamic Branding: Extract colors from preset
+    try {
+      extractColorsFromImage(dataUrl).then(colors => {
+        setRules(prev => ({ ...prev, brandColors: colors }))
+      })
+    } catch (e) { }
   }
 
   if (loading) return (
@@ -547,6 +564,41 @@ export default function EventSettingsPage() {
                 </GlassCard>
               ))}
             </div>
+
+            <GlassCard title="Leaderboard Rules" icon={<Target className="w-5 h-5" />}>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Tie-Breaking Protocol</label>
+                  <p className="text-xs text-slate-500 mb-4">How should the engine resolve identical total scores?</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { id: 'alphabetical', label: 'Alphabetical', desc: 'Sort by name (default)' },
+                      { id: 'speed', label: 'Speed / Time', desc: 'Fastest cumulative duration' },
+                      { id: 'max-points', label: 'Max Points', desc: 'Who has more maximum score criteria' },
+                      { id: 'consistency', label: 'Consistency', desc: 'Lowest variance between judge scores' },
+                    ].map((rule) => (
+                      <button
+                        key={rule.id}
+                        type="button"
+                        onClick={() => {
+                          setRules(p => ({ ...p, tieBreakerRule: rule.id as any }))
+                          setHasChanges(true)
+                        }}
+                        className={cn(
+                          "flex flex-col items-start p-4 rounded-xl border text-left transition-all",
+                          rules.tieBreakerRule === rule.id
+                            ? "bg-blue-600/10 border-blue-500 text-white"
+                            : "bg-slate-950/30 border-white/5 text-slate-400 hover:border-white/10"
+                        )}
+                      >
+                        <span className="text-sm font-bold uppercase tracking-widest">{rule.label}</span>
+                        <span className="text-[10px] opacity-60 mt-1">{rule.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
 
             {features.timedRounds && (
               <GlassCard title="Timer Configuration" icon={<Timer className="w-5 h-5 font-bold" />}>

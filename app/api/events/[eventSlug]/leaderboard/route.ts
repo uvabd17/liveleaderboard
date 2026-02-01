@@ -17,7 +17,7 @@ export async function GET(
     const size = Number(url.searchParams.get('size') || '200')
 
     // Fetch event rules early so cache key includes leaderboard mode and to avoid duplicate event fetches
-    const evtFull = await db.event.findUnique({ where: { slug: eventSlug }, select: { id: true, rules: true, currentRound: true, name: true, slug: true, logoUrl: true, brandColors: true, organization: { select: { name: true } } } })
+    const evtFull = await db.event.findUnique({ where: { slug: eventSlug }, select: { id: true, rules: true, features: true, currentRound: true, name: true, slug: true, logoUrl: true, brandColors: true, organization: { select: { name: true } } } })
     const rules = (evtFull?.rules || {}) as any
     const mode = (rules && rules.leaderboardMode) || 'score'
 
@@ -56,8 +56,13 @@ export async function GET(
         momentum: 0
       }))
 
+      const tieBreaker = (rules && rules.tieBreakerRule) || 'alphabetical'
+
       const durationMap: Record<string, number> = {}
-      if (mode === 'speed+score') {
+      const maxPointsMap: Record<string, number> = {}
+      const varianceMap: Record<string, number> = {}
+
+      if (tieBreaker === 'speed' || mode === 'speed+score') {
         const currentRound = Number(evtFull?.currentRound ?? 0)
         const completions = await db.roundCompletion.findMany({ where: { eventId: event.id }, select: { participantId: true, roundNumber: true, durationSeconds: true } })
         for (const c of completions) {
@@ -65,13 +70,63 @@ export async function GET(
           if (c.roundNumber > currentRound) continue
           durationMap[c.participantId] = (durationMap[c.participantId] || 0) + (c.durationSeconds || 0)
         }
-        normalizedParticipants.sort((a, b) => {
-          if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
+      }
+
+      if (tieBreaker === 'max-points' || tieBreaker === 'consistency') {
+        const allScores = await db.score.findMany({
+          where: { eventId: event.id },
+          select: { participantId: true, value: true }
+        })
+
+        if (tieBreaker === 'max-points') {
+          // Count how many times they got >= 90% of max points (simplified as just high scores)
+          for (const s of allScores) {
+            if (s.value >= 9) { // Assuming 10 is max or just tracking "high" scores
+              maxPointsMap[s.participantId] = (maxPointsMap[s.participantId] || 0) + 1
+            }
+          }
+        }
+
+        if (tieBreaker === 'consistency') {
+          const participantScores: Record<string, number[]> = {}
+          for (const s of allScores) {
+            if (!participantScores[s.participantId]) participantScores[s.participantId] = []
+            participantScores[s.participantId].push(s.value)
+          }
+          for (const pId in participantScores) {
+            const vals = participantScores[pId]
+            if (vals.length < 2) {
+              varianceMap[pId] = 0
+              continue
+            }
+            const avg = vals.reduce((a, b) => a + b, 0) / vals.length
+            const variance = vals.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / vals.length
+            varianceMap[pId] = variance
+          }
+        }
+      }
+
+      normalizedParticipants.sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
+
+        if (tieBreaker === 'speed' || mode === 'speed+score') {
           const da = durationMap[a.id] || Infinity
           const dbv = durationMap[b.id] || Infinity
           return da - dbv
-        })
-      }
+        }
+
+        if (tieBreaker === 'max-points') {
+          return (maxPointsMap[b.id] || 0) - (maxPointsMap[a.id] || 0)
+        }
+
+        if (tieBreaker === 'consistency') {
+          // Lower variance = more consistent
+          return (varianceMap[a.id] || 0) - (varianceMap[b.id] || 0)
+        }
+
+        // Default: Alphabetical
+        return a.name.localeCompare(b.name)
+      })
 
       const pageItems = normalizedParticipants.map((p: any, i: number) => ({ ...p, rank: (page - 1) * size + i + 1 }))
       return { event, participants: pageItems, total }

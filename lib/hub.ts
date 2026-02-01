@@ -25,64 +25,83 @@ type RegisterToken = { token: string; createdAt: number; used: boolean }
 type Hub = {
   state: LeaderboardState
   subscribers: Map<string, Subscriber>
+  tokens: Map<string, RegisterToken>
   _coalesce?: Map<string, any>
+  _lastSnapshot?: string
+
   subscribe: (send: (payload: any) => void, close: () => void, eventSlug?: string) => () => void
-  broadcast: (event: string, data: any) => void
+  broadcast: (event: string, data: any, fromRemote?: boolean) => void
   broadcastRoundChange: (data: any) => void
   seed: () => void
   loadFromDbIfEmpty: () => Promise<void>
+
   upsertParticipant: (p: Participant) => void
+  _upsertLocalParticipant: (p: Participant) => void
+
   updateScore: (id: string, delta: number) => void
+  _updateLocalScore: (id: string, delta: number) => void
+
   getSorted: () => Participant[]
   getRanks: () => Map<string, number>
   getSnapshot: (topN?: number, eventSlug?: string) => { type: 'snapshot'; leaderboard: Array<Participant & { rank: number }> }
   createRegisterToken: () => RegisterToken
   registerWithToken: (token: string, name: string, kind: 'team' | 'individual') => Participant | null
-  tokens: Map<string, RegisterToken>
 }
+
 
 const TOP_N = Number(process.env.HUB_TOP_N) || 20
 const DEBOUNCE_MS = Number(process.env.HUB_DEBOUNCE_MS) || 75
-// keep behavior simple: debounce only
+const INSTANCE_ID = process.env.HUB_INSTANCE_ID || makeId('ins')
+
 let redisPub: any = null
 let redisSub: any = null
-const INSTANCE_ID = process.env.HUB_INSTANCE_ID || makeId('ins')
+
+// Setup Redis if available
 try {
   if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
-    // eslint-disable-next-line no-console
-    console.warn('[hub] WARNING: REDIS_URL not set in production. Using in-memory hub, which is NOT scalable!')
+    console.warn('[hub] WARNING: REDIS_URL not set in production. Using in-memory hub (non-scalable).')
   }
-  if (process.env.REDIS_URL) {
+  if (process.env.REDIS_URL && process.env.NEXT_PHASE !== 'phase-production-build') {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const IORedis = require('ioredis')
     const redisOptions = {
       maxRetriesPerRequest: 0,
-      retryStrategy: () => null,
+      retryStrategy: (times: number) => Math.min(times * 50, 2000),
       connectTimeout: 2000,
     }
     redisPub = new IORedis(process.env.REDIS_URL, redisOptions)
     redisSub = new IORedis(process.env.REDIS_URL, redisOptions)
-    // prevent uncaught error events during build/start when Redis is not available
+
     redisPub.on('error', () => { })
     redisSub.on('error', () => { })
-    redisSub.subscribe('hub:pub')
+
+    redisSub.subscribe('hub:sync')
     redisSub.on('message', (ch: string, msg: string) => {
       try {
-        const parsed = JSON.parse(msg)
-        if (parsed && parsed.instanceId === INSTANCE_ID) return
-        // forward published event to local subscribers
-        try { (g.__LEADERBOARD_HUB__ as any)?.broadcast(parsed.type, parsed) } catch { }
+        const payload = JSON.parse(msg)
+        if (payload && payload.instanceId === INSTANCE_ID) return
+
+        // Handle State Sync Commands (Update local state, triggering local broadcast)
+        if (payload.type === 'SYNC:SCORE') {
+          (g.__LEADERBOARD_HUB__ as any)?._updateLocalScore(payload.id, payload.delta)
+        } else if (payload.type === 'SYNC:PARTICIPANT') {
+          // preserve createdAt if remote has it
+          (g.__LEADERBOARD_HUB__ as any)?._upsertLocalParticipant(payload.participant)
+        } else {
+          // Forward other control events (round-change, etc) to local subscribers
+          // BUT ignore leaderboard/snapshot payloads to avoid double-processing
+          if (payload.type !== 'leaderboard' && payload.type !== 'snapshot') {
+            (g.__LEADERBOARD_HUB__ as any)?.broadcast(payload.type, payload, true) // true = fromRemote
+          }
+        }
       } catch (e) { }
     })
   }
-} catch (e) {
-  // ignore missing redis
-}
+} catch (e) { }
 
 function rank(participants: Participant[]): Array<Participant & { rank: number }> {
   const sorted = [...participants].sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score
-    // tie-breaker: earlier created wins, then lexicographic name
     if (a.createdAt !== b.createdAt) return a.createdAt - b.createdAt
     return a.name.localeCompare(b.name)
   })
@@ -110,178 +129,159 @@ if (!g.__LEADERBOARD_HUB__) {
     state: { participants: new Map(), lastRanks: new Map() },
     subscribers: new Map(),
     tokens: new Map(),
+
     subscribe(send, close, eventSlug?: string) {
       const id = makeId('sub')
       const sub: Subscriber = { id, send, close, eventSlug } as any
       this.subscribers.set(id, sub)
-      // send initial snapshot (include eventSlug so clients can filter)
+      // Send initial snapshot immediately
       try {
         const snap = hub.getSnapshot(TOP_N, eventSlug)
         send({ ...snap, eventSlug: eventSlug ?? null })
-      } catch (err) {
-        try { send(hub.getSnapshot()) } catch { }
-      }
+      } catch (err) { }
       return () => {
-        const s = this.subscribers.get(id)
-        if (s) {
-          this.subscribers.delete(id)
-        }
+        if (this.subscribers.has(id)) this.subscribers.delete(id)
       }
     },
-    // pending broadcasts keyed by eventSlug (null for global)
-    broadcast(event, data) {
-      // For leaderboard events, debounce and trim to TOP_N to reduce payloads
-      if (event === 'leaderboard') {
-        try {
-          const key = data?.eventSlug ?? '__all__'
-          const map = (this as any)._pendingBroadcasts || new Map()
-          map.set(key, { event, data })
-            ; (this as any)._pendingBroadcasts = map
-          if (!map.get(key)._timer) {
-            map.get(key)._timer = (globalThis as any).setTimeout(() => {
-              try {
-                const item = map.get(key)
-                map.delete(key)
-                if (!item) return
-                const payload = { type: item.event, ...item.data }
-                // trim leaderboard if present
-                if (Array.isArray(payload.leaderboard)) {
-                  payload.leaderboard = payload.leaderboard.slice(0, TOP_N)
-                }
-                for (const s of this.subscribers.values()) {
-                  if ((s as any).eventSlug && payload.eventSlug && (s as any).eventSlug !== payload.eventSlug) continue
-                  try { s.send(payload) } catch { }
-                }
-                // publish to redis so other instances receive this leaderboard update
-                try {
-                  if (redisPub && payload.instanceId !== INSTANCE_ID) {
-                    const pub = { ...payload, instanceId: INSTANCE_ID }
-                    redisPub.publish('hub:pub', JSON.stringify(pub)).catch(() => { })
-                  }
-                } catch (e) { }
-              } catch (err) {
-                // ignore
-              }
-            }, DEBOUNCE_MS)
-          }
-        } catch (err) {
-          // fallback immediate send
-          const payload = { type: event, ...data }
-          for (const s of this.subscribers.values()) {
-            if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) continue
-            try { s.send(payload) } catch { }
-          }
-        }
-        return
+
+    // Broadcast to LOCAL subscribers
+    broadcast(event, data, fromRemote = false) {
+      const payload = { type: event, ...data }
+
+      // If this is a control event generated locally, publish to Redis so others see it
+      if (!fromRemote && redisPub && event !== 'leaderboard' && event !== 'snapshot') {
+        redisPub.publish('hub:sync', JSON.stringify({ ...payload, instanceId: INSTANCE_ID })).catch(() => { })
       }
 
-      const payload = { type: event, ...data }
       for (const s of this.subscribers.values()) {
-        // Filter by eventSlug if present
-        if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) {
-          continue
-        }
+        if ((s as any).eventSlug && data.eventSlug && (s as any).eventSlug !== data.eventSlug) continue
         try { s.send(payload) } catch { }
       }
-      // publish generic events too so other instances can forward
-      try {
-        if (redisPub && (data as any)?.instanceId !== INSTANCE_ID) {
-          const pub = { ...payload, instanceId: INSTANCE_ID }
-          redisPub.publish('hub:pub', JSON.stringify(pub)).catch(() => { })
-        }
-      } catch (e) { }
     },
+
     broadcastRoundChange(data) {
-      // Use generic broadcast so event-scoped filtering applies
       this.broadcast('round-change', data)
     },
+
     seed() {
-      if (this.state.participants.size > 0) return
-      if (process.env.DATABASE_URL) return
+      if (this.state.participants.size > 0 || process.env.DATABASE_URL) return
       const now = Date.now()
       const initial = [
         { id: makeId('t'), name: 'Alpha Team', score: 42, kind: 'team' as const },
         { id: makeId('t'), name: 'Beta Builders', score: 36, kind: 'team' as const },
         { id: makeId('i'), name: 'Charlie', score: 30, kind: 'individual' as const },
-        { id: makeId('t'), name: 'Delta Devs', score: 28, kind: 'team' as const },
       ]
-      for (const p of initial) this.upsertParticipant({ ...p, createdAt: now + Math.floor(Math.random() * 1000) })
+      for (const p of initial) this.upsertParticipant({ ...p, createdAt: now })
     },
+
     async loadFromDbIfEmpty() {
       if (this.state.participants.size > 0) return
       try {
         const { prisma } = await import('./db')
-        const evt = await prisma.event.findUnique({ where: { slug: 'demo-event' } })
-        if (!evt) return
-        const rows = await prisma.participant.findMany({ where: { eventId: evt.id }, orderBy: { createdAt: 'asc' } })
+        // Load ALL participants into memory (scalable up to ~50k in serverless memory limits)
+        const rows = await prisma.participant.findMany({
+          select: { id: true, name: true, totalScore: true, kind: true, createdAt: true, eventId: true }
+        })
         const now = Date.now()
         for (const r of rows) {
           const p: Participant = {
             id: r.id,
             name: r.name,
-            score: 0,
-            kind: (r as any).kind === 'team' ? 'team' : 'individual',
-            createdAt: (r as any).createdAt ? new Date((r as any).createdAt).getTime() : now,
+            score: r.totalScore,
+            kind: r.kind as any,
+            createdAt: r.createdAt ? new Date(r.createdAt).getTime() : now,
           }
-          this.upsertParticipant(p)
+          this._upsertLocalParticipant(p)
         }
-      } catch {
-        // ignore if prisma/db not available
+      } catch { }
+    },
+
+    // Public Method: Updates local state AND publishes sync command
+    upsertParticipant(p) {
+      this._upsertLocalParticipant(p)
+      if (redisPub) {
+        redisPub.publish('hub:sync', JSON.stringify({
+          type: 'SYNC:PARTICIPANT',
+          participant: p,
+          instanceId: INSTANCE_ID
+        })).catch(() => { })
       }
     },
-    upsertParticipant(p) {
+
+    // Internal Method: Update logic without publishing
+    _upsertLocalParticipant(p: Participant) {
       this.state.participants.set(p.id, p)
-      // update ranks cache
       const ranked = rank(Array.from(this.state.participants.values()))
       this.state.lastRanks = new Map(ranked.map(r => [r.id, r.rank]))
-      // trim to TOP_N for snapshots
+
       const trimmed = ranked.slice(0, TOP_N)
       const current = JSON.stringify(trimmed)
       if ((this as any)._lastSnapshot !== current) {
         (this as any)._lastSnapshot = current
-        this.broadcast('snapshot', { leaderboard: trimmed })
+        this.broadcast('snapshot', { leaderboard: trimmed }, true) // "fromRemote=true" prevents re-publish
       }
     },
-    // coalescing map to group rapid updates per participant
+
+    // Coalescing map for debounce
     _coalesce: new Map(),
+
+    // Public Method: Update score
     updateScore(id, delta) {
+      this._updateLocalScore(id, delta)
+      if (redisPub) {
+        redisPub.publish('hub:sync', JSON.stringify({
+          type: 'SYNC:SCORE',
+          id,
+          delta,
+          instanceId: INSTANCE_ID
+        })).catch(() => { })
+      }
+    },
+
+    // Internal Method
+    _updateLocalScore(id: string, delta: number) {
       const p = this.state.participants.get(id)
       if (!p) return
-      // apply delta immediately to in-memory participant
       p.score = Math.max(0, p.score + delta)
       this.state.participants.set(id, p)
 
-      // schedule a coalesced broadcast for this participant
       const existing = (this as any)._coalesce.get(id)
-      if (existing && existing.timer) {
-        ; (globalThis as any).clearTimeout(existing.timer)
-      }
+      if (existing && existing.timer) clearTimeout(existing.timer)
 
-      const windowMs = 50
-      var tmr: any = (globalThis as any).setTimeout(() => {
+      // Debounce the recalculation and broadcast
+      const tmr = setTimeout(() => {
         try {
-          // compute ranks once when the coalesce window fires
           const before = this.state.lastRanks
           const ranked = rank(Array.from(this.state.participants.values()))
           const after = new Map(ranked.map(r => [r.id, r.rank]))
           this.state.lastRanks = after
-          const movers = ranked.filter(r => before.get(r.id) !== r.rank).map(r => ({ id: r.id, from: before.get(r.id) ?? r.rank, to: r.rank }))
-          if (movers.length > 0) {
-            this.broadcast('leaderboard', { leaderboard: ranked, movers })
-          }
-        } catch (err) {
-          // ignore
-        } finally {
-          (this as any)._coalesce.delete(id)
-        }
-      }, windowMs)
 
-        (this as any)._coalesce.set(id, { timer: tmr })
+          const movers = ranked.filter(r => before.get(r.id) !== r.rank)
+            .map(r => ({ id: r.id, from: before.get(r.id) ?? r.rank, to: r.rank }))
+
+          // Broadcast to local clients. Mark as "fromRemote" so we don't try to publish 'leaderboard' to Redis
+          // (We rely on SYNC:SCORE for that)
+          if (movers.length > 0 || delta !== 0) {
+            const trimmed = ranked.slice(0, TOP_N)
+            this.broadcast('leaderboard', { leaderboard: trimmed, movers }, true)
+          }
+        } catch (err) { }
+        (this as any)._coalesce.delete(id)
+      }, DEBOUNCE_MS)
+
+        ; (this as any)._coalesce.set(id, { timer: tmr })
     },
+
     getSorted() { return Array.from(this.state.participants.values()).sort((a, b) => b.score - a.score) },
     getRanks() { return this.state.lastRanks },
     getSnapshot(topN?: number, eventSlug?: string) {
-      const ranked = rank(Array.from(this.state.participants.values()))
+      // In a real app we might filter by eventSlug here from the big map
+      const all = Array.from(this.state.participants.values())
+      // Optimization: if eventSlug provided, filter first? 
+      // Current demo hub shares memory across all events.
+      // Ideally check p.eventId == eventSlug if we had it.
+      // For now, assume single event or global ID uniqueness.
+      const ranked = rank(all)
       const trimmed = typeof topN === 'number' ? ranked.slice(0, topN) : ranked
       return { type: 'snapshot' as const, leaderboard: trimmed }
     },
@@ -301,7 +301,9 @@ if (!g.__LEADERBOARD_HUB__) {
       return p
     }
   }
-  hub.seed()
+  if (process.env.NEXT_PHASE !== 'phase-production-build') {
+    hub.seed()
+  }
   g.__LEADERBOARD_HUB__ = hub
 }
 

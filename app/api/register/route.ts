@@ -79,39 +79,41 @@ export async function POST(request: Request) {
 
     // Generate unique access token for participant
     const generateAccessToken = () => {
-      return `p_${Date.now()}_${Math.random().toString(36).slice(2, 15)}`
+      // Human readable 6-char code (e.g. A7X92B)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+      let code = ''
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+      return code
     }
-    const accessToken = generateAccessToken()
+    const accessCode = generateAccessToken()
 
     // Create participant and update token atomically where possible
     let created: any = null
     try {
       if (reg.usesLeft === null) {
-        created = await db.participant.create({ 
-          data: { 
-            eventId: reg.eventId, 
-            name: normalized, 
-            normalizedName, 
+        created = await db.participant.create({
+          data: {
+            eventId: reg.eventId,
+            name: normalized,
+            normalizedName,
             kind,
-            profile: {
-              accessToken,
-            }
-          } 
+            accessCode,
+          }
         })
         // increment registrationsCount for analytics
         await db.registrationToken.update({ where: { id: reg.id }, data: { registrationsCount: { increment: 1 } } })
       } else {
         created = await db.$transaction(async (tx) => {
-          const p = await tx.participant.create({ 
-            data: { 
-              eventId: reg.eventId, 
-              name: normalized, 
-              normalizedName, 
+          const p = await tx.participant.create({
+            data: {
+              eventId: reg.eventId,
+              name: normalized,
+              normalizedName,
               kind,
-              profile: {
-                accessToken,
-              }
-            } 
+              accessCode,
+            }
           })
           const newUses = reg.usesLeft > 1 ? reg.usesLeft - 1 : 0
           await tx.registrationToken.update({ where: { id: reg.id }, data: { usesLeft: newUses, registrationsCount: { increment: 1 } } })
@@ -129,14 +131,14 @@ export async function POST(request: Request) {
     // Broadcast to hub for real-time leaderboard
     try {
       hub.upsertParticipant({ id: created.id, name: created.name, score: 0, kind: created.kind as any, createdAt: created.createdAt ? new Date(created.createdAt).getTime() : Date.now() })
-    } catch {}
+    } catch { }
 
     // Return participant with access token (only on initial registration)
     const responseData: any = { ...created }
-    if (created.profile && typeof created.profile === 'object' && (created.profile as any).accessToken) {
-      responseData.accessToken = (created.profile as any).accessToken
+    if (created.accessCode) {
+      responseData.accessCode = created.accessCode
     }
-    
+
     return Response.json({ ok: true, participant: responseData })
   } catch (e: any) {
     return Response.json({ error: e?.message || 'error' }, { status: 500 })

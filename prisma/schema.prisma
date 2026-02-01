@@ -3,11 +3,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -87,8 +89,10 @@ model Participant {
   kind      ParticipantKind
   name      String
   normalizedName String
+  accessCode String?         // Unique login code for portal
   totalScore Int             @default(0)
   profile   Json?
+  entries   Submission[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
   event     Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -125,7 +129,8 @@ model Judge {
   eventId   String
   name      String?
   email     String?
-  code      String    @unique
+  code      String?   @unique // Optional: for display (last 4) or legacy support
+  hashedCode String?  // bcrypt hashed access code
   role      String    @default("judge") // judge|admin
   active    Boolean   @default(true)
   expiresAt DateTime?
@@ -218,4 +223,17 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@index([eventId, createdAt])
+}
+
+model Submission {
+  id            String   @id @default(cuid())
+  participantId String
+  roundNumber   Int
+  url           String   // The link (Google Drive, Github, etc)
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([participantId, roundNumber])
 }

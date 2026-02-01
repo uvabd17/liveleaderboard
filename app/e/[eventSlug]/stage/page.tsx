@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/auth-context'
 import { useTheme } from '@/lib/theme'
-// No external lib for confetti yet, will use a simple implementation or check package.json
-// For now, let's assume we can use a CSS-based or simple one.
-// Let's check package.json for installed libs first though.
+import { BroadcastTicker } from '@/components/broadcast-ticker'
+import { StageCinematics } from '@/components/stage-cinematics'
+import { PageLoading } from '@/components/loading-spinner'
 
 interface Participant {
   id: string
@@ -23,19 +25,24 @@ interface Event {
   logoUrl?: string | null
   brandColors?: { primary: string; secondary: string; accent: string } | null
   rules?: any
+  features?: any
 }
 
 export default function StagePage() {
   const params = useParams()
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const { role } = useAuth()
   const eventSlug = params.eventSlug as string
+  const { setEventColors, useBrandColors, setUseBrandColors } = useTheme()
 
+  // ALL HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
   const [event, setEvent] = useState<Event | null>(null)
   const [allParticipants, setAllParticipants] = useState<Participant[]>([])
   const [completionsMap, setCompletionsMap] = useState<Record<string, Set<number>>>({})
   const [roundsConfig, setRoundsConfig] = useState<any[]>([])
   const [currentRoundIdx, setCurrentRoundIdx] = useState<number>(0)
   const [isTimerExpanded, setIsTimerExpanded] = useState<boolean | null>(null)
-  // Fullscreen/minimize stage UI state
   const [fullscreenRound, setFullscreenRound] = useState<number | null>(null)
   const [minimizedRounds, setMinimizedRounds] = useState<number[]>([])
   const [viewMode, setViewMode] = useState<'podium' | 'full'>('podium')
@@ -44,13 +51,82 @@ export default function StagePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [participantsPerPage, setParticipantsPerPage] = useState<number>(() => 50)
   const [totalParticipants, setTotalParticipants] = useState<number>(0)
-  const { setEventColors } = useTheme()
   const [fullscreenLeaderboard, setFullscreenLeaderboard] = useState(false)
+  const [roundSplash, setRoundSplash] = useState<{ number: number; name: string } | null>(null)
+  const [confettiActive, setConfettiActive] = useState(false)
+
   const prevParticipantsRef = useRef<Participant[] | null>(null)
   const allParticipantsRef = useRef<Participant[]>([])
   const prevTopOneId = useRef<string | null>(null)
-  // Actually, let's use a simple state for confetti to trigger a component
-  const [confettiActive, setConfettiActive] = useState(false)
+  const prevRoundIdxRef = useRef<number>(0)
+
+  // Access control: Only admins can access Stage Display
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (status === 'unauthenticated' || (status === 'authenticated' && role !== 'admin')) {
+      router.replace(`/e/${eventSlug}`)
+      return
+    }
+  }, [status, role, eventSlug, router])
+
+  useEffect(() => {
+    if (event?.features?.isEnded) {
+      setViewMode('podium')
+      if (topN !== 3) setTopN(3) 
+      setConfettiActive(true)
+    }
+  }, [event?.features?.isEnded, topN])
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return <PageLoading message="Verifying Access..." />
+  }
+
+  // Show access denied if not admin
+  if (status === 'authenticated' && role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+        <div className="glass-panel p-12 rounded-3xl text-center space-y-6 max-w-md">
+          <div className="text-6xl">🔒</div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-white">Admin Access Required</h2>
+            <p className="text-slate-400">The Stage Display is only accessible to event administrators.</p>
+          </div>
+          <button
+            onClick={() => router.push(`/e/${eventSlug}`)}
+            className="glass-button-primary w-full py-3"
+          >
+            Go to Standings
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Simple synthesized Gong/Bong sound
+  const playRoundSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(110, ctx.currentTime) // low A
+      osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 1.5)
+
+      gain.gain.setValueAtTime(0.5, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start()
+      osc.stop(ctx.currentTime + 2)
+    } catch (e) { }
+  }
 
   useEffect(() => {
     fetchLeaderboard()
@@ -145,8 +221,8 @@ export default function StagePage() {
   // Update expanded/collapsed default when event or rounds change
   useEffect(() => {
     if (!event) return
-    // threshold from event.rules.features.timerCollapseThresholdMinutes (minutes)
-    const threshold = (event.rules && event.rules.features && event.rules.features.timerCollapseThresholdMinutes) ?? 1
+    // threshold from event.features.timerCollapseThresholdMinutes (minutes)
+    const threshold = (event.features?.timerCollapseThresholdMinutes) ?? (event.rules?.features?.timerCollapseThresholdMinutes) ?? 1
     const round = roundsConfig[currentRoundIdx]
     if (!round) return
     const duration = Number(round.roundDurationMinutes || round.duration || 0)
@@ -217,6 +293,38 @@ export default function StagePage() {
     allParticipantsRef.current = allParticipants
   }, [allParticipants])
 
+  // Timer toggle function for keyboard shortcut
+  const toggleTimer = async () => {
+    const currentRound = roundsConfig[currentRoundIdx] || null
+    if (!currentRound) return
+    
+    const isPaused = currentRound.timerPausedAt && !currentRound.timerRunning
+    const isRunning = currentRound.timerRunning || (currentRound.timerStartedAt && !currentRound.timerPausedAt)
+    
+    try {
+      let action: string
+      if (isRunning) {
+        action = 'pause'
+      } else if (isPaused) {
+        action = 'resume'
+      } else {
+        action = 'start'
+      }
+      
+      await fetch('/api/rounds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          eventSlug,
+          roundNumber: currentRoundIdx
+        })
+      })
+    } catch (e) {
+      console.error('Failed to toggle timer:', e)
+    }
+  }
+
   // Keyboard Shortcuts: Space (Play/Pause), F (Fullscreen)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -233,15 +341,12 @@ export default function StagePage() {
 
       if (e.key === ' ') {
         e.preventDefault()
-        // Toggle timer play/pause if possible
-        // This might require an API call to the server to toggle the timer state
-        // For now, we'll just log or show a toast if we had one
-        console.log('Space pressed - Timer toggle requested')
+        toggleTimer()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [fullscreenLeaderboard])
+  }, [fullscreenLeaderboard, roundsConfig, currentRoundIdx, eventSlug])
 
   const setupSSE = () => {
     const eventSource = new EventSource(`/api/sse?eventSlug=${eventSlug}`)
@@ -250,12 +355,32 @@ export default function StagePage() {
       try {
         const data = JSON.parse(event.data)
         if (data.type === 'leaderboard-update' || data.type === 'leaderboard' || data.type === 'snapshot') {
-          // refetch current page to keep server-side pagination consistent
-          fetchLeaderboard(currentPage, participantsPerPage)
+          // If we are in podium mode or on page 1, we can use the data directly if it's top-N
+          if (data.leaderboard && Array.isArray(data.leaderboard)) {
+            // For Stage view, we usually care about the top participants.
+            // If the incoming data is the full top pool, update our local state to avoid a fetch.
+            setAllParticipants(data.leaderboard)
+            setTotalParticipants(data.leaderboard.length)
+          } else {
+            // fallback: refetch current page to keep server-side pagination consistent
+            fetchLeaderboard(currentPage, participantsPerPage)
+          }
         }
         if (data.type === 'round-change') {
           // payload: { currentRound, roundsConfig }
-          if (typeof data.currentRound === 'number') setCurrentRoundIdx(data.currentRound)
+          if (typeof data.currentRound === 'number') {
+            if (data.currentRound !== prevRoundIdxRef.current) {
+              // Round started!
+              const r = data.roundsConfig?.[data.currentRound]
+              if (r) {
+                setRoundSplash({ number: data.currentRound + 1, name: r.name })
+                playRoundSound()
+                setTimeout(() => setRoundSplash(null), 5000)
+              }
+            }
+            setCurrentRoundIdx(data.currentRound)
+            prevRoundIdxRef.current = data.currentRound
+          }
           if (Array.isArray(data.roundsConfig)) setRoundsConfig(data.roundsConfig)
         }
       } catch (error) {
@@ -327,15 +452,42 @@ export default function StagePage() {
     return () => { if (id) clearInterval(id) }
   }, [currentRoundIdx, !!(timerState && timerState.running)])
 
-  // Audio Feedback for Timer End
+  // Audio Feedback for Timer End - with proper cleanup
+  const timerEndAudioRef = useRef<HTMLAudioElement | null>(null)
+  const prevTimerLeftRef = useRef<number | null>(null)
+  
   useEffect(() => {
-    if (timerState && timerState.left === 0 && timerState.running === false) {
-      // playing a "gong" or alert sound when timer hits zero
+    // Only play when timer just hit 0 (not on initial load or re-renders)
+    const justFinished = prevTimerLeftRef.current !== null && 
+                         prevTimerLeftRef.current > 0 && 
+                         timerState?.left === 0
+    
+    if (justFinished) {
       try {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1063/1063-preview.mp3') // Gong/Alert
+        // Clean up any existing audio
+        if (timerEndAudioRef.current) {
+          timerEndAudioRef.current.pause()
+          timerEndAudioRef.current.src = ''
+        }
+        
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1063/1063-preview.mp3')
         audio.volume = 0.3
-        audio.play().catch(() => { })
-      } catch (e) { }
+        timerEndAudioRef.current = audio
+        audio.play().catch(() => {})
+      } catch (e) {
+        console.warn('Failed to play timer end sound:', e)
+      }
+    }
+    
+    prevTimerLeftRef.current = timerState?.left ?? null
+    
+    // Cleanup on unmount
+    return () => {
+      if (timerEndAudioRef.current) {
+        timerEndAudioRef.current.pause()
+        timerEndAudioRef.current.src = ''
+        timerEndAudioRef.current = null
+      }
     }
   }, [timerState?.left])
 
@@ -470,11 +622,22 @@ export default function StagePage() {
 
   return (
     <div className="min-h-screen p-6 relative">
+      <BroadcastTicker />
+      <StageCinematics />
       {/* Background gradients */}
       <div className="fixed inset-0 pointer-events-none -z-10 bg-[#030712] overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/10 rounded-full blur-[150px] animate-aurora-1" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/10 rounded-full blur-[150px] animate-aurora-2" />
-        <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[80%] h-[80%] bg-violet-600/5 rounded-full blur-[200px] animate-pulse-slow" />
+        <div
+          className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[150px] animate-aurora-1 opacity-20"
+          style={{ backgroundColor: event?.brandColors?.primary || '#4f46e5' }}
+        />
+        <div
+          className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[150px] animate-aurora-2 opacity-20"
+          style={{ backgroundColor: event?.brandColors?.secondary || '#8b5cf6' }}
+        />
+        <div
+          className="absolute top-[30%] left-[50%] -translate-x-1/2 w-[80%] h-[80%] rounded-full blur-[200px] animate-pulse-slow opacity-10"
+          style={{ backgroundColor: event?.brandColors?.accent || '#10b981' }}
+        />
         {/* Subtle grid mesh */}
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
       </div>
@@ -488,12 +651,24 @@ export default function StagePage() {
             </div>
           )}
           <div className="text-center md:text-left">
-            <h1 className="text-5xl md:text-6xl font-black text-white mb-1 tracking-tight drop-shadow-lg">{event.name}</h1>
-            <p className="text-lg font-light text-slate-400 tracking-wide uppercase">{event.organization.name}</p>
+            {event.features?.isEnded ? (
+              <div className="animate-fade-in">
+                <div className="text-emerald-400 font-mono tracking-[0.3em] text-sm uppercase mb-1 font-bold">Event Complete</div>
+                <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 mb-1 tracking-tight drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                  Final Results
+                </h1>
+                <p className="text-xl font-light text-slate-400 tracking-wide uppercase">{event.name}</p>
+              </div>
+            ) : (
+              <>
+                <h1 className="text-5xl md:text-6xl font-black text-white mb-1 tracking-tight drop-shadow-lg">{event.name}</h1>
+                <p className="text-lg font-light text-slate-400 tracking-wide uppercase">{event.organization.name}</p>
+              </>
+            )}
 
             {/* Small view tabs inside header (left-aligned, compact) */}
             <div className="mt-3 md:mt-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => {
                     setViewMode('podium')
@@ -513,7 +688,7 @@ export default function StagePage() {
                   className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${viewMode === 'full' ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105' : 'text-slate-400 hover:text-white bg-white/5 border border-white/5'
                     }`}
                 >
-                  LEADERBOARD
+                  STANDINGS
                 </button>
                 <button
                   onClick={() => setFullscreenLeaderboard(v => !v)}
@@ -522,6 +697,21 @@ export default function StagePage() {
                 >
                   Full Screen
                 </button>
+                {/* Brand Color Toggle */}
+                {event.brandColors && (
+                  <button
+                    onClick={() => setUseBrandColors(!useBrandColors)}
+                    title={useBrandColors ? 'Using brand colors' : 'Using default theme'}
+                    className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all flex items-center gap-1.5 ${
+                      useBrandColors 
+                        ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg shadow-purple-500/20' 
+                        : 'text-slate-400 hover:text-white bg-white/5 border border-white/5'
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: event.brandColors.primary }} />
+                    {useBrandColors ? 'BRAND' : 'DEFAULT'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -721,7 +911,7 @@ export default function StagePage() {
                 const left = allParticipants.slice(0, 25)
                 const right = allParticipants.slice(25, 50)
                 const renderColumn = (arr: Participant[], side: 'left' | 'right') => (
-                  <div className="space-y-2">
+                  <div className="space-y-0.5">
                     {arr.map((participant, idx) => {
                       const globalIndex = (side === 'left' ? idx : idx + 25)
                       let movement = 0
@@ -731,20 +921,25 @@ export default function StagePage() {
                       const movedUp = movement > 0
                       const movedDown = movement < 0
                       return (
-                        <div key={participant.id} className="glass-panel px-3 py-2 flex items-center justify-between gap-3 text-base">
-                          <div className="flex items-center gap-3">
-                            <div className="text-base w-9 text-center">{globalIndex < 3 ? (globalIndex === 0 ? '🥇' : globalIndex === 1 ? '🥈' : '🥉') : `#${globalIndex + 1}`}</div>
+                        <div key={participant.id} className="group relative px-4 py-2 flex items-center justify-between gap-4 transition-all border-b border-white/[0.03] last:border-0 overflow-hidden">
+                          <div className="flex items-center gap-4">
+                            <div className={`text-sm w-8 text-center font-bold font-mono ${globalIndex < 3 ? 'text-white' : 'text-slate-500 opacity-40'}`}>
+                              {(globalIndex + 1).toString().padStart(2, '0')}
+                            </div>
                             <div className="truncate max-w-[14rem]">
-                              <div className="text-lg font-semibold truncate">{participant.name}</div>
-                              <div className="text-sm text-slate-400 truncate">{participant.kind}</div>
+                              <div className="text-base font-medium text-white/90 tracking-tight group-hover:text-white transition-colors uppercase truncate">{participant.name}</div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[9px] px-1 py-0.5 rounded bg-white/5 text-slate-500 font-bold tracking-tighter uppercase">{participant.kind === 'team' ? 'TEAM' : 'INDIV'}</span>
+                                {movedUp && <span className="text-[9px] text-emerald-500/80 font-bold">▲ {movement}</span>}
+                                {movedDown && <span className="text-[9px] text-rose-500/80 font-bold">▼ {Math.abs(movement)}</span>}
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <div className={`text-lg font-medium ${movedUp ? 'text-green-400' : movedDown ? 'text-red-400' : 'text-blue-300'}`}>{participant.totalScore}</div>
-                            <div className="w-5 h-5 flex items-center justify-center text-sm">
-                              {movedUp && <div className="text-green-400 animate-move-up">▲</div>}
-                              {movedDown && <div className="text-red-400 animate-move-down">▼</div>}
+                            <div className={`text-xl font-black tabular-nums tracking-tighter ${movedUp ? 'text-emerald-400' : movedDown ? 'text-rose-400' : 'text-white'}`}>
+                              {participant.totalScore.toLocaleString()}
                             </div>
+                            <div className={`w-1 h-6 rounded-full transition-all ${movedUp ? 'bg-emerald-500' : movedDown ? 'bg-rose-500' : 'bg-white/5'}`} />
                           </div>
                         </div>
                       )
@@ -760,25 +955,73 @@ export default function StagePage() {
 
       {/* Minimized corner badges (clickable to reopen fullscreen) */}
       {minimizedRounds.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
-          {minimizedRounds.map((idx) => {
-            const r = roundsConfig[idx]
-            const ts = computeTimeLeftFor(idx)
-            return (
-              <button
-                key={idx}
-                onClick={() => showFullscreenFor(idx)}
-                title={`${r?.name || `Round ${idx + 1}`}`}
-                className="flex items-center gap-3 bg-slate-800/90 text-white px-3 py-2 rounded-lg shadow-lg hover:scale-105"
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${r?.judgingOpen ? 'bg-green-500' : 'bg-slate-700'}`}>{idx + 1}</div>
-                <div className="text-left">
-                  <div className="text-sm font-semibold">{r?.name || `Round ${idx + 1}`}</div>
-                  <div className="text-xs text-slate-400">{ts ? formatMS(ts.left) : 'No timer'}</div>
-                </div>
-              </button>
-            )
-          })}
+        <div className="fixed bottom-8 right-8 z-40 flex flex-nowrap items-center gap-3 animate-fade-in-up">
+          <div className="flex items-center gap-2 p-2 bg-white/5 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
+            {minimizedRounds.map((idx) => {
+              const r = roundsConfig[idx]
+              const ts = computeTimeLeftFor(idx)
+              const isActive = idx === currentRoundIdx
+              const isLowTime = ts && ts.left < 60 && r?.timerRunning
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => showFullscreenFor(idx)}
+                  className={`relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-500 overflow-hidden group ${isActive
+                    ? 'bg-white/10 shadow-[inner_0_0_20px_rgba(255,255,255,0.05)]'
+                    : 'hover:bg-white/5'
+                    }`}
+                >
+                  {/* Subtle active glow */}
+                  {isActive && (
+                    <div
+                      className="absolute inset-0 opacity-20 blur-xl animate-pulse-slow"
+                      style={{ backgroundColor: event?.brandColors?.primary || '#4f46e5' }}
+                    />
+                  )}
+
+                  <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors ${isActive ? 'bg-white text-black' : 'bg-white/10 text-slate-400'
+                    }`}>
+                    {idx + 1}
+                  </div>
+
+                  <div className="relative text-left flex flex-col justify-center">
+                    <div className={`text-[10px] uppercase tracking-[0.2em] font-bold leading-none mb-1 transition-colors ${isActive ? 'text-white' : 'text-slate-500'
+                      }`}>
+                      {r?.name || `Round ${idx + 1}`}
+                    </div>
+                    <div className={`text-sm font-mono font-bold leading-none tabular-nums flex items-center gap-1.5 ${isLowTime ? 'text-red-500 animate-pulse' :
+                      isActive ? 'text-blue-400' :
+                        'text-slate-300'
+                      }`}>
+                      {ts ? formatMS(ts.left) : '00:00'}
+                      {r?.timerRunning && !isLowTime && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Glass highlight line */}
+                  {isActive && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Round Start Splash Overlay */}
+      {roundSplash && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="text-center space-y-4 transform animate-bounce-in">
+            <div className="text-blue-500 font-mono tracking-[0.5em] text-2xl uppercase">Round {roundSplash.number}</div>
+            <h2 className="text-7xl md:text-9xl font-black text-white tracking-tighter drop-shadow-[0_0_30px_rgba(59,130,246,0.5)]">
+              {roundSplash.name}
+            </h2>
+            <div className="text-white/40 text-xl font-light tracking-widest uppercase mt-8 animate-pulse">Starting Now</div>
+          </div>
         </div>
       )}
 
@@ -854,6 +1097,19 @@ export default function StagePage() {
            to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+        @keyframes bounce-in {
+          0% { transform: scale(0.5); opacity: 0; }
+          70% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-bounce-in { animation: bounce-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        @keyframes pulse-red {
+          0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
+          50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.5); }
+        }
+        .animate-pulse-red { animation: pulse-red 1s infinite ease-in-out; }
       `}</style>
     </div>
   )

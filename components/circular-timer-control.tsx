@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
+import { Volume2, VolumeX } from 'lucide-react'
 
 interface CircularTimerControlProps {
   round: {
@@ -21,6 +22,8 @@ interface CircularTimerControlProps {
   onResumeTimer: () => void
   onStopTimer: () => void
   loading?: boolean
+  warningMinutes?: number // Default: 5 minutes
+  criticalMinutes?: number // Default: 1 minute
 }
 
 export function CircularTimerControl({
@@ -31,9 +34,93 @@ export function CircularTimerControl({
   onPauseTimer,
   onResumeTimer,
   onStopTimer,
-  loading = false
+  loading = false,
+  warningMinutes = 5,
+  criticalMinutes = 1
 }: CircularTimerControlProps) {
   const [currentTime, setCurrentTime] = useState(Date.now())
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [hasPlayedWarning, setHasPlayedWarning] = useState(false)
+  const [hasPlayedCritical, setHasPlayedCritical] = useState(false)
+  const [hasPlayedFinish, setHasPlayedFinish] = useState(false)
+  const audioContext = useRef<AudioContext | null>(null)
+  const prevTimerStartedAt = useRef<string | null>(null)
+
+  // Initialize audio context on user interaction
+  const initAudio = useCallback(() => {
+    if (!audioContext.current) {
+      audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+    }
+    return audioContext.current
+  }, [])
+
+  // Play sound using Web Audio API
+  const playSound = useCallback((type: 'warning' | 'critical' | 'finish') => {
+    if (!soundEnabled) return
+    
+    try {
+      const ctx = initAudio()
+      if (ctx.state === 'suspended') {
+        ctx.resume()
+      }
+      
+      const oscillator = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(ctx.destination)
+      
+      // Different sounds for different alerts
+      if (type === 'warning') {
+        // Two-tone warning beep
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime) // A5
+        oscillator.frequency.setValueAtTime(660, ctx.currentTime + 0.1) // E5
+        oscillator.type = 'sine'
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
+        oscillator.start(ctx.currentTime)
+        oscillator.stop(ctx.currentTime + 0.3)
+      } else if (type === 'critical') {
+        // Rapid beeps for critical
+        oscillator.frequency.setValueAtTime(1000, ctx.currentTime)
+        oscillator.type = 'square'
+        gainNode.gain.setValueAtTime(0.2, ctx.currentTime)
+        for (let i = 0; i < 3; i++) {
+          gainNode.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.15)
+          gainNode.gain.setValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.1)
+        }
+        oscillator.start(ctx.currentTime)
+        oscillator.stop(ctx.currentTime + 0.5)
+      } else if (type === 'finish') {
+        // Long tone for finish
+        oscillator.frequency.setValueAtTime(440, ctx.currentTime) // A4
+        oscillator.type = 'sine'
+        gainNode.gain.setValueAtTime(0.4, ctx.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5)
+        oscillator.start(ctx.currentTime)
+        oscillator.stop(ctx.currentTime + 1.5)
+      }
+    } catch (e) {
+      console.warn('Audio playback failed:', e)
+    }
+  }, [soundEnabled, initAudio])
+
+  // Reset sound flags when timer restarts or is stopped
+  useEffect(() => {
+    // If timer was stopped (timerStartedAt became null), reset all flags
+    if (!round.timerStartedAt && prevTimerStartedAt.current) {
+      setHasPlayedWarning(false)
+      setHasPlayedCritical(false)
+      setHasPlayedFinish(false)
+    }
+    // If timer was restarted (new timerStartedAt value), reset all flags
+    else if (round.timerStartedAt && round.timerStartedAt !== prevTimerStartedAt.current) {
+      setHasPlayedWarning(false)
+      setHasPlayedCritical(false)
+      setHasPlayedFinish(false)
+    }
+    prevTimerStartedAt.current = round.timerStartedAt || null
+  }, [round.timerStartedAt])
 
   // Update current time every second for live updates
   useEffect(() => {
@@ -66,6 +153,7 @@ export function CircularTimerControl({
 
   const timerState = computeTimeLeft()
   const formatTime = (seconds: number) => {
+    if (seconds <= 0) return '00:00'
     const m = Math.floor(seconds / 60)
     const s = seconds % 60
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
@@ -75,6 +163,61 @@ export function CircularTimerControl({
   const isCurrentRound = roundIdx === currentRoundIdx
   const isRunning = timerState.running
   const isPaused = timerState.paused
+  const isFinished = timerState.left === 0 && round.timerStartedAt && !isPaused
+  const isCritical = isRunning && timerState.left <= criticalMinutes * 60
+  const isWarning = isRunning && !isCritical && timerState.left <= warningMinutes * 60
+
+  // Track previous time left to detect threshold crossings on resume
+  const prevTimeLeftRef = useRef<number | null>(null)
+
+  // Sound triggers
+  useEffect(() => {
+    const warningThreshold = warningMinutes * 60
+    const criticalThreshold = criticalMinutes * 60
+    const currentTimeLeft = timerState.left
+    const prevTimeLeft = prevTimeLeftRef.current
+
+    // Only process sounds when timer is running
+    if (!isRunning) {
+      // Store current time when paused so we can check on resume
+      if (isPaused) {
+        prevTimeLeftRef.current = currentTimeLeft
+      }
+      return
+    }
+
+    // Check if we resumed and crossed a threshold while paused
+    // (e.g., paused at 5:30, resumed at 4:30 after time adjustment)
+    const crossedWarningWhilePaused = prevTimeLeft !== null && 
+      prevTimeLeft > warningThreshold && currentTimeLeft <= warningThreshold
+    const crossedCriticalWhilePaused = prevTimeLeft !== null && 
+      prevTimeLeft > criticalThreshold && currentTimeLeft <= criticalThreshold
+
+    // Warning sound at warningMinutes
+    if ((currentTimeLeft <= warningThreshold && currentTimeLeft > criticalThreshold && !hasPlayedWarning) ||
+        (crossedWarningWhilePaused && !hasPlayedWarning)) {
+      playSound('warning')
+      setHasPlayedWarning(true)
+    }
+
+    // Critical sound at criticalMinutes
+    if ((currentTimeLeft <= criticalThreshold && currentTimeLeft > 0 && !hasPlayedCritical) ||
+        (crossedCriticalWhilePaused && !hasPlayedCritical)) {
+      playSound('critical')
+      setHasPlayedCritical(true)
+    }
+
+    // Update previous time reference
+    prevTimeLeftRef.current = currentTimeLeft
+  }, [timerState.left, isRunning, isPaused, hasPlayedWarning, hasPlayedCritical, warningMinutes, criticalMinutes, playSound])
+
+  // Finish sound when timer reaches 0
+  useEffect(() => {
+    if (isFinished && !hasPlayedFinish) {
+      playSound('finish')
+      setHasPlayedFinish(true)
+    }
+  }, [isFinished, hasPlayedFinish, playSound])
 
   return (
     <div className="flex flex-col items-center space-y-4">
@@ -101,21 +244,21 @@ export function CircularTimerControl({
             fill="none"
             strokeDasharray={`${2 * Math.PI * 60}`}
             strokeDashoffset={`${2 * Math.PI * 60 * (1 - progress / 100)}`}
-            className={`transition-all duration-1000 ${
-              isRunning ? 'text-blue-500' :
+            className={`transition-all duration-1000 ${isRunning ? 'text-blue-500' :
               isPaused ? 'text-yellow-500' :
-              'text-slate-500'
-            }`}
+                'text-slate-500'
+              }`}
           />
         </svg>
 
         {/* Timer Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className={`text-lg font-mono font-bold ${
-            isRunning ? 'text-blue-400' :
-            isPaused ? 'text-yellow-400' :
-            'text-slate-400'
-          }`}>
+          <div className={`text-lg font-black font-outfit transition-all duration-300 ${isCritical ? 'text-red-500 scale-125 italic' :
+            isWarning ? 'text-amber-400' :
+              isRunning ? 'text-blue-400 italic' :
+                isPaused ? 'text-yellow-400' :
+                  'text-slate-400'
+            }`}>
             {formatTime(timerState.left)}
           </div>
         </div>
@@ -134,12 +277,11 @@ export function CircularTimerControl({
         {/* Start Button */}
         <Button
           onClick={onStartTimer}
-          disabled={loading || isRunning || !isCurrentRound}
-          className={`px-4 py-2 text-sm font-medium rounded ${
-            isRunning
-              ? 'bg-blue-900 text-blue-300 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
+          disabled={loading || isRunning}
+          className={`px-4 py-2 text-sm font-black font-mono uppercase tracking-widest rounded-xl ${isRunning
+            ? 'bg-blue-900 text-blue-300 cursor-not-allowed'
+            : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
         >
           Start
         </Button>
@@ -147,12 +289,11 @@ export function CircularTimerControl({
         {/* Pause Button */}
         <Button
           onClick={onPauseTimer}
-          disabled={loading || !isRunning || !isCurrentRound}
-          className={`px-4 py-2 text-sm font-medium rounded ${
-            !isRunning
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-yellow-600 hover:bg-yellow-700 text-white'
-          }`}
+          disabled={loading || !isRunning}
+          className={`px-4 py-2 text-sm font-black font-mono uppercase tracking-widest rounded-xl ${!isRunning
+            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+            : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+            }`}
         >
           Pause
         </Button>
@@ -160,12 +301,11 @@ export function CircularTimerControl({
         {/* Resume Button */}
         <Button
           onClick={onResumeTimer}
-          disabled={loading || !isPaused || !isCurrentRound}
-          className={`px-4 py-2 text-sm font-medium rounded ${
-            !isPaused
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-green-600 hover:bg-green-700 text-white'
-          }`}
+          disabled={loading || !isPaused}
+          className={`px-4 py-2 text-sm font-black font-mono uppercase tracking-widest rounded-xl ${!isPaused
+            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+            : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
         >
           Resume
         </Button>
@@ -173,16 +313,48 @@ export function CircularTimerControl({
         {/* Stop Button */}
         <Button
           onClick={onStopTimer}
-          disabled={loading || (!isRunning && !isPaused) || !isCurrentRound}
-          className={`px-4 py-2 text-sm font-medium rounded ${
-            (!isRunning && !isPaused)
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-red-600 hover:bg-red-700 text-white'
-          }`}
+          disabled={loading || (!isRunning && !isPaused)}
+          className={`px-4 py-2 text-sm font-black font-mono uppercase tracking-widest rounded-xl ${(!isRunning && !isPaused)
+            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+            : 'bg-red-600 hover:bg-red-700 text-white'
+            }`}
         >
           Stop
         </Button>
+
+        {/* Sound Toggle */}
+        <Button
+          onClick={() => {
+            setSoundEnabled(!soundEnabled)
+            // Initialize audio context on first click
+            if (!soundEnabled) initAudio()
+          }}
+          className={`px-3 py-2 rounded-xl transition-all ${
+            soundEnabled
+              ? 'bg-slate-700 hover:bg-slate-600 text-white'
+              : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+          }`}
+          title={soundEnabled ? 'Sound enabled' : 'Sound muted'}
+        >
+          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </Button>
       </div>
+
+      {/* Warning/Critical Status */}
+      {(isWarning || isCritical || isFinished) && (
+        <div className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse ${
+          isFinished ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30' :
+          isCritical ? 'bg-red-600/20 text-red-400 border border-red-500/30' :
+          'bg-amber-600/20 text-amber-400 border border-amber-500/30'
+        }`}>
+          <span className="text-lg">{isFinished ? '🏁' : isCritical ? '⚠️' : '⏰'}</span>
+          <span>
+            {isFinished ? 'TIME\'S UP!' :
+             isCritical ? 'FINAL MINUTE!' :
+             `${Math.ceil(timerState.left / 60)} min remaining`}
+          </span>
+        </div>
+      )}
 
       {/* Judging Status */}
       {round.judgingOpen && (

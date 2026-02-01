@@ -52,7 +52,7 @@ export function Logo({ className, size = 32, variant = 'full', animated = false 
 
             {variant === 'full' && (
                 <span className={cn(
-                    "font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400",
+                    "font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-slate-500 font-outfit uppercase italic",
                     size >= 32 ? "text-xl" : "text-lg"
                 )}>
                     Live Leaderboard

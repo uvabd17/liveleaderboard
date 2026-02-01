@@ -1,26 +1,29 @@
 'use client'
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
+  label?: string
 }
 
-export function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 'md', className = '', label }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12'
+    sm: 'w-4 h-4 border-2',
+    md: 'w-8 h-8 border-3',
+    lg: 'w-12 h-12 border-4',
+    xl: 'w-16 h-16 border-4'
   }
 
   return (
-    <div className={`inline-block ${className}`}>
+    <div className={`inline-flex flex-col items-center gap-3 ${className}`}>
       <div
-        className={`${sizeClasses[size]} border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin`}
+        className={`${sizeClasses[size]} border-slate-700 border-t-blue-500 rounded-full animate-spin`}
         role="status"
-        aria-label="Loading"
+        aria-label={label || "Loading"}
       >
-        <span className="sr-only">Loading...</span>
+        <span className="sr-only">{label || "Loading..."}</span>
       </div>
+      {label && <span className="text-sm text-slate-400 font-medium">{label}</span>}
     </div>
   )
 }
@@ -28,18 +31,46 @@ export function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerPr
 export function LoadingSkeleton({ className = '' }: { className?: string }) {
   return (
     <div className={`animate-pulse ${className}`}>
-      <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
-      <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+      <div className="h-4 bg-slate-700/50 rounded-xl w-3/4 mb-3"></div>
+      <div className="h-4 bg-slate-700/50 rounded-xl w-1/2"></div>
     </div>
   )
 }
 
-export function PageLoading() {
+interface PageLoadingProps {
+  message?: string
+  submessage?: string
+}
+
+export function PageLoading({ message = "Loading...", submessage }: PageLoadingProps) {
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <div className="text-center">
-        <LoadingSpinner size="lg" />
-        <p className="text-slate-400 mt-4">Loading...</p>
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+      {/* Aurora Ambience */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]" />
+      </div>
+      
+      <div className="text-center space-y-6 max-w-md px-6">
+        {/* Animated Logo */}
+        <div className="relative mx-auto w-20 h-20">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 animate-pulse opacity-30 blur-xl" />
+          <div className="relative w-20 h-20 rounded-2xl bg-slate-900/80 border border-white/10 flex items-center justify-center backdrop-blur-xl">
+            <div className="w-10 h-10 border-3 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-white tracking-tight">{message}</h2>
+          <p className="text-slate-500 text-sm">{submessage || "Please wait..."}</p>
+        </div>
+        
+        {/* Progress dots */}
+        <div className="flex items-center justify-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
       </div>
     </div>
   )

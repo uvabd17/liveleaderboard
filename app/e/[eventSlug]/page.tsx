@@ -8,6 +8,7 @@ import { EventCache } from '@/lib/cache'
 import { useTheme } from '@/lib/theme'
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-context'
+import { cn } from '@/lib/utils'
 import {
   Trophy,
   Search,
@@ -44,6 +45,7 @@ interface Event {
   organization: {
     name: string
   }
+  features?: any
 }
 
 export default function EventLeaderboardPage() {
@@ -60,6 +62,9 @@ export default function EventLeaderboardPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [searchQuery, setSearchQuery] = useState('')
+
+  const [roundsConfig, setRoundsConfig] = useState<any[]>([])
+  const [currentRoundIdx, setCurrentRoundIdx] = useState(0)
 
   const cache = EventCache.getInstance()
   const { setEventColors } = useTheme()
@@ -89,6 +94,8 @@ export default function EventLeaderboardPage() {
         const data = await response.json()
         setEvent(data.event)
         setParticipants(data.participants)
+        if (data.roundsConfig) setRoundsConfig(data.roundsConfig)
+        if (typeof data.currentRound === 'number') setCurrentRoundIdx(data.currentRound)
         cache.set(cacheKey, data, 2 * 60 * 1000)
         if (data.event?.brandColors) {
           setEventColors(data.event.brandColors)
@@ -101,20 +108,57 @@ export default function EventLeaderboardPage() {
     }
   }
 
+  // Track last update timestamp to prevent stale data
+  const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState<number>(0)
+
   const setupSSE = () => {
     const eventSource = new EventSource(`/api/sse?eventSlug=${eventSlug}`)
 
     eventSource.onopen = () => setConnected(true)
-    eventSource.onerror = () => setConnected(false)
-
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      if (data.type === 'leaderboard-update') {
-        setParticipants(data.participants)
+    eventSource.onerror = () => {
+      setConnected(false)
+      // Safe cleanup - wrap in try-catch
+      try {
+        eventSource.close()
+      } catch (e) {
+        // Already closed, ignore
       }
     }
 
-    return () => eventSource.close()
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        const messageTimestamp = data.timestamp || Date.now()
+        
+        // Only process if this message is newer than the last one
+        // This prevents out-of-order SSE messages from showing stale data
+        if (messageTimestamp < lastUpdateTimestamp) {
+          console.debug('Ignoring stale SSE message', { messageTimestamp, lastUpdateTimestamp })
+          return
+        }
+        
+        if (data.type === 'leaderboard-update') {
+          setParticipants(data.participants)
+          setLastUpdateTimestamp(messageTimestamp)
+        } else if (data.type === 'round-change') {
+          if (data.roundsConfig) setRoundsConfig(data.roundsConfig)
+          if (typeof data.currentRound === 'number') setCurrentRoundIdx(data.currentRound)
+          if (Array.isArray(data.leaderboard)) setParticipants(data.leaderboard)
+          setLastUpdateTimestamp(messageTimestamp)
+        }
+      } catch (error) {
+        console.error('Failed to parse SSE data:', error)
+      }
+    }
+
+    return () => {
+      // Safe cleanup - wrap in try-catch
+      try {
+        eventSource.close()
+      } catch (e) {
+        // Already closed, ignore
+      }
+    }
   }
 
   const filteredParticipants = useMemo(() => {
@@ -140,7 +184,7 @@ export default function EventLeaderboardPage() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-          <div className="text-slate-400 font-medium">Loading leaderboard...</div>
+          <div className="text-slate-400 font-medium">Loading standings...</div>
         </div>
       </div>
     )
@@ -177,6 +221,52 @@ export default function EventLeaderboardPage() {
     return <span className="text-rose-400 text-sm font-medium">{diff} ▼</span>
   }
 
+  const TimerHUD = () => {
+    const activeRound = roundsConfig[currentRoundIdx]
+    const [timeLeft, setTimeLeft] = useState<string>('')
+
+    useEffect(() => {
+      if (!activeRound?.timerRunning || !activeRound?.timerStartedAt) {
+        setTimeLeft(activeRound?.timerPausedAt ? 'PAUSED' : 'LOCKED')
+        return
+      }
+
+      const interval = setInterval(() => {
+        const startedAt = new Date(activeRound.timerStartedAt).getTime()
+        const durationMs = (activeRound.roundDurationMinutes || activeRound.durationMinutes || 0) * 60 * 1000
+        const now = Date.now()
+        const elapsed = now - startedAt
+        const remaining = Math.max(0, durationMs - elapsed)
+
+        if (remaining === 0) {
+          setTimeLeft('FINISHED')
+          clearInterval(interval)
+          return
+        }
+
+        const mins = Math.floor(remaining / 60000)
+        const secs = Math.floor((remaining % 60000) / 1000)
+        setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`)
+      }, 1000)
+
+      return () => clearInterval(interval)
+    }, [activeRound])
+
+    if (!activeRound) return null
+
+    return (
+      <div className="flex flex-col items-center md:items-end gap-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">{activeRound.name || `Round ${currentRoundIdx + 1}`}</span>
+          <div className={`w-1.5 h-1.5 rounded-full ${activeRound.timerRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
+        </div>
+        <div className="text-4xl md:text-5xl font-black font-outfit text-white tracking-tighter italic">
+          {timeLeft}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-[100dvh] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-200 font-sans">
       <Navbar />
@@ -193,6 +283,11 @@ export default function EventLeaderboardPage() {
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
                   {event.organization.name}
                 </span>
+                {event.features?.isEnded && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">
+                    FINAL RESULTS
+                  </span>
+                )}
                 {connected ? (
                   <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Live Updates
@@ -210,29 +305,33 @@ export default function EventLeaderboardPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              {role === 'admin' && (
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <TimerHUD />
+              <div className="h-12 w-[1px] bg-white/5 hidden md:block" />
+              <div className="flex flex-wrap justify-center gap-3">
+                {role === 'admin' && (
+                  <Link
+                    href={`/e/${eventSlug}/admin`}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/20 transition-all font-medium"
+                  >
+                    <Settings className="w-4 h-4" /> Admin
+                  </Link>
+                )}
+                {role === 'judge' && (
+                  <Link
+                    href={`/e/${eventSlug}/judge`}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 transition-all font-medium"
+                  >
+                    <Gavel className="w-4 h-4" /> Judge
+                  </Link>
+                )}
                 <Link
-                  href={`/e/${eventSlug}/admin`}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/20 transition-all font-medium"
+                  href={`/e/${eventSlug}/stage`}
+                  className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/5 transition-all"
                 >
-                  <Settings className="w-4 h-4" /> Admin
+                  <MonitorPlay className="w-4 h-4" /> Live Display
                 </Link>
-              )}
-              {role === 'judge' && (
-                <Link
-                  href={`/e/${eventSlug}/judge`}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 transition-all font-medium"
-                >
-                  <Gavel className="w-4 h-4" /> Judge
-                </Link>
-              )}
-              <Link
-                href={`/e/${eventSlug}/stage`}
-                className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/5 transition-all"
-              >
-                <MonitorPlay className="w-4 h-4" /> Stage Mode
-              </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -262,7 +361,7 @@ export default function EventLeaderboardPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search participants..."
+                  placeholder="Find Participant..."
                   className="w-full bg-slate-900/50 border border-white/5 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>

@@ -49,7 +49,7 @@ export default function ScoreAdjustPage() {
       if (leaderboardRes.ok) {
         const data = await leaderboardRes.json()
         setParticipants(data.participants || [])
-        
+
         // Fetch detailed scores for each participant
         participantsWithScores = await Promise.all(
           (data.participants || []).map(async (p: Participant) => {
@@ -74,7 +74,7 @@ export default function ScoreAdjustPage() {
       if (completionsRes.ok && roundsRes.ok && roundsData) {
         const completionsData = await completionsRes.json()
         const totalRounds = roundsData.rounds?.length || 0
-        
+
         if (totalRounds === 0 || participantsWithScores.length === 0) {
           setAllRoundsCompleted(false)
         } else {
@@ -86,13 +86,13 @@ export default function ScoreAdjustPage() {
             }
             completionMap.get(r.participantId)!.add(r.roundNumber)
           })
-          
+
           // Check all participants have completed all rounds
           const allComplete = participantsWithScores.length > 0 && participantsWithScores.every(p => {
             const completedRounds = completionMap.get(p.id) || new Set()
             return completedRounds.size === totalRounds
           })
-          
+
           setAllRoundsCompleted(allComplete)
         }
       } else {
@@ -127,7 +127,7 @@ export default function ScoreAdjustPage() {
 
     try {
       setSaving(true)
-      const res = await fetch('/api/admin/score/adjust', {
+      const res = await fetch('/api/admin/score-adjustment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

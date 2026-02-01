@@ -23,15 +23,18 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user || !user.password) {
+            console.warn(`[auth] Failed login attempt: user not found or no password for ${credentials.email}`)
             return null
           }
 
           const isPasswordValid = await compare(credentials.password, user.password)
 
           if (!isPasswordValid) {
+            console.warn(`[auth] Failed login attempt: incorrect password for ${credentials.email}`)
             return null
           }
 
+          console.log(`[auth] Successful login for user: ${user.email} (ID: ${user.id})`)
           return {
             id: user.id,
             email: user.email,
@@ -70,5 +73,5 @@ export const authOptions: NextAuthOptions = {
       return session
     }
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  useSecureCookies: process.env.NODE_ENV === 'production',
 }

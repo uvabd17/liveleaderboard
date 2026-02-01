@@ -28,6 +28,10 @@ export default function SignInPage() {
       if (result?.error) {
         setError('Invalid email or password')
       } else {
+        // Set user role as admin after successful login
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user-role', 'admin')
+        }
         router.push('/dashboard')
       }
     } catch (err) {

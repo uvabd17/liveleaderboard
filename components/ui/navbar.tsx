@@ -14,95 +14,112 @@ export function Navbar({ className }: { className?: string }) {
 
     return (
         <nav className={cn(
-            "fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl transition-all",
+            "fixed top-4 inset-x-0 z-50 transition-all duration-500",
             className
         )}>
-            <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                {/* Logo */}
-                <Link href="/" className="hover:opacity-90 transition-opacity">
-                    <Logo animated />
-                </Link>
+            <div className="max-w-7xl mx-auto px-4">
+                <div className="glass-panel rounded-[2rem] px-6 h-16 flex items-center justify-between border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+                    {/* Logo & Brand */}
+                    <Link href="/" className="hover:opacity-90 transition-all hover:scale-105 active:scale-95">
+                        <Logo animated size={28} />
+                    </Link>
 
-                {/* Desktop Nav */}
-                <div className="hidden md:flex items-center gap-6">
-                    {status === "authenticated" ? (
-                        <>
-                            <Link href="/dashboard" className="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-2">
-                                <LayoutDashboard className="w-4 h-4" /> Dashboard
-                            </Link>
-                            <div className="w-px h-4 bg-white/10" />
-                            <div className="flex items-center gap-3">
-                                <div className="text-right hidden lg:block">
-                                    <div className="text-sm font-medium text-white">{session.user?.name}</div>
-                                    <div className="text-xs text-slate-500">{session.user?.email}</div>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => signOut()}
-                                    className="text-slate-400 hover:text-red-400 hover:bg-red-500/10"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <Link href="/auth/signin" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
-                                Sign In
-                            </Link>
-                            <Button asChild className="glass-button-primary rounded-full px-6">
-                                <Link href="/auth/signup">Get Started</Link>
-                            </Button>
-                        </>
-                    )}
-                </div>
+                    {/* Main Navigation links could go here if global, but usually they are event-specific */}
+                    {/* For the global navbar, we focus on Dashboard/Auth */}
 
-                {/* Mobile Toggle */}
-                <button
-                    className="md:hidden p-2 text-slate-400 hover:text-white"
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                >
-                    {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                </button>
-            </div>
-
-            {/* Mobile Menu */}
-            {mobileMenuOpen && (
-                <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-40 bg-slate-950 border-t border-white/5 p-4 overflow-y-auto animate-in slide-in-from-top-4">
-                    <div className="space-y-4 pb-8">
+                    <div className="hidden md:flex items-center gap-1">
                         {status === "authenticated" ? (
                             <>
-                                <div className="px-2 py-2 border-b border-white/5 mb-2">
-                                    <div className="text-sm font-medium text-white">{session.user?.name}</div>
-                                    <div className="text-xs text-slate-500">{session.user?.email}</div>
+                                <Link
+                                    href="/dashboard"
+                                    className="px-4 py-2 rounded-xl text-sm font-black font-mono tracking-widest text-slate-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2 uppercase"
+                                >
+                                    <LayoutDashboard className="w-4 h-4" /> Dashboard
+                                </Link>
+
+                                <div className="w-[1px] h-4 bg-white/10 mx-2" />
+
+                                <div className="flex items-center gap-4 pl-2">
+                                    <div className="flex flex-col items-end">
+                                        <div className="text-[10px] font-black font-mono text-blue-400 uppercase tracking-widest">Operator</div>
+                                        <div className="text-xs font-bold text-white max-w-[120px] truncate">{session.user?.name}</div>
+                                    </div>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => signOut()}
+                                        className="w-10 h-10 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                                        title="Sign Out"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    href="/auth/signin"
+                                    className="px-6 py-2 rounded-xl text-sm font-black font-mono tracking-widest text-slate-400 hover:text-white transition-all uppercase"
+                                >
+                                    Login
+                                </Link>
+                                <Button asChild className="bg-white text-black hover:bg-slate-200 font-black rounded-xl px-6 h-10 shadow-lg transition-all hover:scale-105 active:scale-95">
+                                    <Link href="/auth/signup">Get Started</Link>
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mobile Toggle */}
+                    <button
+                        className="md:hidden p-2 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    >
+                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile Menu Overlay */}
+            {mobileMenuOpen && (
+                <div className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm pt-24 px-4 overflow-y-auto" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="glass-panel rounded-[2.5rem] p-6 border-white/10 space-y-4 animate-in fade-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                        {status === "authenticated" ? (
+                            <>
+                                <div className="px-4 py-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div className="text-[10px] font-black font-mono text-blue-400 uppercase tracking-widest mb-1">Authenticated Operator</div>
+                                    <div className="text-sm font-bold text-white">{session.user?.name}</div>
+                                    <div className="text-xs text-slate-500 font-mono truncate">{session.user?.email}</div>
                                 </div>
                                 <Link
                                     href="/dashboard"
-                                    className="block px-4 py-2 rounded-lg bg-white/5 text-white font-medium"
+                                    className="flex items-center justify-between px-6 py-4 rounded-2xl bg-white/5 text-white font-black font-mono uppercase tracking-widest text-xs hover:bg-white/10 transition-colors"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
                                     Dashboard
+                                    <LayoutDashboard className="w-4 h-4" />
                                 </Link>
                                 <button
                                     onClick={() => signOut()}
-                                    className="w-full text-left px-4 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                                    className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-rose-500/10 text-rose-400 font-black font-mono uppercase tracking-widest text-xs transition-colors"
                                 >
-                                    Sign Out
+                                    Log Out
+                                    <LogOut className="w-4 h-4" />
                                 </button>
                             </>
                         ) : (
                             <>
                                 <Link
                                     href="/auth/signin"
-                                    className="block px-4 py-3 text-center rounded-lg bg-white/5 text-slate-300 hover:text-white font-medium"
+                                    className="block px-6 py-4 text-center rounded-2xl bg-white/5 text-slate-300 hover:text-white font-black font-mono uppercase tracking-widest text-xs"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
                                     Sign In
                                 </Link>
                                 <Link
                                     href="/auth/signup"
-                                    className="block px-4 py-3 text-center rounded-lg bg-blue-600 text-white font-bold"
+                                    className="block px-6 py-4 text-center rounded-2xl bg-white text-black font-black font-mono uppercase tracking-widest text-xs shadow-xl"
                                     onClick={() => setMobileMenuOpen(false)}
                                 >
                                     Get Started

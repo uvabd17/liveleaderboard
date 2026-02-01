@@ -30,13 +30,17 @@ export async function POST(request: Request) {
     const userId = session.user.id as string
 
     // Create judge record
-    const code = crypto.randomBytes(6).toString('hex')
+    const code = crypto.randomBytes(6).toString('hex').toUpperCase()
+    const { hash } = await import('bcrypt')
+    const hashedPassword = await hash(code, 12)
+
     const judge = await db.judge.create({
       data: {
         eventId: invite.eventId,
         name: session.user.name || null,
         email: session.user.email || null,
-        code,
+        code: code.slice(-4), // Store last 4 for display/reference only
+        hashedCode: hashedPassword,
         role: 'judge',
       }
     })

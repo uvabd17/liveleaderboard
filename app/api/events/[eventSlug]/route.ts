@@ -57,3 +57,34 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
   }
 }
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: { eventSlug: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { eventSlug } = params
+    const body = await req.json()
+
+    const event = await db.event.findUnique({
+      where: { slug: eventSlug },
+      select: { orgId: true }
+    })
+
+    if (!event || event.orgId !== session.user.orgId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const updated = await db.event.update({
+      where: { slug: eventSlug },
+      data: body
+    })
+
+    return NextResponse.json({ event: updated })
+  } catch (e) {
+    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  }
+}

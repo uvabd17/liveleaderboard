@@ -23,6 +23,9 @@ export async function GET(
         id: true,
         name: true,
         kind: true,
+        entries: {
+          select: { roundNumber: true, url: true, notes: true }
+        }
       },
       orderBy: { createdAt: 'asc' }
     })
@@ -71,7 +74,22 @@ export async function POST(
     const existing = await db.participant.findFirst({ where: { eventId: event.id, normalizedName, kind } })
     if (existing) return NextResponse.json({ error: 'duplicate_name' }, { status: 409 })
 
-    const created = await db.participant.create({ data: { eventId: event.id, name: name.trim(), normalizedName, kind } })
+    // Generate access code for participant portal access
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    let accessCode = ''
+    for (let i = 0; i < 6; i++) {
+      accessCode += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+
+    const created = await db.participant.create({ 
+      data: { 
+        eventId: event.id, 
+        name: name.trim(), 
+        normalizedName, 
+        kind,
+        accessCode 
+      } 
+    })
 
     return NextResponse.json({ ok: true, participant: created }, { status: 201 })
   } catch (error: any) {

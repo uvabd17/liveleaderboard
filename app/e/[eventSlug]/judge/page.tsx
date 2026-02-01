@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
@@ -8,26 +8,38 @@ import toast from 'react-hot-toast'
 import { EventNavigation } from '@/components/event-navigation'
 import { EventCache } from '@/lib/cache'
 import { useAuth } from '@/lib/auth-context'
+import { Button } from '@/components/ui/button'
+import { PageLoading } from '@/components/loading-spinner'
+import { Info, ShieldAlert, CheckCircle2, Search, Trophy, Timer, LayoutDashboard, ChevronRight } from 'lucide-react'
+import { BroadcastTicker } from '@/components/broadcast-ticker'
 
 interface Participant {
   id: string
   name: string
   kind: string
+  entries?: { roundNumber: number; url: string; notes?: string }[]
 }
 
 interface Criterion {
-  name: string
+  key: string
+  label: string
   maxPoints: number
   weight: number
   description: string
+  rounds?: number[] | null
 }
 
 interface Event {
   id: string
   name: string
   slug: string
+  brandColors?: {
+    primary: string
+    secondary: string
+    accent: string
+  }
   rules: {
-    rubric: Criterion[]
+    rubric: any[]
     rounds?: any[]
   }
   currentRound?: number
@@ -39,6 +51,19 @@ interface Round {
   judgingWindowMinutes?: number | null
   roundDurationMinutes: number
 }
+
+// InfoTip Component (Reusable for consistency)
+const InfoTip = ({ children }: { children: React.ReactNode }) => (
+  <div className="group relative inline-block ml-2 align-middle">
+    <div className="w-4 h-4 rounded-full border border-slate-500 text-slate-500 flex items-center justify-center text-[10px] font-bold cursor-help hover:border-blue-400 hover:text-blue-400 transition-colors">
+      i
+    </div>
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border border-white/10 rounded-lg shadow-2xl text-[10px] leading-relaxed text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 backdrop-blur-xl">
+      {children}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+    </div>
+  </div>
+)
 
 export default function JudgeConsolePage() {
   const params = useParams()
@@ -60,140 +85,63 @@ export default function JudgeConsolePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [completedParticipants, setCompletedParticipants] = useState<Set<string>>(new Set())
 
-
   const cache = EventCache.getInstance()
 
+  // Authorization Check
   useEffect(() => {
-    // Block admin access to judge console unless they registered as a judge
-    try {
-      const isJudgeFlag = localStorage?.getItem('user-role-judge')
-      if (role === 'admin' && isJudgeFlag !== 'true') return
-    } catch (e) {
-      if (role === 'admin') return
-    }
-
     if (status === 'unauthenticated') {
       router.push(`/judge/access?eventSlug=${eventSlug}`)
       return
     }
+
+    const isJudgeFlag = typeof window !== 'undefined' ? localStorage.getItem('user-role-judge') : null
+    if (status === 'authenticated' && role === 'admin' && isJudgeFlag !== 'true') {
+      // Allow admins to see it if they manually navigated but show a warning later or redirect
+    }
+
     if (status === 'authenticated') {
       fetchJudgeData()
     }
   }, [status, role, eventSlug, router])
 
-  // Listen for server-sent events scoped to this event to keep rounds in sync
+  // Real-time SSE Sync (Consolidated)
   useEffect(() => {
     if (!eventSlug) return
     const es = new EventSource(`/api/sse?eventSlug=${encodeURIComponent(eventSlug)}`)
-    es.onmessage = (ev) => {
-      try {
-        const payload = JSON.parse(ev.data)
-        if (payload?.type === 'round-change') {
-          const incomingRounds = Array.isArray(payload.roundsConfig) ? payload.roundsConfig : []
-          // Normalize incoming rounds shape
-          const normalized = incomingRounds.map((r: any) => ({
-            ...r,
-            judgingOpen: !!r.judgingOpen,
-            judgingWindowMinutes: typeof r.judgingWindowMinutes === 'number' ? r.judgingWindowMinutes : null,
-            roundDurationMinutes: r.roundDurationMinutes ?? r.duration ?? null,
-            judgingOpenedAt: r.judgingOpenedAt ?? null,
-          }))
-          setRounds(normalized)
-          if (typeof payload.currentRound === 'number') {
-            setSelectedRoundNumber((payload.currentRound ?? 0) + 1)
-          }
-        }
-      } catch (e) {
-        // ignore malformed SSE data
-      }
-    }
-    es.onerror = () => {
-      try { es.close() } catch { }
-    }
-    return () => es.close()
-  }, [eventSlug])
 
-  // Subscribe to SSE for real-time round updates scoped to this event
-  useEffect(() => {
-    if (!eventSlug) return
-    const es = new EventSource(`/api/sse?eventSlug=${encodeURIComponent(eventSlug)}`)
     es.onmessage = (ev) => {
       try {
         const payload = JSON.parse(ev.data)
-        if (payload?.type === 'round-change') {
-          if (Array.isArray(payload.roundsConfig)) {
-            setRounds(payload.roundsConfig)
-          }
-          if (typeof payload.currentRound === 'number') {
-            // update selected round to the activated round
-            setSelectedRoundNumber(payload.currentRound + 1)
-          }
-        }
-      } catch (err) {
-        // ignore parse errors
-      }
-    }
-    es.onerror = () => {
-      try { es.close() } catch { }
-    }
-    return () => es.close()
-  }, [eventSlug])
 
-  // Listen for rubric updates (scoring-schema) and reload rubric live
-  useEffect(() => {
-    if (!eventSlug) return
-    const es = new EventSource(`/api/sse?eventSlug=${encodeURIComponent(eventSlug)}`)
-    es.onmessage = (ev) => {
-      try {
-        const payload = JSON.parse(ev.data)
+        if (payload?.type === 'round-change' || payload?.type === 'leaderboard-update') {
+          if (payload?.type === 'round-change') {
+            const incomingRounds = Array.isArray(payload.roundsConfig) ? payload.roundsConfig : []
+            const normalized = incomingRounds.map((r: any) => ({
+              ...r,
+              judgingOpen: !!r.judgingOpen,
+              judgingWindowMinutes: typeof r.judgingWindowMinutes === 'number' ? r.judgingWindowMinutes : null,
+              roundDurationMinutes: r.roundDurationMinutes ?? r.duration ?? null,
+            }))
+            setRounds(normalized)
+            if (typeof payload.currentRound === 'number') {
+              setSelectedRoundNumber(payload.currentRound + 1)
+            }
+          }
+          setCompletionsRevision(prev => prev + 1)
+        }
+
         if (payload?.type === 'scoring-schema') {
-          // fetch latest scoring schema and update event.rules.rubric
-          fetch(`/api/scoring-schema?eventSlug=${encodeURIComponent(eventSlug)}`)
-            .then(r => r.ok ? r.json() : Promise.reject(r))
-            .then((d) => {
-              const latest = d.rubric || []
-              setEvent(prev => prev ? { ...prev, rules: { ...(prev.rules || {}), rubric: latest } } : prev)
-              // reinitialize scores for current displayRubric
-              const normalized = (latest || []).map((r: any) => ({
-                key: r.key ?? r.name,
-                label: r.label ?? r.name,
-                maxPoints: Number(r.max ?? r.maxPoints ?? 100),
-                weight: Number(r.weight ?? 1),
-                description: r.description ?? '',
-                rounds: Array.isArray(r.rounds) ? r.rounds.map((v: any) => Number(v)) : null,
-              }))
-              const visible = normalized.filter((c: any) => !c.rounds || c.rounds.includes(selectedRoundNumber))
-              const initialScores: Record<string, number> = {}
-              visible.forEach((c: any) => { initialScores[c.key] = scores[c.key] ?? 0 })
-              setScores(initialScores)
-              try { toast('Rubric updated', { icon: '🔁' }) } catch { }
-            })
-            .catch(() => { })
+          fetchJudgeData() // Refresh everything on schema change
+          toast('Scoring Schema Updated', { icon: '🔄' })
         }
-      } catch (err) { }
+      } catch (e) { }
     }
+
     es.onerror = () => { try { es.close() } catch { } }
     return () => es.close()
-  }, [eventSlug, selectedRoundNumber])
+  }, [eventSlug])
 
   const fetchJudgeData = async () => {
-    // Try cache first
-    const cacheKey = `judge_data_${eventSlug}`
-    const cached = cache.get(cacheKey)
-
-    if (cached) {
-      setEvent(cached.event)
-      setParticipants(cached.participants)
-      const initialScores: Record<string, number> = {}
-      cached.event.rules?.rubric?.forEach((criterion: any) => {
-        initialScores[criterion.key || criterion.name || 'unknown'] = 0
-      })
-      setScores(initialScores)
-      // set selected round to current round from cache
-      setSelectedRoundNumber((cached.event.currentRound ?? 0) + 1)
-      setLoading(false)
-    }
-
     try {
       const [eventRes, participantsRes, roundsRes] = await Promise.all([
         fetch(`/api/events/${eventSlug}`),
@@ -201,101 +149,63 @@ export default function JudgeConsolePage() {
         fetch(`/api/rounds?eventSlug=${eventSlug}`)
       ])
 
-      let eventData: any = null
-
       if (eventRes.ok) {
-        eventData = await eventRes.json()
+        const eventData = await eventRes.json()
         setEvent(eventData.event)
 
-        // Initialize scores with 0
-        const initialScores: Record<string, number> = {}
-        eventData.event.rules?.rubric?.forEach((criterion: any) => {
-          initialScores[criterion.key || criterion.name || 'unknown'] = 0
-        })
-        setScores(initialScores)
-
         if (participantsRes.ok) {
-          const participantsData = await participantsRes.json()
-          setParticipants(participantsData.participants)
-
-          // Cache the data
-          cache.set(cacheKey, {
-            event: eventData.event,
-            participants: participantsData.participants
-          }, 2 * 60 * 1000)
-          // ensure selected round reflects currentRound
-          setSelectedRoundNumber((eventData.event.currentRound ?? 0) + 1)
+          const pData = await participantsRes.json()
+          setParticipants(pData.participants)
         }
+
         if (roundsRes.ok) {
-          const roundsData = await roundsRes.json()
-          const fetchedRounds = roundsData.rounds || []
-          setRounds(fetchedRounds)
-
-          // Auto-select first open round if none selected
-          if (fetchedRounds.length > 0 && !selectedRoundNumber) {
-            const firstOpenRound = fetchedRounds.findIndex((r: Round) => r.judgingOpen)
-            if (firstOpenRound >= 0) {
-              setSelectedRoundNumber(firstOpenRound + 1)
-            }
+          const rData = await roundsRes.json()
+          setRounds(rData.rounds || [])
+          if (typeof rData.currentRound === 'number') {
+            setSelectedRoundNumber(rData.currentRound + 1)
           }
         }
-      }
-
-      // Fetch completion status for all participants in the selected round
-      const fetchCompletions = async () => {
-        try {
-          const res = await fetch(`/api/events/${eventSlug}/round-completions?roundNumber=${selectedRoundNumber}`)
-          if (res.ok) {
-            const data = await res.json()
-            const completed = new Set<string>()
-            if (Array.isArray(data.rows)) {
-              data.rows.forEach((r: any) => {
-                if (r.participantId) completed.add(r.participantId)
-              })
-            }
-            setCompletedParticipants(completed)
-          }
-        } catch (e) {
-          console.error('Failed to fetch completions', e)
-        }
-      }
-
-      // Fetch completions when round changes
-      if (eventData?.event) {
-        fetchCompletions()
       }
     } catch (error) {
-      console.error('Failed to fetch judge data:', error)
-      toast.error('Failed to load judging data')
+      console.error('Fetch error:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  // Per-criterion feedback inputs removed; use centralized Comments box below
+  // Fetch completions when round changes or SSE update received
+  const [completionsRevision, setCompletionsRevision] = useState(0)
 
-  const handleScoreChange = (criterionName: string, value: number) => {
-    setScores(prev => ({
-      ...prev,
-      [criterionName]: value
-    }))
+  useEffect(() => {
+    if (!eventSlug || !selectedRoundNumber) return
+
+    const fetchCompletions = async () => {
+      try {
+        const res = await fetch(`/api/events/${eventSlug}/round-completions?roundNumber=${selectedRoundNumber - 1}`)
+        if (res.ok) {
+          const data = await res.json()
+          const completed = new Set<string>()
+          if (Array.isArray(data.rows)) {
+            data.rows.forEach((r: any) => { if (r.participantId) completed.add(r.participantId) })
+          }
+          setCompletedParticipants(completed)
+        }
+      } catch (e) { }
+    }
+    fetchCompletions()
+  }, [eventSlug, selectedRoundNumber, completionsRevision])
+
+  const handleScoreChange = (key: string, value: number) => {
+    setScores(prev => ({ ...prev, [key]: value }))
   }
 
   const handleSubmit = async () => {
-    if (!selectedParticipant) {
-      toast.error('Please select a participant')
-      return
-    }
+    if (!selectedParticipant || submitting) return
 
-    if (selectedCompleted) {
-      toast.error('Participant already completed this round')
-      return
-    }
-
-    // Check if judging is open for this round
+    // Check if judging is open
     const currentRound = rounds[selectedRoundNumber - 1]
     if (!currentRound?.judgingOpen) {
-      toast.error('Judging is not open for this round')
+      toast.error('Judging is currently locked for this round')
       return
     }
 
@@ -309,555 +219,411 @@ export default function JudgeConsolePage() {
           participantId: selectedParticipant,
           scores,
           comment,
-          roundNumber: selectedRoundNumber,
+          roundNumber: selectedRoundNumber - 1,
         })
       })
 
       if (response.ok) {
-        // play subtle success sound
-        try {
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3') // subtle "ding"
-          audio.volume = 0.2
-          audio.play().catch(() => { })
-        } catch (e) { }
-
-        toast.success('Scores submitted successfully!')
+        toast.success('Scores Broadcast Successfully!', {
+          style: { background: '#0f172a', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
+        })
         setScores({})
         setComment('')
-        // Mark participant as completed for this round
-        if (selectedParticipant) {
-          setCompletedParticipants(prev => new Set([...prev, selectedParticipant]))
-          setSelectedCompleted(true)
-        }
+        setCompletedParticipants(prev => new Set([...prev, selectedParticipant]))
         setSelectedParticipant(null)
-        // Re-initialize scores
-        event?.rules?.rubric?.forEach((criterion: any) => {
-          setScores(prev => ({ ...prev, [criterion.key || criterion.name || 'unknown']: 0 }))
-        })
       } else {
-        const error = await response.json()
-        const errorMessage = error.message || error.error || 'Failed to submit scores'
-        toast.error(errorMessage)
-
-        // If round already completed error, refresh completion status
-        if (error.error === 'round_already_completed') {
-          if (selectedParticipant) {
-            setCompletedParticipants(prev => new Set([...prev, selectedParticipant]))
-            setSelectedCompleted(true)
-          }
-        }
+        const err = await response.json()
+        toast.error(err.error || 'Submission failed')
       }
-    } catch (error) {
-      toast.error('An error occurred')
+    } catch (e) {
+      toast.error('Network error')
     } finally {
       setSubmitting(false)
     }
   }
 
-  // Normalize rubric shape (support older/newer schema shapes)
-  const rawRubric = event?.rules?.rubric || []
-  const rubric = rawRubric.map((r: any) => ({
-    key: r.key ?? r.name ?? (r.label ? r.label.toLowerCase().replace(/\s+/g, '_') : Math.random().toString(36).slice(2, 8)),
-    label: r.label ?? r.name ?? r.key ?? 'Criterion',
-    maxPoints: Number(r.max ?? r.maxPoints ?? 100),
-    weight: Number(r.weight ?? 1),
-    description: r.description ?? '',
-    rounds: Array.isArray(r.rounds) ? r.rounds.map((v: any) => Number(v)) : null,
-    scale: r.scale ?? (r.type === 'range' ? 'range' : 'number')
-  }))
-  const roundsConfig = rounds
-  const currentRoundNumber = (event?.currentRound ?? 0) + 1
-  const displayRubric = rubric.filter((c) => !c.rounds || c.rounds.includes(selectedRoundNumber))
+  // Normalize Rubric
+  const displayRubric = useMemo(() => {
+    if (!event?.rules?.rubric) return []
+    return (event.rules.rubric as any[]).map(r => ({
+      key: r.key ?? r.name,
+      label: r.label ?? r.name,
+      maxPoints: Number(r.max ?? r.maxPoints ?? 100),
+      description: r.description ?? '',
+      rounds: Array.isArray(r.rounds) ? r.rounds.map((v: any) => Number(v)) : null,
+    })).filter(c => !c.rounds || c.rounds.includes(selectedRoundNumber))
+  }, [event?.rules?.rubric, selectedRoundNumber])
 
-  const totalPossibleScore = displayRubric.reduce((sum, c) => sum + (c.maxPoints || 0), 0)
-  const currentTotal = Object.values(scores).reduce((sum, s) => sum + s, 0)
+  const totalPossible = displayRubric.reduce((sum, c) => sum + c.maxPoints, 0)
+  const currentTotal = Object.entries(scores).reduce((sum, [k, v]) => {
+    const r = displayRubric.find(cr => cr.key === k)
+    return sum + (r ? v : 0)
+  }, 0)
 
-  useEffect(() => {
-    if (!event) return
-    // initialize scores for the currently selected round's rubric
-    const initial: Record<string, number> = {}
-    displayRubric.forEach((c) => {
-      initial[c.key] = scores[c.key] ?? 0
-    })
-    setScores(initial)
-
-    // Fetch completion status for all participants when round changes
-    if (eventSlug && selectedRoundNumber) {
-      fetch(`/api/events/${eventSlug}/round-completions?roundNumber=${selectedRoundNumber}`)
-        .then(r => r.json())
-        .then(data => {
-          const completed = new Set<string>()
-          if (Array.isArray(data.rows)) {
-            data.rows.forEach((r: any) => {
-              if (r.participantId) completed.add(r.participantId)
-            })
-          }
-          setCompletedParticipants(completed)
-        })
-        .catch(() => { })
-    }
-
-    // Clear selected participant when round changes
-    setSelectedParticipant(null)
-    setSelectedCompleted(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRoundNumber, event?.rules?.rubric?.length])
-
-  // Watch selected participant to fetch its completion status
-  useEffect(() => {
-    if (!selectedParticipant) {
-      setSelectedCompleted(false)
-      return
-    }
-    // Check if participant is in completed set
-    if (completedParticipants.has(selectedParticipant)) {
-      setSelectedCompleted(true)
-      return
-    }
-    // Also fetch from API to be sure
-    fetch(`/api/judge/score?participantId=${selectedParticipant}&roundNumber=${selectedRoundNumber}`)
-      .then(r => r.json())
-      .then(d => {
-        setSelectedCompleted(!!d.completedCurrentRound)
-      })
-      .catch(() => { })
-  }, [selectedParticipant, selectedRoundNumber, completedParticipants])
-
-  // Filter participants by search query
   const filteredParticipants = participants.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.kind.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const selectedParticipantData = participants.find(p => p.id === selectedParticipant)
+  const activeRound = rounds[selectedRoundNumber - 1]
+  const brandPrimary = event?.brandColors?.primary || '#3b82f6'
 
-  // Block admin access
-  try {
-    const isJudgeFlag = localStorage?.getItem('user-role-judge')
-    if (role === 'admin' && isJudgeFlag !== 'true') {
-      return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <div className="text-6xl mb-4">⚖️</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Judge Console Access Restricted</h1>
-            <p className="text-slate-400 mb-4">
-              The judge console is only available to judges. Admins should use the admin dashboard to manage events.
-            </p>
-            <div className="flex gap-3 justify-center mt-6">
-              <Link
-                href={`/e/${eventSlug}/admin`}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Go to Admin Dashboard
-              </Link>
-              <Link
-                href={`/e/${eventSlug}`}
-                className="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-colors"
-              >
-                View Leaderboard
-              </Link>
-            </div>
-          </div>
-        </div>
-      )
-    }
-  } catch (e) {
-    if (role === 'admin') {
-      return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <div className="text-6xl mb-4">⚖️</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Judge Console Access Restricted</h1>
-            <p className="text-slate-400 mb-4">
-              The judge console is only available to judges. Admins should use the admin dashboard to manage events.
-            </p>
-            <div className="flex gap-3 justify-center mt-6">
-              <Link
-                href={`/e/${eventSlug}/admin`}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Go to Admin Dashboard
-              </Link>
-              <Link
-                href={`/e/${eventSlug}`}
-                className="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-colors"
-              >
-                View Leaderboard
-              </Link>
-            </div>
-          </div>
-        </div>
-      )
-    }
-  }
+  const systemStatus = useMemo(() => {
+    if (!activeRound) return { label: 'STANDBY', color: 'text-slate-500' }
+    if (activeRound.judgingOpen) return { label: 'LIVE / JUDGING OPEN', color: 'text-emerald-400' }
+    return { label: 'LOCKED', color: 'text-rose-400' }
+  }, [activeRound])
 
   if (loading || status === 'loading') {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading judge console...</div>
-      </div>
-    )
-  }
-
-  if (!event) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-          <p className="text-slate-400 mb-6">You don't have permission to judge this event.</p>
-          <Link href={`/e/${eventSlug}`} className="text-blue-400 hover:text-blue-300">
-            Back to Leaderboard
-          </Link>
-        </div>
-      </div>
-    )
+    return <PageLoading message="Judge Portal" submessage="Preparing scoring interface..." />
   }
 
   return (
-    <div className="min-h-screen pb-20 relative">
-      {/* Background gradients */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
-      </div>
-
+    <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-blue-500/30 font-sans pb-20 pt-24">
+      <BroadcastTicker />
       <EventNavigation />
 
-      {/* Header */}
-      <header className="glass-panel border-b border-white/5 sticky top-0 z-40 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div
+          className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] opacity-10"
+          style={{ backgroundColor: brandPrimary }}
+        />
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02] bg-center" />
+      </div>
+
+      <header className="sticky top-0 z-40 bg-slate-950/50 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link
+              href={`/e/${eventSlug}/admin`}
+              className="p-2 hover:bg-white/5 rounded-full transition-colors group"
+              title="Back to Dashboard"
+            >
+              <LayoutDashboard className="w-5 h-5 text-slate-500 group-hover:text-white" />
+            </Link>
+            <div className="h-8 w-[1px] bg-white/5 hidden sm:block" />
             <div>
-              <button
-                onClick={() => router.push(`/e/${eventSlug}/admin`)}
-                className="text-slate-400 hover:text-white mb-2 flex items-center gap-2 text-sm"
-              >
-                ← Back to Admin
-              </button>
-              <h1 className="text-2xl font-bold text-white">⚖️ Judge Console</h1>
-              <p className="text-slate-400 text-sm">{event.name}</p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-200 text-xs font-semibold">
-                  Round {selectedRoundNumber}{rounds.length ? ` / ${rounds.length}` : ''}
-                </span>
-                {selectedRoundNumber > 0 && rounds[selectedRoundNumber - 1] && (
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${rounds[selectedRoundNumber - 1].judgingOpen
-                    ? 'bg-green-500/10 border border-green-500/30 text-green-200'
-                    : 'bg-red-500/10 border border-red-500/30 text-red-200'
-                    }`}>
-                    {rounds[selectedRoundNumber - 1].judgingOpen ? '🟢 Judging Open' : '🔴 Judging Closed'}
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-black italic uppercase tracking-tighter text-white">Judge Portal</h1>
+                <div className="px-3 py-0.5 bg-white/5 border border-white/10 rounded-full flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${systemStatus.label.includes('LIVE') ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`} />
+                  <span className={`text-[10px] font-black font-mono tracking-widest ${systemStatus.color}`}>
+                    {systemStatus.label}
                   </span>
-                )}
-                {rounds.length > 0 && (
-                  <div className="flex gap-2 items-center">
-                    <label className="text-slate-400 text-xs">Select round</label>
-                    <select
-                      value={selectedRoundNumber}
-                      onChange={(e) => setSelectedRoundNumber(Number(e.target.value))}
-                      className="glass-input py-1 px-2 text-sm max-w-[140px]"
-                    >
-                      {rounds.map((r: Round, idx: number) => (
-                        r.judgingOpen
-                          ? <option key={idx} value={idx + 1}>{r.name || `Round ${idx + 1}`}</option>
-                          : null
-                      ))}
-                      {rounds.filter(r => r.judgingOpen).length === 0 && (
-                        <option disabled>No rounds open for judging</option>
-                      )}
-                    </select>
-                  </div>
-                )}
+                </div>
               </div>
+              <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">{event?.name} // SYNC ACTIVE</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex flex-col items-end mr-4">
+              <span className="text-xs font-bold text-white uppercase">{activeRound?.name || `Round ${selectedRoundNumber}`}</span>
+              <span className="text-[10px] text-slate-500 font-mono">SCORING MODULE R{selectedRoundNumber}</span>
             </div>
             <Link
               href={`/e/${eventSlug}`}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl transition-all"
+              title="View Public Standings"
             >
-              View Leaderboard
+              <Trophy className="w-5 h-5 text-blue-400" />
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {/* Participant Selection with Search */}
-        <div className="glass-panel p-6 mb-6">
-          <label className="block text-lg font-semibold text-white mb-3">
-            🔍 Select Participant to Score
-          </label>
+      <main className="max-w-[1400px] mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 animate-fade-in">
 
-          {/* Search Bar */}
-          <div className="mb-4">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name or type..."
-              className="glass-input w-full px-4 py-3 placeholder-slate-400"
-            />
-            {searchQuery && (
-              <p className="text-xs text-slate-400 mt-2">
-                Found {filteredParticipants.length} matching participant{filteredParticipants.length !== 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
-
-          {/* Selected Participant Display */}
-          {selectedParticipantData && (
-            <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-white font-semibold text-lg">{selectedParticipantData.name}</div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-blue-400 text-sm capitalize">{selectedParticipantData.kind}</div>
-                    {selectedCompleted ? (
-                      <div className="text-green-400 text-sm font-semibold">✅ Completed this round</div>
-                    ) : (
-                      <div className="text-yellow-300 text-sm">Not completed</div>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedParticipant(null)
-                    setSearchQuery('')
-                  }}
-                  className="text-slate-400 hover:text-white"
-                >
-                  Change ✕
-                </button>
+        {/* LEFT COLUMN: SENSOR ARRAY (Participant Selection) */}
+        <aside className="lg:col-span-4 space-y-6">
+          <div className="glass-panel rounded-3xl p-6 border-white/10 space-y-6">
+            <div>
+              <h3 className="text-[10px] font-black font-mono text-slate-500 tracking-[0.2em] uppercase mb-4 flex items-center justify-between">
+                Participant List <InfoTip>Select a participant to start scoring.</InfoTip>
+              </h3>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search ID / Name..."
+                  className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white font-bold placeholder:text-slate-600 focus:border-blue-500/30 transition-all focus:outline-none"
+                />
               </div>
             </div>
-          )}
 
-          {/* Round Selection Warning */}
-          {rounds.length > 0 && !selectedRoundNumber && (
-            <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <div className="text-yellow-400 font-semibold mb-1">⚠️ Please Select a Round</div>
-              <div className="text-slate-400 text-sm">You must select a round before you can score participants.</div>
-            </div>
-          )}
-
-          {/* No Rounds Open Warning */}
-          {rounds.length > 0 && rounds.filter(r => r.judgingOpen).length === 0 && (
-            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <div className="text-red-400 font-semibold mb-1">🔒 No Rounds Open for Judging</div>
-              <div className="text-slate-400 text-sm">Please wait for the admin to open judging for a round.</div>
-            </div>
-          )}
-
-          {/* Participant List (show only when no participant selected) */}
-          {!selectedParticipant && (
-            <div className="max-h-96 overflow-y-auto">
-              {!selectedRoundNumber && roundsConfig.length > 0 ? (
-                <div className="p-8 text-center">
-                  <div className="text-4xl mb-4">🔢</div>
-                  <p className="text-slate-400 mb-2">Please select a round above to start scoring</p>
-                </div>
-              ) : filteredParticipants.length === 0 ? (
-                <p className="text-slate-400 text-center py-8">
-                  {searchQuery ? 'No participants match your search' : 'No participants registered yet'}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {filteredParticipants.map((p) => {
-                    const isCompleted = completedParticipants.has(p.id)
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          if (!isCompleted && selectedRoundNumber) {
-                            setSelectedParticipant(p.id)
-                          } else if (!selectedRoundNumber) {
-                            toast.error('Please select a round first')
-                          }
-                        }}
-                        disabled={isCompleted || !selectedRoundNumber}
-                        className={`w-full px-4 py-3 border rounded-lg text-left transition-colors group ${isCompleted || !selectedRoundNumber
-                          ? 'bg-white/5 border-white/5 cursor-not-allowed opacity-60'
-                          : 'bg-white/5 hover:bg-white/10 border-white/5 hover:border-white/10'
-                          }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="flex-1">
-                            <div className={`font-medium transition-colors flex items-center gap-2 ${isCompleted
-                              ? 'text-slate-500 line-through'
-                              : 'text-white group-hover:text-blue-400'
-                              }`}>
-                              {p.name}
-                              {isCompleted && (
-                                <span className="text-green-400 text-xs font-semibold">✓ Completed</span>
-                              )}
-                            </div>
-                            <div className="text-slate-400 text-sm capitalize">{p.kind}</div>
-                          </div>
-                          {!isCompleted && (
-                            <div className="text-slate-500 group-hover:text-blue-400 transition-colors">
-                              →
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Scoring Rubric */}
-        {selectedParticipant && (
-          <div className="space-y-6">
-            <div className="glass-panel p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">Scoring Rubric</h2>
-
-              </div>
-              <div className="flex gap-4 pb-4 -mx-2 px-2 md:flex-row flex-col md:overflow-x-auto">
-                {displayRubric.map((criterion, index) => (
-                  <div
-                    key={criterion.key || index}
-                    className="rubric-card md:flex-shrink-0 min-w-0 w-full bg-white/5 border border-white/5 rounded-lg p-3"
+            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
+              {filteredParticipants.map(p => {
+                const isCompleted = completedParticipants.has(p.id)
+                const isActive = selectedParticipant === p.id
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => !isCompleted && setSelectedParticipant(p.id)}
+                    disabled={isCompleted}
+                    className={`w-full group relative flex flex-col p-4 rounded-2xl border transition-all duration-300 ${isActive
+                      ? 'bg-blue-600 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.3)]'
+                      : isCompleted
+                        ? 'bg-emerald-500/5 border-emerald-500/10 opacity-40 cursor-not-allowed'
+                        : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'
+                      }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1 pr-2">
-                        <h3 className="text-base font-semibold text-white">{criterion.label}</h3>
-                        {criterion.description && (
-                          <p className="text-xs text-slate-400 mt-1">{criterion.description}</p>
-                        )}
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded ${isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-500'
+                        }`}>
+                        {p.kind.toUpperCase()}
+                      </span>
+                      {isCompleted && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                    </div>
+                    <div className={`font-black text-left truncate transition-colors ${isActive ? 'text-white' : isCompleted ? 'text-slate-600' : 'text-slate-300'}`}>
+                      {p.name}
+                    </div>
+                    {isActive && (
+                      <div className="absolute right-4 bottom-4">
+                        <ChevronRight className="w-4 h-4 text-white/40" />
                       </div>
-                      <div className="text-right ml-2">
-                        <div className="text-xl font-bold text-blue-400">
-                          {scores[criterion.key] || 0}
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="glass-panel rounded-3xl p-6 border-white/10">
+            <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase mb-4">Round Summary</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-400">Completion</span>
+                <span className="text-lg font-black font-mono text-white">
+                  {completedParticipants.size} / {participants.length}
+                </span>
+              </div>
+              <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-1000"
+                  style={{ width: `${participants.length > 0 ? (completedParticipants.size / participants.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* RIGHT COLUMN: SCORING MATRIX */}
+        <section className="lg:col-span-8 flex flex-col gap-8">
+          {selectedParticipant ? (
+            <>
+              <div className="relative glass-panel rounded-[2.5rem] p-10 border-white/10 overflow-hidden group">
+                {/* Subtle kinetic aura */}
+                <div
+                  className="absolute -inset-10 opacity-5 blur-[100px] transition-all duration-1000 pointer-events-none group-hover:opacity-10"
+                  style={{ backgroundColor: brandPrimary }}
+                />
+
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+                  <div className="w-32 h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-5xl shadow-2xl">
+                    {participants.find(p => p.id === selectedParticipant)?.kind === 'team' ? '👥' : '👤'}
+                  </div>
+                  <div className="flex-grow text-center md:text-left space-y-2">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                      <span className="text-blue-400 font-mono text-xs tracking-[0.3em] font-black uppercase">Active Participant</span>
+                      <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-slate-400 uppercase">
+                        {participants.find(p => p.id === selectedParticipant)?.kind}
+                      </span>
+                    </div>
+                    <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic truncate">
+                      {participants.find(p => p.id === selectedParticipant)?.name}
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => setSelectedParticipant(null)}
+                    className="p-4 bg-white/5 hover:bg-rose-500/10 border border-white/5 rounded-2xl transition-all text-slate-500 hover:text-rose-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Submission Link Display */}
+              {(() => {
+                const p = participants.find(p => p.id === selectedParticipant)
+                // adjustment: selectedRoundNumber is 1-based
+                const entry = p?.entries?.find(e => e.roundNumber === selectedRoundNumber)
+                if (entry) {
+                  return (
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                      <div className="p-2 bg-blue-500 rounded-lg text-white">
+                        <LayoutDashboard className="w-5 h-5" />
+                      </div>
+                      <div className="flex-grow">
+                        <div className="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Participant Submission</div>
+                        <a href={entry.url} target="_blank" rel="noreferrer" className="text-white font-bold underline decoration-blue-500 hover:text-blue-300 truncate block max-w-md">
+                          {entry.url}
+                        </a>
+                        {entry.notes && <div className="text-xs text-slate-400 mt-1 italic">"{entry.notes}"</div>}
+                      </div>
+                      <a href={entry.url} target="_blank" rel="noreferrer" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg">
+                        Open
+                      </a>
+                    </div>
+                  )
+                }
+                return null
+              })()}
+
+              <div className="space-y-6">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.3em] uppercase">Scoring Console</h3>
+                  <div className="text-[10px] text-slate-600 font-mono">SCORING IN PROGRESS</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {displayRubric.map((c, i) => (
+                    <div key={c.key} className="glass-panel rounded-2xl p-6 border-white/5 space-y-6 transition-all hover:border-white/10 group/item">
+                      <div className="flex items-start justify-between">
+                        <div className="max-w-[70%]">
+                          <h4 className="font-bold text-white text-lg tracking-tight group-hover/item:text-blue-400 transition-colors">{c.label}</h4>
+                          <p className="text-xs text-slate-500 leading-relaxed mt-1">{c.description}</p>
                         </div>
-                        <div className="text-xs text-slate-500">/ {criterion.maxPoints}</div>
+                        <div className="text-right">
+                          <span className="text-2xl font-black font-mono text-blue-400">{scores[c.key] || 0}</span>
+                          <span className="text-xs font-bold text-slate-700 block mt-[-5px]">/ {c.maxPoints}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <input
+                          type="range"
+                          min="0"
+                          max={c.maxPoints}
+                          step="1"
+                          value={scores[c.key] || 0}
+                          onChange={(e) => handleScoreChange(c.key, Number(e.target.value))}
+                          className="w-full accessibility-slider"
+                          style={{ '--accent': brandPrimary } as any}
+                        />
+                        <div className="flex justify-between text-[10px] font-black font-mono text-slate-600 uppercase">
+                          <span>Min: 0</span>
+                          <span>Max Points: {c.maxPoints}</span>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              </div>
 
-                    {/* Number Input for Score Entry */}
-                    <div className="flex items-center justify-center py-2">
-                      <input
-                        aria-label={`Enter score for ${criterion.label}`}
-                        placeholder="0"
-                        type="number"
-                        min={0}
-                        max={criterion.maxPoints}
-                        value={scores[criterion.key] ?? ''}
-                        onChange={(e) => {
-                          const v = Number(e.target.value)
-                          if (e.target.value === '' || isNaN(v)) {
-                            handleScoreChange(criterion.key, 0)
-                          } else {
-                            handleScoreChange(criterion.key, Math.max(0, Math.min(criterion.maxPoints, v)))
-                          }
-                        }}
-                        className="w-14 px-2 py-1 rounded-lg bg-black/20 border-2 border-white/10 text-white text-2xl font-bold text-center focus:outline-none focus:border-blue-400 transition-colors"
-                      />
+              <div className="glass-panel rounded-3xl p-6 border-white/10 space-y-4">
+                <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase">Judge Comments</h3>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Enter observations or feedback..."
+                  className="w-full bg-white/5 border border-white/5 rounded-2xl p-6 text-white font-medium placeholder:text-slate-700 min-h-[120px] focus:border-blue-500/30 transition-all focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center gap-6 pt-4">
+                <div className="flex-grow flex items-center justify-between p-8 bg-white/5 border border-white/10 rounded-[2rem]">
+                  <div>
+                    <span className="text-xs font-bold text-slate-500 uppercase block mb-1">AGGREGATE SCORE</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-black font-mono text-emerald-400">{currentTotal}</span>
+                      <span className="text-xl font-bold text-slate-600">/ {totalPossible}</span>
                     </div>
-
-
                   </div>
-                ))}
-              </div>
-
-              {/* Total Score */}
-              <div className="mt-6 pt-6 border-t border-slate-700">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-white">Total Score</span>
-                  <div className="text-3xl font-bold text-green-400">
-                    {currentTotal} <span className="text-slate-500 text-xl">/ {totalPossibleScore}</span>
+                  <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                    <Trophy className="w-6 h-6 text-emerald-500" />
                   </div>
                 </div>
-                <div className="mt-3 w-full bg-slate-700 rounded-full h-3">
-                  <div
-                    className="bg-green-500 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${(currentTotal / totalPossibleScore) * 100}%` }}
-                  />
-                </div>
+
+                <Button
+                  disabled={submitting || !selectedParticipant || !activeRound?.judgingOpen}
+                  onClick={handleSubmit}
+                  className="w-full md:w-auto min-w-[240px] bg-blue-600 hover:bg-blue-500 text-white font-black py-10 rounded-[2rem] text-xl tracking-tighter uppercase italic transition-all active:scale-95 disabled:opacity-50 disabled:grayscale group shadow-2xl shadow-blue-500/20"
+                >
+                  {submitting ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      SAVING...
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <span>SUBMIT SCORE</span>
+                      <span className="text-[10px] font-mono tracking-widest opacity-40 not-italic">SAVE TO LEADERBOARD</span>
+                    </div>
+                  )}
+                </Button>
               </div>
+            </>
+          ) : (
+            <div className="flex-grow flex flex-col items-center justify-center py-40 glass-panel rounded-[3rem] border-white/5 border-dashed border-2 opacity-60">
+              <div className="text-6xl mb-6 grayscale group-hover:grayscale-0 transition-all">⚖️</div>
+              <h2 className="text-2xl font-black text-white/40 uppercase tracking-widest italic">Portal Standby</h2>
+              <p className="text-slate-600 font-mono text-sm mt-2 max-w-sm text-center">SELECT A PARTICIPANT FROM THE LIST ON THE LEFT</p>
             </div>
-
-            {/* Comments */}
-            <div className="glass-panel p-6">
-              <label className="block text-lg font-semibold text-white mb-3">
-                Comments (Optional)
-              </label>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                className="glass-input w-full px-4 py-3 resize-none"
-                rows={4}
-                placeholder="Provide feedback or notes about this participant..."
-              />
-            </div>
-
-            {/* Submit Button */}
-            {selectedCompleted ? (
-              <div className="w-full py-4 px-6 rounded-lg bg-green-500/10 border-2 border-green-500/30 text-center" style={{ minHeight: '56px' }}>
-                <div className="text-green-400 font-semibold mb-1">✓ Round Already Completed</div>
-                <div className="text-slate-400 text-sm">This participant has already been scored for this round. Rescoring is not allowed.</div>
-              </div>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || !selectedParticipant || selectedCompleted || !selectedRoundNumber}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
-                style={{ minHeight: '56px' }}
-              >
-                {submitting ? 'Submitting Scores...' : '✓ Submit Scores'}
-              </button>
-            )}
-
-            {!selectedRoundNumber && (
-              <div className="mt-2 text-center text-yellow-400 text-sm">
-                ⚠️ Please select a round before scoring
-              </div>
-            )}
-          </div>
-        )}
-
-        {!selectedParticipant && rubric.length > 0 && (
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-12 text-center">
-            <div className="text-6xl mb-4">👆</div>
-            <p className="text-slate-400 text-lg">
-              Select a participant above to start scoring
-            </p>
-          </div>
-        )}
+          )}
+        </section>
       </main>
 
+      {/* FOOTER MOBILE HUD */}
+      <footer className="fixed bottom-0 left-0 right-0 z-50 p-4 md:hidden">
+        <div className="glass-panel border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-2xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl">
+              {selectedParticipant ? '🎯' : '📡'}
+            </div>
+            <div>
+              <div className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Participant</div>
+              <div className="text-xs font-black text-white truncate max-w-[150px]">
+                {selectedParticipant ? participants.find(p => p.id === selectedParticipant)?.name : 'Select Participant...'}
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 py-2 bg-blue-600 rounded-xl">
+            <span className="text-xs font-black font-mono text-white">{currentTotal} PTS</span>
+          </div>
+        </div>
+      </footer>
+
       <style jsx>{`
-        .slider::-webkit-slider-thumb {
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .accessibility-slider {
+          -webkit-appearance: none;
+          width: 100%;
+          height: 8px;
+          border-radius: 99px;
+          background: rgba(255,255,255,0.05);
+          outline: none;
+          cursor: pointer;
+        }
+        
+        .accessibility-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
           appearance: none;
           width: 24px;
           height: 24px;
-          border-radius: 50%;
-          background: #2563eb;
+          border-radius: 10px;
+          background: var(--accent);
+          border: 4px solid rgba(2, 6, 23, 1);
+          box-shadow: 0 0 15px var(--accent);
           cursor: pointer;
+          transition: transform 0.2s;
         }
-        .slider::-moz-range-thumb {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          background: #2563eb;
-          cursor: pointer;
-          border: none;
+        
+        .accessibility-slider::-webkit-slider-thumb:hover {
+          transform: scale(1.15);
         }
-        @media (min-width: 768px) {
-          /* Fix rubric cards to a fifth of the container so five are visible without scrolling */
-          .rubric-card {
-            width: calc((100% - 4rem) / 5);
-            max-width: calc((100% - 4rem) / 5);
-            flex-shrink: 0;
-            min-width: 0;
-            max-height: 10rem;
-            overflow: hidden;
-          }
-          .rubric-card textarea {
-            max-height: 4.5rem;
-          }
+
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
     </div>

@@ -1,177 +1,146 @@
-"use client";
-
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-
-interface Event {
-  id: string;
-  name: string;
-  slug: string;
-}
+'use client'
+import React from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { ShieldCheck, ArrowRight, QrCode, Mail } from 'lucide-react'
 
 export default function JudgeAccessPage() {
-  const router = useRouter();
-  const [code, setCode] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error" | "select-event">("idle");
-  const [message, setMessage] = useState<string>("");
-  const [eventSlug, setEventSlug] = useState<string | null>(null);
-  const [nextUrl, setNextUrl] = useState<string | null>(null);
-  const [initialCode, setInitialCode] = useState<string | null>(null);
-  const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
-  const [judgeInfo, setJudgeInfo] = useState<{ id: string; name: string; role: string } | null>(null);
+  const params = useSearchParams()
+  const router = useRouter()
+  const eventSlug = params.get('eventSlug')
+  
+  const [inviteToken, setInviteToken] = React.useState('')
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
-  useEffect(() => {
-    document.title = "Verify Judge Access";
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!inviteToken.trim()) return
+    
+    setLoading(true)
+    setError(null)
+    
     try {
-      const sp = new URLSearchParams(window.location.search);
-      const ev = sp.get("eventSlug");
-      const nx = sp.get("next");
-      const ic = sp.get("code");
-      setEventSlug(ev);
-      setNextUrl(nx);
-      setInitialCode(ic);
-      if (ic) {
-        setCode(ic);
-        void verifyCode(undefined, ic);
+      // Try to validate the token first
+      const res = await fetch(`/api/judge/validate?token=${encodeURIComponent(inviteToken.trim())}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data?.error === 'expired' ? 'This invite link has expired' : 'Invalid invite token')
+        setLoading(false)
+        return
+      }
+      
+      const data = await res.json()
+      // Redirect to the join page with the token
+      if (data.event?.slug) {
+        router.push(`/e/${data.event.slug}/judge/join?token=${encodeURIComponent(inviteToken.trim())}`)
+      } else {
+        setError('Could not determine event. Please use the full invite link.')
       }
     } catch (e) {
-      // ignore (not in browser)
+      setError('Failed to validate token')
+    } finally {
+      setLoading(false)
     }
-  }, []);
-
-  async function verifyCode(e?: React.FormEvent, overrideCode?: string) {
-    if (e) e.preventDefault();
-    const codeToUse = (overrideCode ?? code).trim();
-    if (!codeToUse) return;
-    setStatus("loading");
-    setMessage("");
-    try {
-      const res = await fetch("/api/judge/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: codeToUse, eventSlug }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Verification failed");
-
-      // Normalize and persist judge identity
-      const normalized = {
-        id: data.judgeId,
-        name: data.judgeName || 'Judge',
-        role: data.role || 'judge',
-      };
-      setJudgeInfo(normalized);
-      localStorage.setItem("judgeInfo", JSON.stringify(normalized));
-      // Also elevate role for current session if needed
-      try { localStorage.setItem('user-role', 'judge'); } catch {}
-
-      // If judge has multiple events, show event selection
-      if (data.hasMultipleEvents && data.events && data.events.length > 1) {
-        setAvailableEvents(data.events);
-        setStatus("select-event");
-        setMessage(`Welcome ${normalized.name}. Please select an event to judge.`);
-        return;
-      }
-
-      // Single event or eventSlug provided - proceed directly
-      setStatus("success");
-      setMessage(`Welcome ${normalized.name}. Access granted.`);
-
-      // Redirect to event-specific judge console
-      const targetEventSlug = eventSlug || data.eventSlug || (data.events && data.events[0]?.slug);
-      const target = nextUrl || (targetEventSlug ? `/e/${targetEventSlug}/judge` : "/judge");
-      setTimeout(() => { router.push(target); }, 500);
-    } catch (err: any) {
-      setStatus("error");
-      setMessage(err.message || "Something went wrong");
-    }
-  }
-
-  function selectEvent(selectedEventSlug: string) {
-    if (!judgeInfo) return;
-    
-    // Store selected event
-    localStorage.setItem("selectedEventSlug", selectedEventSlug);
-    
-    setStatus("success");
-    setMessage("Event selected. Redirecting...");
-    
-    const target = nextUrl || `/e/${selectedEventSlug}/judge`;
-    setTimeout(() => { router.push(target); }, 500);
   }
 
   return (
-    <main className="container" style={{ maxWidth: 520, margin: "2rem auto", padding: "1rem" }}>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Judge Access</h1>
-      <p style={{ color: "#666", marginBottom: "1rem" }}>
-        Enter your invite code to unlock the judge console on this device.
-      </p>
-      <form onSubmit={verifyCode} aria-label="Verify judge invite code">
-        <label htmlFor="invite" style={{ display: "block", fontWeight: 600 }}>Invite Code</label>
-        <input
-          id="invite"
-          name="invite"
-          type="text"
-          required
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="e.g. JUDGE-4F7X-92KQ"
-          aria-describedby="invite-help"
-          style={{ width: "100%", padding: "0.5rem", margin: "0.25rem 0 0.75rem", borderRadius: 6, border: "1px solid #ccc" }}
-        />
-        <div id="invite-help" style={{ fontSize: 12, color: "#666", marginBottom: "0.75rem" }}>
-          This links your identity to scores you submit.
-        </div>
-        <button
-          type="submit"
-          disabled={status === "loading" || code.trim().length === 0}
-          style={{ padding: "0.5rem 0.75rem", borderRadius: 6 }}
-        >
-          {status === "loading" ? "Verifying…" : "Verify Access"}
-        </button>
-      </form>
+    <div className="min-h-screen bg-[#020617] text-slate-200 flex items-center justify-center p-4">
+      {/* Background */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]" />
+      </div>
 
-      {status !== "idle" && (
-        <div role="status" aria-live="polite" style={{ marginTop: "1rem", color: status === "error" ? "#b00020" : "#0a7" }}>
-          {message}
+      <div className="max-w-lg w-full space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 bg-blue-500/10 border border-blue-500/20 rounded-3xl flex items-center justify-center mx-auto">
+            <ShieldCheck className="w-10 h-10 text-blue-400" />
+          </div>
+          <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter">
+            Judge Access
+          </h1>
+          <p className="text-slate-400 text-sm max-w-sm mx-auto">
+            Enter your invite token or use the QR code/link provided by the event administrator.
+          </p>
         </div>
-      )}
 
-      {status === "select-event" && availableEvents.length > 0 && (
-        <div style={{ marginTop: "2rem" }}>
-          <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "1rem" }}>Select Event</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {availableEvents.map((event) => (
-              <button
-                key={event.id}
-                onClick={() => selectEvent(event.slug)}
-                style={{
-                  padding: "1rem",
-                  border: "1px solid #ccc",
-                  borderRadius: 6,
-                  textAlign: "left",
-                  cursor: "pointer",
-                  backgroundColor: "#fff",
-                  transition: "background-color 0.2s"
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#f5f5f5"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#fff"}
-              >
-                <div style={{ fontWeight: 600, marginBottom: "0.25rem" }}>{event.name}</div>
-                <div style={{ fontSize: "0.875rem", color: "#666" }}>{event.slug}</div>
-              </button>
-            ))}
+        {/* Token Entry Form */}
+        <div className="glass-panel rounded-3xl p-8 border border-white/10 space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest mb-2">
+                Invite Token
+              </label>
+              <input
+                type="text"
+                value={inviteToken}
+                onChange={(e) => setInviteToken(e.target.value)}
+                placeholder="Paste your invite token here..."
+                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-slate-600 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono text-sm"
+              />
+            </div>
+            
+            {error && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-sm">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !inviteToken.trim()}
+              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
+            >
+              {loading ? 'Validating...' : 'Access Judge Portal'}
+              {!loading && <ArrowRight className="w-4 h-4" />}
+            </button>
+          </form>
+
+          <div className="relative py-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-[#0f172a] px-4 text-[10px] font-mono uppercase tracking-widest text-slate-500">
+                Or
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-start gap-4 p-4 bg-white/5 rounded-xl">
+              <QrCode className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-white text-sm">Scan QR Code</h4>
+                <p className="text-slate-400 text-xs mt-1">
+                  Ask the event administrator for the judge QR code and scan it with your phone.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-white/5 rounded-xl">
+              <Mail className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-white text-sm">Check Your Email</h4>
+                <p className="text-slate-400 text-xs mt-1">
+                  If you were invited via email, click the link in your invitation.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {status !== "select-event" && (
-        <div style={{ marginTop: "2rem", fontSize: 12, color: "#666" }}>
-          Tip: After verification, open the <a href="/judge">Judge Console</a>.
+        {/* Back Link */}
+        <div className="text-center">
+          <Link 
+            href={eventSlug ? `/e/${eventSlug}` : '/'}
+            className="text-slate-500 hover:text-white text-sm transition-colors"
+          >
+            ← Back to {eventSlug ? 'Event' : 'Home'}
+          </Link>
         </div>
-      )}
-    </main>
-  );
+      </div>
+    </div>
+  )
 }

@@ -11,8 +11,10 @@ interface BrandColors {
 interface ThemeContextType {
   eventColors: BrandColors | null
   orgColors: BrandColors | null
+  useBrandColors: boolean
   setEventColors: (colors: BrandColors | null) => void
   setOrgColors: (colors: BrandColors | null) => void
+  setUseBrandColors: (use: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
@@ -20,11 +22,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [eventColors, setEventColors] = useState<BrandColors | null>(null)
   const [orgColors, setOrgColors] = useState<BrandColors | null>(null)
+  const [useBrandColors, setUseBrandColors] = useState(false) // Default: use system theme
 
   // Apply colors to CSS variables
   useEffect(() => {
     const root = document.documentElement
-    const colors = eventColors || orgColors
+    const colors = useBrandColors ? (eventColors || orgColors) : null
     
     if (colors) {
       root.style.setProperty('--brand-primary', colors.primary)
@@ -36,6 +39,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.style.setProperty('--brand-primary-dark', adjustBrightness(colors.primary, -20))
       root.style.setProperty('--brand-secondary-light', adjustBrightness(colors.secondary, 20))
       root.style.setProperty('--brand-secondary-dark', adjustBrightness(colors.secondary, -20))
+      root.classList.add('brand-theme')
     } else {
       // Reset to defaults
       root.style.removeProperty('--brand-primary')
@@ -45,11 +49,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.style.removeProperty('--brand-primary-dark')
       root.style.removeProperty('--brand-secondary-light')
       root.style.removeProperty('--brand-secondary-dark')
+      root.classList.remove('brand-theme')
     }
-  }, [eventColors, orgColors])
+  }, [eventColors, orgColors, useBrandColors])
 
   return (
-    <ThemeContext.Provider value={{ eventColors, orgColors, setEventColors, setOrgColors }}>
+    <ThemeContext.Provider value={{ eventColors, orgColors, useBrandColors, setEventColors, setOrgColors, setUseBrandColors }}>
       {children}
     </ThemeContext.Provider>
   )

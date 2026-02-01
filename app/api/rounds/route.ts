@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     if (!eventSlug) {
       return Response.json({ error: 'eventSlug required' }, { status: 400 })
     }
-    
+
     const evt = await prisma.event.findUnique({ where: { slug: eventSlug } })
     if (!evt) return Response.json({ error: 'no_event' }, { status: 400 })
 
@@ -50,9 +50,9 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const { action, eventSlug, roundConfig, eliminationConfig: elimConfigBody, judging } = body as {
-      action: 'next' | 'prev' | 'set' | 'configure' | 'judging' | 'pause' | 'resume'
+      action: 'next' | 'prev' | 'set' | 'configure' | 'judging' | 'pause' | 'resume' | 'start' | 'stop'
       eventSlug?: string
-      roundConfig?: { 
+      roundConfig?: {
         number: number
         name: string
         durationMinutes?: number
@@ -74,18 +74,18 @@ export async function POST(request: Request) {
 
     // Verify user has access to this event (must be org member or owner)
     const userId = session.user.id as string
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { ownedOrgs: true }
     })
-    
+
     if (!user) {
       return Response.json({ error: 'user_not_found' }, { status: 404 })
     }
 
     const isOwner = evt.organization.ownerId === userId
     const isOrgMember = user.orgId === evt.orgId || user.ownedOrgs.some(org => org.id === evt.orgId)
-    
+
     if (!isOwner && !isOrgMember) {
       return Response.json({ error: 'forbidden - not authorized for this event' }, { status: 403 })
     }
@@ -119,10 +119,10 @@ export async function POST(request: Request) {
     } else if (action === 'set') {
       const num = (body as any).roundNumber
       currentRound = Math.max(0, Math.min(num, roundsConfig.length))
-      // If explicitly setting, ensure timerStartedAt exists for the set round
-      if (roundsConfig[currentRound]) {
-        roundsConfig[currentRound].timerStartedAt = roundsConfig[currentRound].timerStartedAt || new Date().toISOString()
-        roundsConfig[currentRound].timerPausedAt = roundsConfig[currentRound].timerPausedAt || null
+      // Support legacy 'set' behavior: start timer if not yet started
+      if (roundsConfig[currentRound] && !roundsConfig[currentRound].timerStartedAt) {
+        roundsConfig[currentRound].timerStartedAt = new Date().toISOString()
+        roundsConfig[currentRound].timerPausedAt = null
         roundsConfig[currentRound].timerRunning = true
       }
     } else if (action === 'configure') {
@@ -137,21 +137,20 @@ export async function POST(request: Request) {
 
         const idx = roundConfig.number
         if (idx >= 0 && idx < roundsConfig.length) {
-          roundsConfig[idx] = { 
-            ...roundsConfig[idx], 
+          roundsConfig[idx] = {
+            ...roundsConfig[idx],
             ...roundConfig,
-            // Ensure both duration field names are set for backward compatibility
             duration: roundConfig.roundDurationMinutes ?? roundConfig.durationMinutes ?? roundsConfig[idx].duration,
             roundDurationMinutes: roundConfig.roundDurationMinutes ?? roundConfig.durationMinutes ?? roundsConfig[idx].roundDurationMinutes
           }
         } else if (idx === roundsConfig.length) {
-          roundsConfig.push({ 
-            ...roundConfig, 
-            judgingOpen: roundConfig.judgingOpen ?? false, 
+          roundsConfig.push({
+            ...roundConfig,
+            judgingOpen: roundConfig.judgingOpen ?? false,
             judgingWindowMinutes: roundConfig.judgingWindowMinutes ?? null,
             duration: roundConfig.roundDurationMinutes ?? roundConfig.durationMinutes ?? 60,
             roundDurationMinutes: roundConfig.roundDurationMinutes ?? roundConfig.durationMinutes ?? 60,
-            judgingOpenedAt: null 
+            judgingOpenedAt: null
           })
         }
       }
@@ -160,7 +159,6 @@ export async function POST(request: Request) {
         rules.elimination = eliminationConfig
       }
     } else if (action === 'judging' && judging) {
-      // Validate judging window
       if (judging.windowMinutes !== undefined && judging.windowMinutes !== null && judging.windowMinutes < 0) {
         return Response.json({ error: 'Judging window must be positive' }, { status: 400 })
       }
@@ -185,13 +183,76 @@ export async function POST(request: Request) {
             timerRunning: false,
           }
         } else {
-          // resume
+          // resume - adjust startedAt to account for pause duration
+          const oldStartedAt = roundsConfig[idx].timerStartedAt
+          const pausedAt = roundsConfig[idx].timerPausedAt
+          
+          if (!oldStartedAt) {
+            // If never started, start fresh
+            roundsConfig[idx] = {
+              ...roundsConfig[idx],
+              timerStartedAt: new Date().toISOString(),
+              timerPausedAt: null,
+              timerRunning: true,
+            }
+          } else if (pausedAt) {
+            // Calculate how long the timer was paused
+            const pauseDuration = new Date().getTime() - new Date(pausedAt).getTime()
+            // Adjust the start time forward by the pause duration
+            const newStartedAt = new Date(new Date(oldStartedAt).getTime() + pauseDuration).toISOString()
+            
+            roundsConfig[idx] = {
+              ...roundsConfig[idx],
+              timerPausedAt: null,
+              timerStartedAt: newStartedAt,
+              timerRunning: true,
+            }
+          } else {
+            // Already running, just ensure state is correct
+            roundsConfig[idx] = {
+              ...roundsConfig[idx],
+              timerRunning: true,
+            }
+          }
+        }
+      }
+    }
+    else if (action === 'start') {
+      const idx = (body as any).roundNumber
+      if (typeof idx === 'number' && idx >= 0 && idx < roundsConfig.length) {
+        // Start timer from fresh or resume if already paused
+        if (!roundsConfig[idx].timerStartedAt) {
           roundsConfig[idx] = {
             ...roundsConfig[idx],
+            timerStartedAt: new Date().toISOString(),
             timerPausedAt: null,
-            timerStartedAt: roundsConfig[idx].timerStartedAt || new Date().toISOString(),
             timerRunning: true,
           }
+        } else if (roundsConfig[idx].timerPausedAt) {
+          // Resume from pause
+          const pausedAt = roundsConfig[idx].timerPausedAt
+          const oldStartedAt = roundsConfig[idx].timerStartedAt
+          const pauseDuration = new Date().getTime() - new Date(pausedAt!).getTime()
+          const newStartedAt = new Date(new Date(oldStartedAt!).getTime() + pauseDuration).toISOString()
+          
+          roundsConfig[idx] = {
+            ...roundsConfig[idx],
+            timerStartedAt: newStartedAt,
+            timerPausedAt: null,
+            timerRunning: true,
+          }
+        }
+      }
+    }
+    else if (action === 'stop') {
+      const idx = (body as any).roundNumber
+      if (typeof idx === 'number' && idx >= 0 && idx < roundsConfig.length) {
+        // Stop and reset timer
+        roundsConfig[idx] = {
+          ...roundsConfig[idx],
+          timerStartedAt: null,
+          timerPausedAt: null,
+          timerRunning: false,
         }
       }
     }
