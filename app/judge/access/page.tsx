@@ -21,7 +21,6 @@ export default function JudgeAccessPage() {
     setError(null)
     
     try {
-      // Try to validate the token first
       const res = await fetch(`/api/judge/validate?token=${encodeURIComponent(inviteToken.trim())}`)
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -31,7 +30,6 @@ export default function JudgeAccessPage() {
       }
       
       const data = await res.json()
-      // Redirect to the join page with the token
       if (data.event?.slug) {
         router.push(`/e/${data.event.slug}/judge/join?token=${encodeURIComponent(inviteToken.trim())}`)
       } else {
@@ -45,32 +43,32 @@ export default function JudgeAccessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-cream text-charcoal flex items-center justify-center p-6">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-charcoal/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-charcoal/5 rounded-full blur-[120px]" />
       </div>
 
-      <div className="max-w-lg w-full space-y-8">
+      <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-blue-500/10 border border-blue-500/20 rounded-3xl flex items-center justify-center mx-auto">
-            <ShieldCheck className="w-10 h-10 text-blue-400" />
+          <div className="w-16 h-16 bg-charcoal/5 rounded-2xl flex items-center justify-center mx-auto">
+            <ShieldCheck className="w-8 h-8 text-charcoal/60" />
           </div>
-          <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter">
+          <h1 className="font-display text-2xl font-semibold text-charcoal">
             Judge Access
           </h1>
-          <p className="text-slate-400 text-sm max-w-sm mx-auto">
+          <p className="text-charcoal/50 text-sm max-w-sm mx-auto">
             Enter your invite token or use the QR code/link provided by the event administrator.
           </p>
         </div>
 
         {/* Token Entry Form */}
-        <div className="glass-panel rounded-3xl p-8 border border-white/10 space-y-6">
+        <div className="card p-8 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest mb-2">
+              <label className="block text-sm font-medium text-charcoal mb-2">
                 Invite Token
               </label>
               <input
@@ -78,12 +76,12 @@ export default function JudgeAccessPage() {
                 value={inviteToken}
                 onChange={(e) => setInviteToken(e.target.value)}
                 placeholder="Paste your invite token here..."
-                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-slate-600 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono text-sm"
+                className="input font-mono text-sm"
               />
             </div>
             
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-sm">
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-lg text-rose-600 text-sm">
                 {error}
               </div>
             )}
@@ -91,7 +89,7 @@ export default function JudgeAccessPage() {
             <button
               type="submit"
               disabled={loading || !inviteToken.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-sm"
+              className="btn-primary w-full py-3 rounded-xl flex items-center justify-center gap-2"
             >
               {loading ? 'Validating...' : 'Access Judge Portal'}
               {!loading && <ArrowRight className="w-4 h-4" />}
@@ -100,31 +98,29 @@ export default function JudgeAccessPage() {
 
           <div className="relative py-4">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
+              <div className="w-full border-t border-charcoal/10" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-[#0f172a] px-4 text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                Or
-              </span>
+              <span className="bg-white px-4 text-xs text-charcoal/40">Or</span>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-start gap-4 p-4 bg-white/5 rounded-xl">
-              <QrCode className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-4 p-4 bg-charcoal/5 rounded-xl">
+              <QrCode className="w-5 h-5 text-charcoal/40 shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-bold text-white text-sm">Scan QR Code</h4>
-                <p className="text-slate-400 text-xs mt-1">
-                  Ask the event administrator for the judge QR code and scan it with your phone.
+                <h4 className="font-medium text-charcoal text-sm">Scan QR Code</h4>
+                <p className="text-charcoal/50 text-xs mt-1">
+                  Ask the event administrator for the judge QR code.
                 </p>
               </div>
             </div>
-            <div className="flex items-start gap-4 p-4 bg-white/5 rounded-xl">
-              <Mail className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-4 p-4 bg-charcoal/5 rounded-xl">
+              <Mail className="w-5 h-5 text-charcoal/40 shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-bold text-white text-sm">Check Your Email</h4>
-                <p className="text-slate-400 text-xs mt-1">
-                  If you were invited via email, click the link in your invitation.
+                <h4 className="font-medium text-charcoal text-sm">Check Your Email</h4>
+                <p className="text-charcoal/50 text-xs mt-1">
+                  If invited via email, click the link in your invitation.
                 </p>
               </div>
             </div>
@@ -135,7 +131,7 @@ export default function JudgeAccessPage() {
         <div className="text-center">
           <Link 
             href={eventSlug ? `/e/${eventSlug}` : '/'}
-            className="text-slate-500 hover:text-white text-sm transition-colors"
+            className="text-charcoal/40 hover:text-charcoal text-sm transition-colors"
           >
             ← Back to {eventSlug ? 'Event' : 'Home'}
           </Link>
