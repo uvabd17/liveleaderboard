@@ -27,10 +27,10 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata = {
-  title: 'Live Leaderboard - The Real-time Competition Platform',
+  title: 'LiveLeaderboard',
   description: 'Host professional hackathons and competitions with zero-latency live leaderboards.',
   icons: {
-    icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>'
+    icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22 fill=%22none%22><path d=%22M6 26V6L12 12V26H6Z%22 fill=%22%233b82f6%22/><path d=%22M14 26V14L20 8V26H14Z%22 fill=%22%236366f1%22/><path d=%22M22 26V4L28 10V26H22Z%22 fill=%22%2338bdf8%22/><path d=%22M4 28H28%22 stroke=%22%2394a3b8%22 stroke-width=%222%22 stroke-linecap=%22round%22/></svg>'
   }
 }
 
