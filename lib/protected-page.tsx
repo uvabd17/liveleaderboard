@@ -35,11 +35,11 @@ export function ProtectedPage({ requiredRole, children }: ProtectedPageProps) {
         return (
           <Card className="" style={{ gridColumn: 'span 12', textAlign: 'center', padding: '40px 20px' }}>
             <div className="text-6xl mb-4">⚖️</div>
-            <h2 className="text-2xl font-bold text-white mb-2">Judge Console Access Restricted</h2>
-            <p className="text-slate-400 mb-4">
+            <h2 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-2">Judge Console Access Restricted</h2>
+            <p className="text-[#1A1A1A]/60 dark:text-slate-400 mb-4">
               The judge console is only available to judges. Admins should use the admin dashboard to manage events.
             </p>
-            <p className="text-sm text-slate-500 mb-6">
+            <p className="text-sm text-[#1A1A1A]/40 dark:text-slate-500 mb-6">
               If you need to access the judge console, please use a judge access code.
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20 }}>
@@ -57,11 +57,11 @@ export function ProtectedPage({ requiredRole, children }: ProtectedPageProps) {
       return (
         <Card className="" style={{ gridColumn: 'span 12', textAlign: 'center', padding: '40px 20px' }}>
           <div className="text-6xl mb-4">⚖️</div>
-          <h2 className="text-2xl font-bold text-white mb-2">Judge Console Access Restricted</h2>
-          <p className="text-slate-400 mb-4">
+          <h2 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-2">Judge Console Access Restricted</h2>
+          <p className="text-[#1A1A1A]/60 dark:text-slate-400 mb-4">
             The judge console is only available to judges. Admins should use the admin dashboard to manage events.
           </p>
-          <p className="text-sm text-slate-500 mb-6">
+          <p className="text-sm text-[#1A1A1A]/40 dark:text-slate-500 mb-6">
             If you need to access the judge console, please use a judge access code.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20 }}>
