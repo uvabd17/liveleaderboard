@@ -377,14 +377,14 @@ export default function EventAdminPage() {
                   <span className="text-2xl">🏁</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">All Rounds Complete!</h3>
-                  <p className="text-sm text-slate-400">Your event appears ready to be finalized. Would you like to end the event?</p>
+                  <h3 className="text-lg font-bold text-[#1A1A1A] dark:text-white">All Rounds Complete!</h3>
+                  <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400">Your event appears ready to be finalized. Would you like to end the event?</p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => { setClosureDismissed(true); setShowClosureSuggestion(false) }}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-slate-300 rounded-xl text-sm font-medium"
+                  className="px-4 py-2 bg-[#1A1A1A]/10 dark:bg-white/10 hover:bg-[#1A1A1A]/20 dark:hover:bg-white/20 text-[#1A1A1A]/70 dark:text-slate-300 rounded-xl text-sm font-medium"
                 >
                   Not Yet
                 </button>
@@ -610,7 +610,7 @@ export default function EventAdminPage() {
                     <select
                       value={completionSort}
                       onChange={(e) => setCompletionSort(e.target.value as any)}
-                      className="bg-slate-700 border border-slate-600 text-white rounded px-3 py-1 text-sm"
+                      className="bg-[#FAF9F6] dark:bg-slate-700 border border-[#1A1A1A]/10 dark:border-slate-600 text-[#1A1A1A] dark:text-white rounded px-3 py-1 text-sm"
                     >
                       <option value="all">All</option>
                       <option value="completed">Completed First</option>
@@ -661,21 +661,21 @@ export default function EventAdminPage() {
                 return (
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-white/5 border-b border-white/5">
+                      <thead className="bg-[#1A1A1A]/5 dark:bg-white/5 border-b border-[#1A1A1A]/5 dark:border-white/5">
                         <tr>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Rank</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Name</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Type</th>
-                          <th className="px-6 py-3 text-right text-sm font-semibold text-slate-300">Score</th>
-                          <th className="px-6 py-3 text-center text-sm font-semibold text-slate-300">Rounds Completed</th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Rank</th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Name</th>
+                          <th className="px-6 py-3 text-left text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Type</th>
+                          <th className="px-6 py-3 text-right text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Score</th>
+                          <th className="px-6 py-3 text-center text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Rounds Completed</th>
                           {filterRound && (
-                            <th className="px-6 py-3 text-center text-sm font-semibold text-slate-300">
+                            <th className="px-6 py-3 text-center text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">
                               Round {filterRound} Status
                             </th>
                           )}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-700">
+                      <tbody className="divide-y divide-[#1A1A1A]/10 dark:divide-slate-700">
                         {filtered.map((participant) => {
                           const completedRounds = roundCompletions[participant.id] || new Set<number>()
                           const isCompleted = filterRound ? completedRounds.has(filterRound) : false
@@ -683,13 +683,13 @@ export default function EventAdminPage() {
                           const totalRounds = Array.isArray(rules?.rounds) ? rules.rounds.length : 0
 
                           return (
-                            <tr key={participant.id} className={`hover:bg-white/5 ${isCompleted ? 'bg-green-500/5' : ''}`}>
-                              <td className="px-6 py-4 text-slate-300">#{participant.rank}</td>
-                              <td className="px-6 py-4 font-medium text-white">{participant.name}</td>
-                              <td className="px-6 py-4 text-slate-400 capitalize">{participant.kind}</td>
-                              <td className="px-6 py-4 text-right font-bold text-blue-400">{participant.totalScore}</td>
+                            <tr key={participant.id} className={`hover:bg-[#1A1A1A]/5 dark:hover:bg-white/5 ${isCompleted ? 'bg-green-500/5' : ''}`}>
+                              <td className="px-6 py-4 text-[#1A1A1A]/70 dark:text-slate-300">#{participant.rank}</td>
+                              <td className="px-6 py-4 font-medium text-[#1A1A1A] dark:text-white">{participant.name}</td>
+                              <td className="px-6 py-4 text-[#1A1A1A]/60 dark:text-slate-400 capitalize">{participant.kind}</td>
+                              <td className="px-6 py-4 text-right font-bold text-blue-600 dark:text-blue-400">{participant.totalScore}</td>
                               <td className="px-6 py-4 text-center">
-                                <span className="text-slate-300 text-sm">
+                                <span className="text-[#1A1A1A]/70 dark:text-slate-300 text-sm">
                                   {completedCount} / {totalRounds || '?'}
                                 </span>
                               </td>
@@ -758,25 +758,25 @@ export default function EventAdminPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-white/5 border-b border-white/5">
                       <tr>
-                        <th className="px-4 py-3 text-left text-slate-200">Name</th>
-                        <th className="px-4 py-3 text-left text-slate-200">Email</th>
-                        <th className="px-4 py-3 text-left text-slate-200">Role</th>
-                        <th className="px-4 py-3 text-left text-slate-200">Status</th>
-                        <th className="px-4 py-3 text-left text-slate-200">Expires</th>
+                        <th className="px-4 py-3 text-left text-[#1A1A1A]/70 dark:text-slate-200">Name</th>
+                        <th className="px-4 py-3 text-left text-[#1A1A1A]/70 dark:text-slate-200">Email</th>
+                        <th className="px-4 py-3 text-left text-[#1A1A1A]/70 dark:text-slate-200">Role</th>
+                        <th className="px-4 py-3 text-left text-[#1A1A1A]/70 dark:text-slate-200">Status</th>
+                        <th className="px-4 py-3 text-left text-[#1A1A1A]/70 dark:text-slate-200">Expires</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-[#1A1A1A]/5 dark:divide-white/5">
                       {judges.map((j) => (
-                        <tr key={j.id} className="hover:bg-white/5">
-                          <td className="px-4 py-3 text-white font-medium">{j.name || 'Unnamed'}</td>
-                          <td className="px-4 py-3 text-slate-300">{j.email || '—'}</td>
-                          <td className="px-4 py-3 text-slate-300 capitalize">{j.role || 'judge'}</td>
+                        <tr key={j.id} className="hover:bg-[#1A1A1A]/5 dark:hover:bg-white/5">
+                          <td className="px-4 py-3 text-[#1A1A1A] dark:text-white font-medium">{j.name || 'Unnamed'}</td>
+                          <td className="px-4 py-3 text-[#1A1A1A]/70 dark:text-slate-300">{j.email || '—'}</td>
+                          <td className="px-4 py-3 text-[#1A1A1A]/70 dark:text-slate-300 capitalize">{j.role || 'judge'}</td>
                           <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${j.active ? 'bg-green-500/20 text-green-300' : 'bg-slate-600 text-slate-200'}`}>
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${j.active ? 'bg-green-500/20 text-green-300' : 'bg-[#1A1A1A]/10 dark:bg-slate-600 text-[#1A1A1A]/70 dark:text-slate-200'}`}>
                               {j.active ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-300">
+                          <td className="px-4 py-3 text-[#1A1A1A]/70 dark:text-slate-300">
                             {j.expiresAt ? new Date(j.expiresAt).toLocaleDateString() : 'No expiry'}
                           </td>
                         </tr>
@@ -913,16 +913,16 @@ export default function EventAdminPage() {
 
                   {/* Message Input */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Message</label>
+                    <label className="block text-xs font-bold text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-widest mb-3">Message</label>
                     <textarea
                       value={broadcastMessage}
                       onChange={(e) => setBroadcastMessage(e.target.value)}
                       placeholder="Type your announcement message..."
-                      className="w-full h-32 p-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-slate-600 resize-none focus:outline-none focus:border-blue-500/50"
+                      className="w-full h-32 p-4 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-2xl text-[#1A1A1A] dark:text-white placeholder:text-[#1A1A1A]/40 dark:placeholder:text-slate-600 resize-none focus:outline-none focus:border-blue-500/50"
                       maxLength={200}
                     />
                     <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs text-slate-600">{broadcastMessage.length}/200 characters</span>
+                      <span className="text-xs text-[#1A1A1A]/40 dark:text-slate-600">{broadcastMessage.length}/200 characters</span>
                     </div>
                   </div>
 
@@ -934,7 +934,7 @@ export default function EventAdminPage() {
                       "w-full py-4 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3",
                       broadcastMessage.trim()
                         ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white"
-                        : "bg-white/5 text-slate-600 cursor-not-allowed"
+                        : "bg-[#1A1A1A]/5 dark:bg-white/5 text-[#1A1A1A]/40 dark:text-slate-600 cursor-not-allowed"
                     )}
                   >
                     <Send className="w-4 h-4" />
@@ -962,8 +962,8 @@ export default function EventAdminPage() {
                           {item.type === 'info' ? '📢' : item.type === 'warning' ? '⚠️' : '🚨'}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium">{item.message}</p>
-                          <span className="text-xs text-slate-500">{new Date(item.timestamp).toLocaleTimeString()}</span>
+                          <p className="text-[#1A1A1A] dark:text-white font-medium">{item.message}</p>
+                          <span className="text-xs text-[#1A1A1A]/40 dark:text-slate-500">{new Date(item.timestamp).toLocaleTimeString()}</span>
                         </div>
                       </div>
                     ))}
@@ -978,12 +978,12 @@ export default function EventAdminPage() {
       {/* QR Code Modal */}
       {showQR && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#FAF9F6] dark:bg-slate-800 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-white">Share Event</h3>
+              <h3 className="text-2xl font-bold text-[#1A1A1A] dark:text-white">Share Event</h3>
               <button
                 onClick={() => setShowQR(false)}
-                className="text-slate-400 hover:text-white text-2xl"
+                className="text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white text-2xl"
               >
                 ×
               </button>
@@ -992,26 +992,26 @@ export default function EventAdminPage() {
             <div className="flex gap-2 mb-4">
               {showLeaderboardTab && (
                 <button
-                  className={`px-3 py-2 rounded ${qrTab === 'leaderboard' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`}
+                  className={`px-3 py-2 rounded ${qrTab === 'leaderboard' ? 'bg-blue-600 text-white' : 'bg-[#1A1A1A]/10 dark:bg-slate-700 text-[#1A1A1A]/70 dark:text-slate-200'}`}
                   onClick={() => setQrTab('leaderboard')}
                 >
                   Leaderboard
                 </button>
               )}
               <button
-                className={`px-3 py-2 rounded ${qrTab === 'stage' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`}
+                className={`px-3 py-2 rounded ${qrTab === 'stage' ? 'bg-blue-600 text-white' : 'bg-[#1A1A1A]/10 dark:bg-slate-700 text-[#1A1A1A]/70 dark:text-slate-200'}`}
                 onClick={() => setQrTab('stage')}
               >
                 Stage
               </button>
               <button
-                className={`px-3 py-2 rounded ${qrTab === 'registration' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`}
+                className={`px-3 py-2 rounded ${qrTab === 'registration' ? 'bg-blue-600 text-white' : 'bg-[#1A1A1A]/10 dark:bg-slate-700 text-[#1A1A1A]/70 dark:text-slate-200'}`}
                 onClick={() => setQrTab('registration')}
               >
                 Registration
               </button>
               <button
-                className={`px-3 py-2 rounded ${qrTab === 'judge' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-200'}`}
+                className={`px-3 py-2 rounded ${qrTab === 'judge' ? 'bg-blue-600 text-white' : 'bg-[#1A1A1A]/10 dark:bg-slate-700 text-[#1A1A1A]/70 dark:text-slate-200'}`}
                 onClick={() => setQrTab('judge')}
               >
                 Judge
@@ -1019,17 +1019,17 @@ export default function EventAdminPage() {
             </div>
 
             {qrTab === 'leaderboard' && (
-              <div className="bg-slate-700 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-white mb-2">📊 Public Leaderboard</h4>
-                <p className="text-sm text-slate-400 mb-4">Scan this QR to view the live leaderboard.</p>
+              <div className="bg-[#1A1A1A]/5 dark:bg-slate-700 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-[#1A1A1A] dark:text-white mb-2">📊 Public Leaderboard</h4>
+                <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-4">Scan this QR to view the live leaderboard.</p>
                 <div className="flex items-center gap-6">
                   <div className="bg-white p-4 rounded-lg">
                     <QRCodeSVG value={publicURL} size={180} />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm text-slate-400 mb-2">URL</div>
+                    <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-2">URL</div>
                     <div className="flex gap-2">
-                      <input type="text" value={publicURL} readOnly className="flex-1 px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white text-sm" />
+                      <input type="text" value={publicURL} readOnly className="flex-1 px-3 py-2 bg-[#FAF9F6] dark:bg-slate-600 border border-[#1A1A1A]/10 dark:border-slate-500 rounded text-[#1A1A1A] dark:text-white text-sm" />
                       <button onClick={() => copyToClipboard(publicURL, 'Leaderboard URL')} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">Copy</button>
                     </div>
                   </div>
@@ -1038,17 +1038,17 @@ export default function EventAdminPage() {
             )}
 
             {qrTab === 'stage' && (
-              <div className="bg-slate-700 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-white mb-2">📺 Stage Display</h4>
-                <p className="text-sm text-slate-400 mb-4">Use this on the projector or stage display device.</p>
+              <div className="bg-[#1A1A1A]/5 dark:bg-slate-700 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-[#1A1A1A] dark:text-white mb-2">📺 Stage Display</h4>
+                <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-4">Use this on the projector or stage display device.</p>
                 <div className="flex items-center gap-6">
                   <div className="bg-white p-4 rounded-lg">
                     <QRCodeSVG value={`${publicURL}/stage`} size={180} />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm text-slate-400 mb-2">URL</div>
+                    <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-2">URL</div>
                     <div className="flex gap-2">
-                      <input type="text" value={`${publicURL}/stage`} readOnly className="flex-1 px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white text-sm" />
+                      <input type="text" value={`${publicURL}/stage`} readOnly className="flex-1 px-3 py-2 bg-[#FAF9F6] dark:bg-slate-600 border border-[#1A1A1A]/10 dark:border-slate-500 rounded text-[#1A1A1A] dark:text-white text-sm" />
                       <button onClick={() => copyToClipboard(`${publicURL}/stage`, 'Stage URL')} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">Copy</button>
                     </div>
                   </div>
@@ -1098,31 +1098,31 @@ export default function EventAdminPage() {
             )}
 
             {qrTab === 'judge' && (
-              <div className="bg-slate-700 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-white mb-2">⚖️ Invite Judge</h4>
-                <p className="text-sm text-slate-400 mb-4">Share this link with judges.</p>
+              <div className="bg-[#1A1A1A]/5 dark:bg-slate-700 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-[#1A1A1A] dark:text-white mb-2">⚖️ Invite Judge</h4>
+                <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-4">Share this link with judges.</p>
                 {judgeInvite ? (
                   <div className="flex items-center gap-6">
                     <div className="bg-white p-4 rounded-lg">
                       <QRCodeSVG value={judgeInvite.inviteUrl} size={180} />
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm text-slate-400 mb-2">Invite Link</div>
+                      <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-2">Invite Link</div>
                       <div className="flex gap-2">
-                        <input type="text" value={judgeInvite.inviteUrl} readOnly className="flex-1 px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white text-sm" />
+                        <input type="text" value={judgeInvite.inviteUrl} readOnly className="flex-1 px-3 py-2 bg-[#FAF9F6] dark:bg-slate-600 border border-[#1A1A1A]/10 dark:border-slate-500 rounded text-[#1A1A1A] dark:text-white text-sm" />
                         <button onClick={() => copyToClipboard(judgeInvite.inviteUrl, 'Judge Invite')} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">Copy</button>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-slate-400">No judge invite generated yet. Use the "Invite Judge" button to create one.</div>
+                  <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400">No judge invite generated yet. Use the "Invite Judge" button to create one.</div>
                 )}
               </div>
             )}
 
             <button
               onClick={() => setShowQR(false)}
-              className="w-full mt-6 px-4 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium"
+              className="w-full mt-6 px-4 py-3 bg-[#1A1A1A]/10 dark:bg-slate-600 hover:bg-[#1A1A1A]/20 dark:hover:bg-slate-500 text-[#1A1A1A] dark:text-white rounded-lg font-medium"
             >
               Close
             </button>
