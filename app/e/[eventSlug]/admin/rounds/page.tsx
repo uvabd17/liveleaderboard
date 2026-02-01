@@ -597,7 +597,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                 {rounds.map((r, idx) => (
                   <div
                     key={idx}
-                    className={`group relative glass-panel rounded-2xl p-6 border transition-all ${idx === currentRoundIdx ? 'border-blue-500/30 bg-blue-500/5' : 'border-white/5 hover:border-white/20'
+                    className={`group relative card rounded-2xl p-6 border transition-all ${idx === currentRoundIdx ? 'border-blue-500/30 bg-blue-500/5' : 'border-[#1A1A1A]/5 dark:border-white/5 hover:border-[#1A1A1A]/20 dark:hover:border-white/20'
                       }`}
                   >
                     <div className="flex items-start justify-between mb-4">

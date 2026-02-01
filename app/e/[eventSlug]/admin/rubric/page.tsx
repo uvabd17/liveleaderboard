@@ -233,8 +233,8 @@ export default function EventRubricPage() {
             <p className="text-sm text-slate-400">Event: <span className="font-mono text-indigo-300">{eventSlug}</span></p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setCompact(c => !c)} className="text-sm px-3 py-1 rounded glass-panel border-white/10 hover:bg-white/5">{compact ? 'Compact' : 'Spacious'}</button>
-            <button onClick={() => setShowRawJson(s => !s)} className="text-sm px-3 py-1 rounded glass-panel border-white/10 hover:bg-white/5">{showRawJson ? 'Hide JSON' : 'Show JSON'}</button>
+            <button onClick={() => setCompact(c => !c)} className="text-sm px-3 py-1 rounded card border-[#1A1A1A]/10 dark:border-white/10 hover:bg-[#1A1A1A]/5 dark:hover:bg-white/5">{compact ? 'Compact' : 'Spacious'}</button>
+            <button onClick={() => setShowRawJson(s => !s)} className="text-sm px-3 py-1 rounded card border-[#1A1A1A]/10 dark:border-white/10 hover:bg-[#1A1A1A]/5 dark:hover:bg-white/5">{showRawJson ? 'Hide JSON' : 'Show JSON'}</button>
             <Button variant="secondary" onClick={loadRubric}>Reset</Button>
             <Button onClick={saveRubric} disabled={saving}>{saving ? 'Saving...' : 'Save Rubric'}</Button>
           </div>
@@ -242,28 +242,28 @@ export default function EventRubricPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <aside className="md:col-span-1">
-            <div className="glass-panel p-4 space-y-3">
+            <div className="card p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Rounds</div>
-                <div className="text-xs text-slate-400">{rounds.length}</div>
+                <div className="text-sm font-medium text-[#1A1A1A] dark:text-white">Rounds</div>
+                <div className="text-xs text-[#1A1A1A]/60 dark:text-slate-400">{rounds.length}</div>
               </div>
               <div className={`${compact ? 'space-y-1' : 'space-y-2'}`}>
                 {rounds.map(r => (
-                  <button key={r.number} onClick={() => setSelectedRound(r.number)} className={`w-full text-left px-3 py-2 rounded ${selectedRound === r.number ? 'bg-indigo-700 border-indigo-500' : 'bg-slate-900 border-slate-800'} text-sm border`}>
+                  <button key={r.number} onClick={() => setSelectedRound(r.number)} className={`w-full text-left px-3 py-2 rounded ${selectedRound === r.number ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-[#FAF9F6] dark:bg-slate-900 border-[#1A1A1A]/10 dark:border-slate-800 text-[#1A1A1A] dark:text-white'} text-sm border`}>
                     <div className="font-medium">{r.name || `Round ${r.number}`}</div>
-                    <div className="text-xs text-slate-400">{r.roundDurationMinutes ? `${r.roundDurationMinutes} min` : 'Duration —'}</div>
+                    <div className="text-xs opacity-60">{r.roundDurationMinutes ? `${r.roundDurationMinutes} min` : 'Duration —'}</div>
                   </button>
                 ))}
-                <button onClick={() => setSelectedRound(0)} className={`w-full text-left px-3 py-2 rounded ${selectedRound === 0 ? 'bg-indigo-700 border-indigo-500' : 'bg-slate-900 border-slate-800'} text-sm border`}>All Rounds</button>
+                <button onClick={() => setSelectedRound(0)} className={`w-full text-left px-3 py-2 rounded ${selectedRound === 0 ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-[#FAF9F6] dark:bg-slate-900 border-[#1A1A1A]/10 dark:border-slate-800 text-[#1A1A1A] dark:text-white'} text-sm border`}>All Rounds</button>
               </div>
               {/* Round assignments panel removed — not required anymore */}
             </div>
           </aside>
 
           <main className="md:col-span-2 space-y-4">
-            <div className="glass-panel p-4">
+            <div className="card p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-medium">Criteria {selectedRound && selectedRound > 0 ? `(Round ${selectedRound})` : ''}</div>
+                <div className="text-sm font-medium text-[#1A1A1A] dark:text-white">Criteria {selectedRound && selectedRound > 0 ? `(Round ${selectedRound})` : ''}</div>
                 <div className="flex items-center gap-2">
                   <Button onClick={() => addCriterion()}>+ Add Criterion</Button>
                   {selectedRound > 0 && <Button variant="secondary" onClick={createCriterionForSelectedRound}>+ Create for Round</Button>}
@@ -333,8 +333,8 @@ export default function EventRubricPage() {
             </div>
 
             {editingIndex !== null && (
-              <div className="glass-panel p-4">
-                <h3 className="text-sm font-medium mb-2">Edit Criterion</h3>
+              <div className="card p-4">
+                <h3 className="text-sm font-medium mb-2 text-[#1A1A1A] dark:text-white">Edit Criterion</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <input type="text" value={criteria[editingIndex].label} onChange={e => updateCriterion(editingIndex, { label: e.target.value })} className="col-span-2 glass-input p-2 rounded" placeholder="Criterion label" />
                   <input type="number" min={1} value={criteria[editingIndex].max} onChange={e => updateCriterion(editingIndex, { max: Number(e.target.value) })} className="glass-input p-2 rounded" />
