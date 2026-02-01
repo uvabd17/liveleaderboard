@@ -534,9 +534,9 @@ export default function EventSettingsPage() {
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {FEATURE_OPTIONS.map((f) => (
-                <GlassCard key={f.key} className="hover:bg-white/10 transition-colors">
+                <GlassCard key={f.key} className="hover:bg-[#1A1A1A]/5 dark:hover:bg-white/10 transition-colors">
                   <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-slate-950 border border-white/5 shadow-inner">
+                    <div className="p-3 rounded-xl bg-[#FAF9F6] dark:bg-slate-950 border border-[#1A1A1A]/10 dark:border-white/5 shadow-inner">
                       {f.icon}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -587,8 +587,8 @@ export default function EventSettingsPage() {
                         className={cn(
                           "flex flex-col items-start p-4 rounded-xl border text-left transition-all",
                           rules.tieBreakerRule === rule.id
-                            ? "bg-blue-600/10 border-blue-500 text-white"
-                            : "bg-slate-950/30 border-white/5 text-slate-400 hover:border-white/10"
+                            ? "bg-blue-600/10 border-blue-500 text-[#1A1A1A] dark:text-white"
+                            : "bg-[#FAF9F6] dark:bg-slate-950/30 border-[#1A1A1A]/10 dark:border-white/5 text-[#1A1A1A]/60 dark:text-slate-400 hover:border-[#1A1A1A]/20 dark:hover:border-white/10"
                         )}
                       >
                         <span className="text-sm font-bold uppercase tracking-widest">{rule.label}</span>
@@ -643,7 +643,7 @@ export default function EventSettingsPage() {
 
             <GlassCard>
               <div className="flex flex-col md:flex-row gap-8 items-start">
-                <div className="relative group w-full md:w-64 aspect-video bg-slate-950 rounded-xl border border-white/10 overflow-hidden flex items-center justify-center">
+                <div className="relative group w-full md:w-64 aspect-video bg-[#FAF9F6] dark:bg-slate-950 rounded-xl border border-[#1A1A1A]/10 dark:border-white/10 overflow-hidden flex items-center justify-center">
                   {logoPreview ? (
                     <>
                       <img src={logoPreview} alt="Logo" className="w-full h-full object-contain p-4" />
@@ -771,7 +771,7 @@ export default function EventSettingsPage() {
                           setRules(p => ({ ...p, settings: { ...p.settings, sseUpdateInterval: Number(e.target.value) } }))
                           setHasChanges(true)
                         }}
-                        className="bg-slate-950 border border-white/10 rounded-lg px-4 py-2 w-32 text-center font-mono text-sm text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="bg-[#FAF9F6] dark:bg-slate-950 border border-[#1A1A1A]/10 dark:border-white/10 rounded-lg px-4 py-2 w-32 text-center font-mono text-sm text-[#1A1A1A] dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                       />
                       <span className="text-slate-500 text-sm">ms</span>
                     </div>
@@ -786,7 +786,7 @@ export default function EventSettingsPage() {
                         setRules(p => ({ ...p, leaderboardMode: e.target.value }))
                         setHasChanges(true)
                       }}
-                      className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full bg-[#FAF9F6] dark:bg-slate-950 border border-[#1A1A1A]/10 dark:border-white/10 rounded-lg px-4 py-2 text-sm text-[#1A1A1A] dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                     >
                       <option value="score">Pure Score (Highest Wins)</option>
                       <option value="speed+score">Speed + Score (Fastest High Score)</option>

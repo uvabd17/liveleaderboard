@@ -178,15 +178,15 @@ export default function ParticipantDashboardPage() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03] bg-center" />
       </div>
 
-      <header className="sticky top-0 z-40 bg-[#020617]/50 backdrop-blur-xl border-b border-white/5">
+      <header className="sticky top-0 z-40 bg-[#FAF9F6]/80 dark:bg-[#020617]/50 backdrop-blur-xl border-b border-[#1A1A1A]/5 dark:border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-              <Sparkles className="w-5 h-5 text-indigo-400" />
+            <div className="p-2.5 rounded-xl bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10">
+              <Sparkles className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
             </div>
             <div>
-              <h1 className="text-xl font-black italic uppercase tracking-tighter text-white leading-none">Participant Dashboard</h1>
-              <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em] mt-1">{participant.event.name}</p>
+              <h1 className="text-xl font-black italic uppercase tracking-tighter text-[#1A1A1A] dark:text-white leading-none">Participant Dashboard</h1>
+              <p className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono uppercase tracking-[0.2em] mt-1">{participant.event.name}</p>
             </div>
           </div>
 
