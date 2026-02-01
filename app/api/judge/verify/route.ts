@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     if (!judge) return Response.json({ error: 'not_found' }, { status: 404 })
 
     // Verify code
-    const { compare } = await import('bcrypt')
+    const { compare } = await import('bcryptjs')
     let isValid = false
     if (judge.hashedCode) {
       isValid = await compare(code.toUpperCase(), judge.hashedCode)

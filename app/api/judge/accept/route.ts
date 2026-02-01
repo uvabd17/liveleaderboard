@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
     // Create judge record
     const code = crypto.randomBytes(6).toString('hex').toUpperCase()
-    const { hash } = await import('bcrypt')
+    const { hash } = await import('bcryptjs')
     const hashedPassword = await hash(code, 12)
 
     const judge = await db.judge.create({
