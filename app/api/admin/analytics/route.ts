@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 
+// Force dynamic rendering - this route uses headers/cookies
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions)
