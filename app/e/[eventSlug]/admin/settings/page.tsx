@@ -383,7 +383,7 @@ export default function EventSettingsPage() {
         "fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-out",
         hasChanges ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0"
       )}>
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl p-2 pl-6 pr-2 flex items-center gap-6">
+        <div className="bg-[#FAF9F6]/90 dark:bg-slate-900/80 backdrop-blur-xl border border-[#1A1A1A]/10 dark:border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.2)] dark:shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl p-2 pl-6 pr-2 flex items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="relative">
               <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -626,7 +626,7 @@ export default function EventSettingsPage() {
                         setRules(p => ({ ...p, timerSettings: { ...p.timerSettings, warningThreshold: Number(e.target.value) } }))
                         setHasChanges(true)
                       }}
-                      className="w-full h-2 rounded-lg appearance-none bg-slate-800 accent-blue-500"
+                      className="w-full h-2 rounded-lg appearance-none bg-[#1A1A1A]/10 dark:bg-slate-800 accent-blue-500"
                     />
                   </div>
                 </div>
@@ -659,9 +659,9 @@ export default function EventSettingsPage() {
                   ) : (
                     <div
                       onClick={() => document.getElementById('logo-upload')?.click()}
-                      className="flex flex-col items-center gap-3 text-slate-500 cursor-pointer hover:text-slate-300 transition-colors"
+                      className="flex flex-col items-center gap-3 text-[#1A1A1A]/50 dark:text-slate-500 cursor-pointer hover:text-[#1A1A1A]/70 dark:hover:text-slate-300 transition-colors"
                     >
-                      <div className="p-3 rounded-full bg-slate-900 border border-slate-800">
+                      <div className="p-3 rounded-full bg-[#1A1A1A]/5 dark:bg-slate-900 border border-[#1A1A1A]/10 dark:border-slate-800">
                         <ImageIcon className="w-6 h-6" />
                       </div>
                       <span className="text-sm font-medium">Upload Logo</span>
@@ -688,7 +688,7 @@ export default function EventSettingsPage() {
                         <button
                           key={p.id}
                           onClick={() => selectPreset(p.value)}
-                          className="w-10 h-10 flex items-center justify-center text-xl bg-slate-900 border border-white/5 rounded-lg hover:bg-white/10 hover:border-white/20 transition-all hover:scale-105"
+                          className="w-10 h-10 flex items-center justify-center text-xl bg-[#1A1A1A]/5 dark:bg-slate-900 border border-[#1A1A1A]/10 dark:border-white/5 rounded-lg hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 hover:border-[#1A1A1A]/20 dark:hover:border-white/20 transition-all hover:scale-105"
                           title={p.label}
                         >
                           {p.value}
@@ -698,7 +698,7 @@ export default function EventSettingsPage() {
                   </div>
 
                   <div className="flex gap-3 pt-2">
-                    <Button onClick={() => document.getElementById('logo-upload')?.click()} variant="outline" className="border-slate-700 bg-transparent text-slate-300 hover:text-white hover:bg-white/5">
+                    <Button onClick={() => document.getElementById('logo-upload')?.click()} variant="outline" className="border-[#1A1A1A]/20 dark:border-slate-700 bg-transparent text-[#1A1A1A]/70 dark:text-slate-300 hover:text-[#1A1A1A] dark:hover:text-white hover:bg-[#1A1A1A]/5 dark:hover:bg-white/5">
                       Upload Custom File
                     </Button>
                     <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
@@ -728,7 +728,7 @@ export default function EventSettingsPage() {
                       "w-full text-left p-4 rounded-xl border transition-all",
                       rules.settings?.judgingMode !== 'blinded'
                         ? "bg-blue-600/10 border-blue-500/50 shadow-[0_0_20px_rgba(37,99,235,0.1)]"
-                        : "bg-slate-900/50 border-white/5 hover:bg-slate-900"
+                        : "bg-[#FAF9F6] dark:bg-slate-900/50 border-[#1A1A1A]/10 dark:border-white/5 hover:bg-[#1A1A1A]/5 dark:hover:bg-slate-900"
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -747,7 +747,7 @@ export default function EventSettingsPage() {
                       "w-full text-left p-4 rounded-xl border transition-all",
                       rules.settings?.judgingMode === 'blinded'
                         ? "bg-blue-600/10 border-blue-500/50 shadow-[0_0_20px_rgba(37,99,235,0.1)]"
-                        : "bg-slate-900/50 border-white/5 hover:bg-slate-900"
+                        : "bg-[#FAF9F6] dark:bg-slate-900/50 border-[#1A1A1A]/10 dark:border-white/5 hover:bg-[#1A1A1A]/5 dark:hover:bg-slate-900"
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
