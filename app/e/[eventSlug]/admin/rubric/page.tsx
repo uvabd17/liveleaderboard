@@ -353,8 +353,8 @@ export default function EventRubricPage() {
             )}
 
             {showRawJson && (
-              <div className="bg-slate-800 rounded p-4 text-sm border border-slate-700">
-                <pre className="whitespace-pre-wrap text-slate-200">{JSON.stringify(rawRubricJson, null, 2)}</pre>
+              <div className="bg-[#FAF9F6] dark:bg-slate-800 rounded p-4 text-sm border border-[#1A1A1A]/10 dark:border-slate-700">
+                <pre className="whitespace-pre-wrap text-[#1A1A1A] dark:text-slate-200">{JSON.stringify(rawRubricJson, null, 2)}</pre>
               </div>
             )}
           </main>

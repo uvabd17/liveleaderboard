@@ -1133,10 +1133,10 @@ export default function EventAdminPage() {
       {/* Manual Register Modal */}
       {showManualRegister && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">Manual Register</h3>
-              <button onClick={() => setShowManualRegister(false)} className="text-slate-400">×</button>
+              <h3 className="text-xl font-bold text-[#1A1A1A] dark:text-white">Manual Register</h3>
+              <button onClick={() => setShowManualRegister(false)} className="text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white text-2xl leading-none">&times;</button>
             </div>
             <form onSubmit={async (e) => {
               e.preventDefault()
@@ -1156,19 +1156,19 @@ export default function EventAdminPage() {
               }
             }} className="space-y-4">
               <div>
-                <label className="block text-sm text-slate-300 mb-1">Name</label>
-                <input name="name" className="w-full px-3 py-2 rounded bg-slate-700 border border-slate-600 text-white" />
+                <label className="block text-sm text-[#1A1A1A]/70 dark:text-slate-300 mb-1">Name</label>
+                <input name="name" className="w-full px-3 py-2 rounded bg-[#FAF9F6] dark:bg-slate-700 border border-[#1A1A1A]/20 dark:border-slate-600 text-[#1A1A1A] dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
               </div>
               <div>
-                <label className="block text-sm text-slate-300 mb-1">Type</label>
-                <select name="kind" defaultValue="team" className="w-full px-3 py-2 rounded bg-slate-700 border border-slate-600 text-white">
+                <label className="block text-sm text-[#1A1A1A]/70 dark:text-slate-300 mb-1">Type</label>
+                <select name="kind" defaultValue="team" className="w-full px-3 py-2 rounded bg-[#FAF9F6] dark:bg-slate-700 border border-[#1A1A1A]/20 dark:border-slate-600 text-[#1A1A1A] dark:text-white">
                   <option value="team">Team</option>
                   <option value="individual">Individual</option>
                 </select>
               </div>
               <div className="flex gap-2">
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">Add</button>
-                <button type="button" onClick={() => setShowManualRegister(false)} className="px-4 py-2 bg-slate-600 text-white rounded">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-[#1A1A1A] dark:bg-blue-600 text-white rounded hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-700 transition-colors">Add</button>
+                <button type="button" onClick={() => setShowManualRegister(false)} className="px-4 py-2 bg-[#1A1A1A]/10 dark:bg-slate-600 text-[#1A1A1A] dark:text-white rounded hover:bg-[#1A1A1A]/20 dark:hover:bg-slate-500 transition-colors">Cancel</button>
               </div>
             </form>
           </div>

@@ -28,12 +28,12 @@ type EditState = {
 // Tooltip Component
 const InfoTip = ({ children }: { children: React.ReactNode }) => (
   <div className="group relative inline-block ml-2 align-middle">
-    <div className="w-4 h-4 rounded-full border border-slate-500 text-slate-500 flex items-center justify-center text-[10px] font-bold cursor-help hover:border-blue-400 hover:text-blue-400 transition-colors">
+    <div className="w-4 h-4 rounded-full border border-[#1A1A1A]/40 dark:border-slate-500 text-[#1A1A1A]/60 dark:text-slate-500 flex items-center justify-center text-[10px] font-bold cursor-help hover:border-blue-500 hover:text-blue-500 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-colors">
       i
     </div>
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border border-white/10 rounded-lg shadow-2xl text-[10px] leading-relaxed text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 backdrop-blur-xl">
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-white dark:bg-slate-900 border border-[#1A1A1A]/10 dark:border-white/10 rounded-lg shadow-2xl text-[10px] leading-relaxed text-[#1A1A1A]/70 dark:text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 backdrop-blur-xl">
       {children}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-white dark:border-t-slate-900" />
     </div>
   </div>
 )
