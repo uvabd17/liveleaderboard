@@ -86,16 +86,18 @@ export default function StagePage() {
   // Show access denied if not admin
   if (status === 'authenticated' && role !== 'admin') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
-        <div className="glass-panel p-12 rounded-3xl text-center space-y-6 max-w-md">
-          <div className="text-6xl">🔒</div>
+      <div className="min-h-screen bg-charcoal flex items-center justify-center p-4">
+        <div className="bg-white/5 border border-white/10 p-12 rounded-2xl text-center space-y-6 max-w-md">
+          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto">
+            <span className="text-3xl">🔒</span>
+          </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white">Admin Access Required</h2>
-            <p className="text-slate-400">The Stage Display is only accessible to event administrators.</p>
+            <h2 className="font-display text-2xl font-semibold text-white">Admin Access Required</h2>
+            <p className="text-white/50">The Stage Display is only accessible to event administrators.</p>
           </div>
           <button
             onClick={() => router.push(`/e/${eventSlug}`)}
-            className="glass-button-primary w-full py-3"
+            className="w-full py-3 bg-cream text-charcoal rounded-full font-medium hover:bg-white transition-colors"
           >
             Go to Standings
           </button>
@@ -507,8 +509,11 @@ export default function StagePage() {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen bg-charcoal flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-white/10 border-t-white/60 rounded-full animate-spin"></div>
+          <div className="text-white/50 text-sm font-medium">Loading stage...</div>
+        </div>
       </div>
     )
   }
@@ -525,10 +530,10 @@ export default function StagePage() {
       )
     }
 
-    // Dynamic metallic text classes
-    const goldText = "bg-clip-text text-transparent bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]"
-    const silverText = "bg-clip-text text-transparent bg-gradient-to-b from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_10px_rgba(148,163,184,0.5)]"
-    const bronzeText = "bg-clip-text text-transparent bg-gradient-to-b from-orange-200 via-orange-400 to-red-700 drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+    // Dynamic metallic text classes - refined for minimalism
+    const goldText = "text-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]"
+    const silverText = "text-slate-300 drop-shadow-[0_0_15px_rgba(148,163,184,0.3)]"
+    const bronzeText = "text-orange-400 drop-shadow-[0_0_15px_rgba(249,115,22,0.3)]"
 
     // Helper for cards
     const PodiumCard = ({ p, rank, delay }: { p: Participant; rank: number; delay: number }) => {
@@ -568,19 +573,19 @@ export default function StagePage() {
             {/* Inner content */}
             <div className="text-center px-4 space-y-4 mb-auto pt-24 w-full">
               <div className="space-y-1">
-                <div className={`text-4xl md:text-5xl font-black tracking-tighter ${isFirst ? goldText : isSecond ? silverText : isThird ? bronzeText : 'text-slate-300'}`}>
+                <div className={`text-4xl md:text-5xl font-mono font-bold tracking-tight ${isFirst ? goldText : isSecond ? silverText : isThird ? bronzeText : 'text-slate-300'}`}>
                   {p.totalScore}
                 </div>
-                <div className="text-xs font-mono uppercase tracking-[0.2em] text-slate-500">Total Score</div>
+                <div className="text-[10px] uppercase tracking-widest text-white/30">Score</div>
               </div>
 
               <div className="w-12 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto" />
 
               <div>
-                <div className="text-xl md:text-2xl font-bold text-white line-clamp-2 leading-tight">
+                <div className="font-display text-xl md:text-2xl font-semibold text-white line-clamp-2 leading-tight">
                   {p.name}
                 </div>
-                <div className="text-sm text-white/40 mt-1 font-medium tracking-wide">
+                <div className="text-xs text-white/30 mt-1 uppercase tracking-wider">
                   {p.kind}
                 </div>
               </div>
@@ -625,7 +630,7 @@ export default function StagePage() {
       <BroadcastTicker />
       <StageCinematics />
       {/* Background gradients */}
-      <div className="fixed inset-0 pointer-events-none -z-10 bg-[#030712] overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none -z-10 bg-charcoal overflow-hidden">
         <div
           className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[150px] animate-aurora-1 opacity-20"
           style={{ backgroundColor: event?.brandColors?.primary || '#4f46e5' }}
@@ -653,16 +658,16 @@ export default function StagePage() {
           <div className="text-center md:text-left">
             {event.features?.isEnded ? (
               <div className="animate-fade-in">
-                <div className="text-emerald-400 font-mono tracking-[0.3em] text-sm uppercase mb-1 font-bold">Event Complete</div>
-                <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 mb-1 tracking-tight drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                <div className="text-emerald-400 font-mono tracking-widest text-xs uppercase mb-2">Event Complete</div>
+                <h1 className="font-display text-5xl md:text-7xl font-semibold text-white mb-2 tracking-tight">
                   Final Results
                 </h1>
-                <p className="text-xl font-light text-slate-400 tracking-wide uppercase">{event.name}</p>
+                <p className="text-lg text-white/40 tracking-wide">{event.name}</p>
               </div>
             ) : (
               <>
-                <h1 className="text-5xl md:text-6xl font-black text-white mb-1 tracking-tight drop-shadow-lg">{event.name}</h1>
-                <p className="text-lg font-light text-slate-400 tracking-wide uppercase">{event.organization.name}</p>
+                <h1 className="font-display text-5xl md:text-6xl font-semibold text-white mb-1 tracking-tight">{event.name}</h1>
+                <p className="text-sm text-white/40 uppercase tracking-widest">{event.organization.name}</p>
               </>
             )}
 

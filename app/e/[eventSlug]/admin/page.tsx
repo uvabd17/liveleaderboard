@@ -334,12 +334,14 @@ export default function EventAdminPage() {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-          <p className="text-slate-400 mb-6">You don't have permission to manage this event.</p>
-          <Link href="/dashboard" className="text-blue-400 hover:text-blue-300">
+          <div className="w-16 h-16 rounded-full bg-charcoal/5 flex items-center justify-center mx-auto mb-6">
+            <span className="text-3xl">🔒</span>
+          </div>
+          <h1 className="font-display text-2xl font-semibold text-charcoal mb-2">Access Denied</h1>
+          <p className="text-charcoal/50 mb-8">You don't have permission to manage this event.</p>
+          <Link href="/dashboard" className="text-charcoal hover:underline">
             Back to Dashboard
           </Link>
         </div>
@@ -356,11 +358,11 @@ export default function EventAdminPage() {
   ]
 
   return (
-    <div className="min-h-screen pb-20 relative">
-      {/* Background gradients */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+    <div className="min-h-screen pb-20 relative bg-cream dark:bg-charcoal">
+      {/* Background gradients - subtle for cream theme */}
+      <div className="fixed inset-0 pointer-events-none dark:opacity-100 opacity-30">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-charcoal/5 dark:bg-purple-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-charcoal/5 dark:bg-blue-500/10 rounded-full blur-[120px]" />
       </div>
 
       <AdminNavbar eventSlug={eventSlug} />
@@ -414,17 +416,17 @@ export default function EventAdminPage() {
         )}
 
         {/* Tab Navigation */}
-        <div className="glass-panel mb-6 rounded-3xl overflow-hidden border-white/5">
+        <div className="card mb-6 overflow-hidden">
           <div className="flex px-2 py-1.5 overflow-x-auto gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2",
+                  "px-6 py-3 rounded-xl font-medium text-sm transition-all whitespace-nowrap flex items-center gap-2",
                   activeTab === tab.id
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                    ? "bg-charcoal text-cream dark:bg-cream dark:text-charcoal"
+                    : "text-charcoal/50 dark:text-white/50 hover:text-charcoal dark:hover:text-white hover:bg-charcoal/5 dark:hover:bg-white/5"
                 )}
               >
                 <span className="opacity-70">{tab.icon}</span>
@@ -441,32 +443,34 @@ export default function EventAdminPage() {
             <>
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="glass-panel p-6">
-                  <div className="text-slate-400 text-sm mb-1">Participants</div>
-                  <div className="text-3xl font-bold text-white">{event._count.participants}</div>
+                <div className="card p-6">
+                  <div className="text-charcoal/50 dark:text-white/50 text-xs uppercase tracking-wider mb-1">Participants</div>
+                  <div className="text-3xl font-mono font-bold text-charcoal dark:text-white">{event._count.participants}</div>
                 </div>
-                <div className="glass-panel p-6">
-                  <div className="text-slate-400 text-sm mb-1">Judges</div>
-                  <div className="text-3xl font-bold text-purple-400">{event._count.judges}</div>
+                <div className="card p-6">
+                  <div className="text-charcoal/50 dark:text-white/50 text-xs uppercase tracking-wider mb-1">Judges</div>
+                  <div className="text-3xl font-mono font-bold text-charcoal dark:text-white">{event._count.judges}</div>
                 </div>
-                <div className="glass-panel p-6">
-                  <div className="text-slate-400 text-sm mb-1">Avg Score</div>
-                  <div className="text-3xl font-bold text-green-400">
+                <div className="card p-6">
+                  <div className="text-charcoal/50 dark:text-white/50 text-xs uppercase tracking-wider mb-1">Avg Score</div>
+                  <div className="text-3xl font-mono font-bold text-charcoal dark:text-white">
                     {participants.length > 0
                       ? Math.round(participants.reduce((sum, p) => sum + p.totalScore, 0) / participants.length)
                       : 0
                     }
                   </div>
                 </div>
-                <div className="glass-panel p-6">
-                  <div className="text-slate-400 text-sm mb-1">Status</div>
-                  <div className="text-2xl font-bold text-green-400">🟢 Active</div>
+                <div className="card p-6">
+                  <div className="text-charcoal/50 dark:text-white/50 text-xs uppercase tracking-wider mb-1">Status</div>
+                  <div className="text-lg font-semibold text-emerald-600 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Active
+                  </div>
                 </div>
               </div>
 
               {/* Quick Actions */}
-              <div className="glass-panel p-6">
-                <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
+              <div className="card p-6">
+                <h2 className="font-display text-xl font-semibold text-charcoal dark:text-white mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <button
                     onClick={() => { setShowQR(true); setQrTab('registration') }}
