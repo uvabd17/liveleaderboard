@@ -189,7 +189,7 @@ export default function EventRubricPage() {
             <div key={i} className="text-sm mb-1">• {e}</div>
           ))}
           {errors.length > 4 && (
-            <div className="text-sm text-slate-400 mt-2">
+            <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mt-2">
               ...and {errors.length - 4} more error{errors.length - 4 > 1 ? 's' : ''}
             </div>
           )}
@@ -287,20 +287,20 @@ export default function EventRubricPage() {
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-            <div className="text-3xl font-bold text-blue-400">{criteria.length}</div>
-            <div className="text-sm text-slate-400 mt-1">Criteria</div>
+            <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{criteria.length}</div>
+            <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mt-1">Criteria</div>
           </Card>
           <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-            <div className="text-3xl font-bold text-purple-400">{roundsConfig.length}</div>
-            <div className="text-sm text-slate-400 mt-1">Rounds</div>
+            <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{roundsConfig.length}</div>
+            <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mt-1">Rounds</div>
           </Card>
           <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-            <div className="text-3xl font-bold text-green-400">{totalWeight.toFixed(1)}</div>
-            <div className="text-sm text-slate-400 mt-1">Total Weight</div>
+            <div className="text-3xl font-bold text-green-700 dark:text-green-400">{totalWeight.toFixed(1)}</div>
+            <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mt-1">Total Weight</div>
           </Card>
           <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
-            <div className="text-3xl font-bold text-orange-400">{maxPossibleScore}</div>
-            <div className="text-sm text-slate-400 mt-1">Max Score</div>
+            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">{maxPossibleScore}</div>
+            <div className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mt-1">Max Score</div>
           </Card>
         </div>
 
@@ -309,7 +309,7 @@ export default function EventRubricPage() {
           <div className="lg:col-span-1">
             <Card>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">🎯 Judging Rounds</h2>
+                <h2 className="text-xl font-bold text-[#1A1A1A] dark:text-white">🎯 Judging Rounds</h2>
                 <Button onClick={addRound} size="sm">
                   + Add
                 </Button>
@@ -319,7 +319,7 @@ export default function EventRubricPage() {
                 {roundsConfig.map((round, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-all"
+                    className="p-4 bg-[#1A1A1A]/5 dark:bg-slate-800/50 rounded-lg border border-[#1A1A1A]/10 dark:border-slate-700 hover:border-[#1A1A1A]/20 dark:hover:border-slate-600 transition-all"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -330,7 +330,7 @@ export default function EventRubricPage() {
                           type="text"
                           value={round.name}
                           onChange={e => updateRound(index, { name: e.target.value })}
-                          className="bg-transparent border-none text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+                          className="bg-transparent border-none text-[#1A1A1A] dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
                           placeholder="Round name"
                         />
                       </div>
@@ -345,14 +345,14 @@ export default function EventRubricPage() {
                       )}
                     </div>
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">Duration (optional)</label>
+                      <label className="text-xs text-[#1A1A1A]/50 dark:text-slate-400 block mb-1">Duration (optional)</label>
                       <input
                         type="number"
                         min="1"
                         value={round.durationMinutes || ''}
                         onChange={e => updateRound(index, { durationMinutes: e.target.value ? Number(e.target.value) : undefined })}
                         placeholder="Minutes"
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 bg-[#FAF9F6] dark:bg-slate-800 border border-[#1A1A1A]/10 dark:border-slate-600 rounded text-[#1A1A1A] dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -361,7 +361,7 @@ export default function EventRubricPage() {
 
               {roundsConfig.length > 1 && (
                 <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-xs text-blue-300">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
                     💡 <strong>Tip:</strong> Assign criteria to specific rounds in the rubric editor
                   </p>
                 </div>
@@ -374,8 +374,8 @@ export default function EventRubricPage() {
             {criteria.length === 0 ? (
               <Card className="text-center py-16">
                 <div className="text-7xl mb-6">📝</div>
-                <h3 className="text-2xl font-bold text-white mb-3">No Criteria Yet</h3>
-                <p className="text-slate-400 mb-8 max-w-md mx-auto">
+                <h3 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-3">No Criteria Yet</h3>
+                <p className="text-[#1A1A1A]/60 dark:text-slate-400 mb-8 max-w-md mx-auto">
                   Create scoring criteria that judges will use to evaluate participants
                 </p>
                 <div className="flex gap-4 justify-center flex-wrap">
@@ -388,14 +388,14 @@ export default function EventRubricPage() {
                 </div>
 
                 {showTemplates && (
-                  <div className="mt-8 pt-8 border-t border-slate-700">
-                    <p className="text-slate-400 mb-4">Quick Start Templates:</p>
+                  <div className="mt-8 pt-8 border-t border-[#1A1A1A]/10 dark:border-slate-700">
+                    <p className="text-[#1A1A1A]/60 dark:text-slate-400 mb-4">Quick Start Templates:</p>
                     <div className="flex flex-wrap gap-3 justify-center max-w-2xl mx-auto">
                       {TEMPLATES.map((t, i) => (
                         <button
                           key={i}
                           onClick={() => addCriterion(t)}
-                          className="px-5 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-all hover:scale-105"
+                          className="px-5 py-3 bg-[#1A1A1A]/5 dark:bg-slate-700 hover:bg-[#1A1A1A]/10 dark:hover:bg-slate-600 text-[#1A1A1A] dark:text-white rounded-lg text-sm font-medium transition-all hover:scale-105"
                         >
                           + {t.label}
                         </button>
@@ -407,7 +407,7 @@ export default function EventRubricPage() {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-bold text-white">Scoring Criteria</h2>
+                  <h2 className="text-xl font-bold text-[#1A1A1A] dark:text-white">Scoring Criteria</h2>
                   <div className="flex gap-2">
                     <Button variant="secondary" onClick={() => setShowTemplates(!showTemplates)} size="sm">
                       📚 Templates
@@ -419,14 +419,14 @@ export default function EventRubricPage() {
                 </div>
 
                 {showTemplates && (
-                  <Card className="bg-slate-800/30 mb-4">
-                    <p className="text-sm text-slate-400 mb-3">Quick Add from Template:</p>
+                  <Card className="bg-[#1A1A1A]/5 dark:bg-slate-800/30 mb-4">
+                    <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-3">Quick Add from Template:</p>
                     <div className="flex flex-wrap gap-2">
                       {TEMPLATES.map((t, i) => (
                         <button
                           key={i}
                           onClick={() => addCriterion(t)}
-                          className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded transition-colors"
+                          className="px-3 py-2 bg-[#1A1A1A]/5 dark:bg-slate-700 hover:bg-[#1A1A1A]/10 dark:hover:bg-slate-600 text-[#1A1A1A] dark:text-white text-xs rounded transition-colors"
                         >
                           + {t.label}
                         </button>
@@ -464,7 +464,7 @@ export default function EventRubricPage() {
                                   moveCriterion(index, 'up')
                                 }}
                                 disabled={index === 0}
-                                className="p-1 text-slate-500 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                className="p-1 text-[#1A1A1A]/40 dark:text-slate-500 hover:text-[#1A1A1A] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                                 title="Move up"
                               >
                                 ▲
@@ -475,7 +475,7 @@ export default function EventRubricPage() {
                                   moveCriterion(index, 'down')
                                 }}
                                 disabled={index === criteria.length - 1}
-                                className="p-1 text-slate-500 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                className="p-1 text-[#1A1A1A]/40 dark:text-slate-500 hover:text-[#1A1A1A] dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
                                 title="Move down"
                               >
                                 ▼
@@ -488,11 +488,11 @@ export default function EventRubricPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-4 mb-2">
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-lg font-bold text-white mb-1 truncate">
-                                {criterion.label || <span className="text-slate-500 italic">Untitled Criterion</span>}
+                              <h3 className="text-lg font-bold text-[#1A1A1A] dark:text-white mb-1 truncate">
+                                {criterion.label || <span className="text-[#1A1A1A]/40 dark:text-slate-500 italic">Untitled Criterion</span>}
                               </h3>
                               {criterion.description && (
-                                <p className="text-sm text-slate-400 line-clamp-2">{criterion.description}</p>
+                                <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 line-clamp-2">{criterion.description}</p>
                               )}
                             </div>
                             {!isExpanded && (
@@ -502,7 +502,7 @@ export default function EventRubricPage() {
                                     e.stopPropagation()
                                     duplicateCriterion(index)
                                   }}
-                                  className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded transition-colors"
+                                  className="px-3 py-1.5 bg-[#1A1A1A]/5 dark:bg-slate-700 hover:bg-[#1A1A1A]/10 dark:hover:bg-slate-600 text-[#1A1A1A] dark:text-white text-sm rounded transition-colors"
                                   title="Duplicate"
                                 >
                                   📋
@@ -523,16 +523,16 @@ export default function EventRubricPage() {
 
                           <div className="flex flex-wrap gap-3 text-sm">
                             <div className="flex items-center gap-2">
-                              <span className="text-slate-500">Max:</span>
-                              <span className="font-semibold text-blue-400">{criterion.max}</span>
+                              <span className="text-[#1A1A1A]/40 dark:text-slate-500">Max:</span>
+                              <span className="font-semibold text-blue-600 dark:text-blue-400">{criterion.max}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-slate-500">Weight:</span>
-                              <span className="font-semibold text-purple-400">{criterion.weight}×</span>
+                              <span className="text-[#1A1A1A]/40 dark:text-slate-500">Weight:</span>
+                              <span className="font-semibold text-purple-600 dark:text-purple-400">{criterion.weight}×</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-slate-500">Rounds:</span>
-                              <span className="font-semibold text-green-400">{roundsApplied}</span>
+                              <span className="text-[#1A1A1A]/40 dark:text-slate-500">Rounds:</span>
+                              <span className="font-semibold text-green-700 dark:text-green-400">{roundsApplied}</span>
                             </div>
                             {criterion.required && (
                               <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">
@@ -545,10 +545,10 @@ export default function EventRubricPage() {
 
                       {/* Expanded Edit View */}
                       {isExpanded && (
-                        <div className="mt-6 pt-6 border-t border-slate-700 space-y-6">
+                        <div className="mt-6 pt-6 border-t border-[#1A1A1A]/10 dark:border-slate-700 space-y-6">
                           {/* Criterion Name */}
                           <div>
-                            <label className="block text-sm font-semibold text-slate-200 mb-2">
+                            <label className="block text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-200 mb-2">
                               Criterion Name *
                             </label>
                             <input
@@ -556,14 +556,14 @@ export default function EventRubricPage() {
                               value={criterion.label}
                               onChange={e => updateCriterion(index, { label: e.target.value })}
                               placeholder="e.g., Innovation, Impact, Technical Excellence"
-                              className="w-full px-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-white text-lg font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-4 py-3 bg-[#FAF9F6] dark:bg-slate-800 border-2 border-[#1A1A1A]/10 dark:border-slate-600 rounded-lg text-[#1A1A1A] dark:text-white text-lg font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
 
                           {/* Key, Max, Weight */}
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                              <label className="block text-sm font-semibold text-slate-200 mb-2">
+                              <label className="block text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-200 mb-2">
                                 Unique Key *
                               </label>
                               <input
@@ -571,11 +571,11 @@ export default function EventRubricPage() {
                                 value={criterion.key}
                                 onChange={e => updateCriterion(index, { key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
                                 placeholder="innovation"
-                                className="w-full px-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-white font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-4 py-3 bg-[#FAF9F6] dark:bg-slate-800 border-2 border-[#1A1A1A]/10 dark:border-slate-600 rounded-lg text-[#1A1A1A] dark:text-white font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-semibold text-slate-200 mb-2">
+                              <label className="block text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-200 mb-2">
                                 Max Score *
                               </label>
                               <input
@@ -584,11 +584,11 @@ export default function EventRubricPage() {
                                 max="1000"
                                 value={criterion.max}
                                 onChange={e => updateCriterion(index, { max: Math.max(1, Number(e.target.value)) })}
-                                className="w-full px-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-white text-lg font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-4 py-3 bg-[#FAF9F6] dark:bg-slate-800 border-2 border-[#1A1A1A]/10 dark:border-slate-600 rounded-lg text-[#1A1A1A] dark:text-white text-lg font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-semibold text-slate-200 mb-2">
+                              <label className="block text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-200 mb-2">
                                 Weight
                               </label>
                               <input
@@ -597,14 +597,14 @@ export default function EventRubricPage() {
                                 step="0.1"
                                 value={criterion.weight}
                                 onChange={e => updateCriterion(index, { weight: Math.max(0, Number(e.target.value)) })}
-                                className="w-full px-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-white text-lg font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-4 py-3 bg-[#FAF9F6] dark:bg-slate-800 border-2 border-[#1A1A1A]/10 dark:border-slate-600 rounded-lg text-[#1A1A1A] dark:text-white text-lg font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               />
                             </div>
                           </div>
 
                           {/* Description */}
                           <div>
-                            <label className="block text-sm font-semibold text-slate-200 mb-2">
+                            <label className="block text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-200 mb-2">
                               Description (shown to judges)
                             </label>
                             <textarea
@@ -612,14 +612,14 @@ export default function EventRubricPage() {
                               onChange={e => updateCriterion(index, { description: e.target.value })}
                               placeholder="Provide guidance on what judges should look for..."
                               rows={3}
-                              className="w-full px-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-4 py-3 bg-[#FAF9F6] dark:bg-slate-800 border-2 border-[#1A1A1A]/10 dark:border-slate-600 rounded-lg text-[#1A1A1A] dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
 
                           {/* Round Assignment */}
                           {roundsConfig.length > 1 && (
                             <div>
-                              <label className="block text-sm font-semibold text-slate-200 mb-3">
+                              <label className="block text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-200 mb-3">
                                 Apply to Rounds (leave empty for all rounds)
                               </label>
                               <div className="flex flex-wrap gap-2">
@@ -632,7 +632,7 @@ export default function EventRubricPage() {
                                       className={`px-4 py-2 rounded-lg font-medium transition-all ${
                                         isSelected
                                           ? 'bg-blue-500 text-white shadow-lg scale-105'
-                                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                          : 'bg-[#1A1A1A]/5 dark:bg-slate-700 text-[#1A1A1A]/70 dark:text-slate-300 hover:bg-[#1A1A1A]/10 dark:hover:bg-slate-600'
                                       }`}
                                     >
                                       Round {round.number}: {round.name}
@@ -640,7 +640,7 @@ export default function EventRubricPage() {
                                   )
                                 })}
                               </div>
-                              <p className="text-xs text-slate-500 mt-2">
+                              <p className="text-xs text-[#1A1A1A]/40 dark:text-slate-500 mt-2">
                                 {!criterion.rounds || criterion.rounds.length === 0
                                   ? '✓ This criterion applies to all rounds'
                                   : `✓ This criterion applies to ${criterion.rounds.length} selected round(s)`}
@@ -657,17 +657,17 @@ export default function EventRubricPage() {
                               onChange={e => updateCriterion(index, { required: e.target.checked })}
                               className="w-5 h-5 rounded"
                             />
-                            <label htmlFor={`required-${index}`} className="text-slate-300 font-medium">
+                            <label htmlFor={`required-${index}`} className="text-[#1A1A1A]/70 dark:text-slate-300 font-medium">
                               Judges must score this criterion (required)
                             </label>
                           </div>
 
                           {/* Actions */}
-                          <div className="flex justify-between items-center pt-4 border-t border-slate-700">
+                          <div className="flex justify-between items-center pt-4 border-t border-[#1A1A1A]/10 dark:border-slate-700">
                             <div className="flex gap-2">
                               <button
                                 onClick={() => duplicateCriterion(index)}
-                                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+                                className="px-4 py-2 bg-[#1A1A1A]/5 dark:bg-slate-700 hover:bg-[#1A1A1A]/10 dark:hover:bg-slate-600 text-[#1A1A1A] dark:text-white rounded-lg font-medium transition-colors"
                               >
                                 📋 Duplicate
                               </button>
