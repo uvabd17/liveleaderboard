@@ -166,17 +166,17 @@ export default function ScoreAdjustPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] flex items-center justify-center">
+        <div className="text-[#1A1A1A] dark:text-white text-xl">Loading...</div>
       </div>
     )
   }
 
   if (!allRoundsCompleted) {
     return (
-      <div className="min-h-screen bg-slate-900 py-8 px-4">
+      <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          <Link href={`/e/${eventSlug}/admin`} className="text-slate-400 hover:text-white mb-4 inline-block">
+          <Link href={`/e/${eventSlug}/admin`} className="text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white mb-4 inline-block">
             ← Back to Admin
           </Link>
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-6">
@@ -199,44 +199,44 @@ export default function ScoreAdjustPage() {
   ).sort()
 
   return (
-    <div className="min-h-screen bg-slate-900 py-8 px-4">
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 flex items-center gap-4">
-          <Link href={`/e/${eventSlug}/admin`} className="text-slate-400 hover:text-white">
+          <Link href={`/e/${eventSlug}/admin`} className="text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white">
             ← Back to Admin
           </Link>
-          <h1 className="text-3xl font-bold text-white">Score Adjustment</h1>
+          <h1 className="text-3xl font-bold text-[#1A1A1A] dark:text-white">Score Adjustment</h1>
         </div>
 
         <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-6">
-          <p className="text-green-400 text-sm">
+          <p className="text-green-600 dark:text-green-400 text-sm">
             ✓ All rounds completed. Score adjustments are now enabled.
           </p>
         </div>
 
-        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
+        <div className="card rounded-lg border border-[#1A1A1A]/10 dark:border-slate-700 overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-700">
+            <thead className="bg-[#1A1A1A]/5 dark:bg-slate-700">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Rank</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Participant</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Type</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Rank</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Participant</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Type</th>
                 {allCriteria.map(criterion => (
-                  <th key={criterion} className="px-4 py-3 text-center text-sm font-semibold text-slate-300">
+                  <th key={criterion} className="px-4 py-3 text-center text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">
                     {criterion}
                   </th>
                 ))}
-                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-300">Total</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-[#1A1A1A]/70 dark:text-slate-300">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-[#1A1A1A]/10 dark:divide-slate-700">
               {participants.map(participant => {
                 const participantScores = new Map(participant.scores.map(s => [s.criterion, s]))
                 return (
-                  <tr key={participant.id} className="hover:bg-slate-700/50">
-                    <td className="px-4 py-3 text-slate-300">#{participant.rank}</td>
-                    <td className="px-4 py-3 font-medium text-white">{participant.name}</td>
-                    <td className="px-4 py-3 text-slate-400 capitalize">{participant.kind}</td>
+                  <tr key={participant.id} className="hover:bg-[#1A1A1A]/5 dark:hover:bg-slate-700/50">
+                    <td className="px-4 py-3 text-[#1A1A1A]/70 dark:text-slate-300">#{participant.rank}</td>
+                    <td className="px-4 py-3 font-medium text-[#1A1A1A] dark:text-white">{participant.name}</td>
+                    <td className="px-4 py-3 text-[#1A1A1A]/60 dark:text-slate-400 capitalize">{participant.kind}</td>
                     {allCriteria.map(criterion => {
                       const score = participantScores.get(criterion)
                       const originalValue = score?.value ?? 0
@@ -251,7 +251,7 @@ export default function ScoreAdjustPage() {
                               type="number"
                               value={currentValue}
                               onChange={(e) => handleScoreChange(participant.id, criterion, Number(e.target.value))}
-                              className="w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-center"
+                              className="w-20 px-2 py-1 bg-[#FAF9F6] dark:bg-slate-700 border border-[#1A1A1A]/10 dark:border-slate-600 rounded text-[#1A1A1A] dark:text-white text-center"
                               min={0}
                             />
                             {isEdited && (

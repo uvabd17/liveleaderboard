@@ -236,8 +236,8 @@ export default function EventRubricPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl animate-pulse">Loading rubric configuration...</div>
+      <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] flex items-center justify-center">
+        <div className="text-[#1A1A1A] dark:text-white text-xl animate-pulse">Loading rubric configuration...</div>
       </div>
     )
   }
@@ -246,23 +246,23 @@ export default function EventRubricPage() {
   const maxPossibleScore = criteria.reduce((sum, c) => sum + c.max * c.weight, 0)
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4 md:p-6">
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.push(`/e/${eventSlug}/admin`)}
-            className="text-slate-400 hover:text-white mb-4 flex items-center gap-2 transition-colors"
+            className="text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white mb-4 flex items-center gap-2 transition-colors"
           >
             <span className="text-xl">←</span> Back to Admin
           </button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              <h1 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] dark:text-white mb-2">
                 📋 Scoring Rubric & Rounds
               </h1>
-              <p className="text-slate-400">
-                Event: <span className="font-mono text-blue-400">{eventSlug}</span>
+              <p className="text-[#1A1A1A]/60 dark:text-slate-400">
+                Event: <span className="font-mono text-blue-600 dark:text-blue-400">{eventSlug}</span>
               </p>
             </div>
             <div className="flex gap-3">
