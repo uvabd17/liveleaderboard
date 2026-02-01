@@ -1,12 +1,28 @@
 import './globals.css'
 import React from 'react'
 import { Providers } from '../lib/providers'
-import { Outfit } from 'next/font/google'
+import { Inter, Playfair_Display, JetBrains_Mono } from 'next/font/google'
 
-const outfit = Outfit({
+// Primary UI font - clean, modern, highly legible
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-outfit',
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+// Display font - elegant serif for headings and hero text
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair',
+  weight: ['400', '500', '600', '700', '800', '900'],
+  display: 'swap',
+})
+
+// Monospace font - for scores, timers, and data
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
 })
 
@@ -20,11 +36,11 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`h-full ${outfit.variable}`}>
+    <html lang="en" className={`h-full ${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className={`min-h-screen bg-background text-foreground antialiased ${outfit.className}`}>
+      <body className={`min-h-screen bg-background text-foreground antialiased ${inter.className}`}>
         <Providers>
           {children}
         </Providers>
