@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Trophy, Sparkles } from 'lucide-react'
+import { ArrowLeft, Loader2, Trophy } from 'lucide-react'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -57,83 +57,76 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black flex items-center justify-center p-4">
-      {/* Background Ambience */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-500/10 blur-[120px] rounded-full animate-pulse duration-[5000ms]" />
-        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full" />
-      </div>
-
-      <div className="w-full max-w-lg relative z-10 animate-fade-in-up">
+    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
+      <div className="w-full max-w-lg relative z-10 animate-fade-in">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
-            <div className="p-2 rounded-xl bg-white/5 border border-white/10 group-hover:bg-blue-500/10 group-hover:border-blue-500/20 transition-all">
-              <Trophy className="w-6 h-6 text-blue-400" />
-            </div>
+          <Link href="/" className="inline-flex items-center gap-2 mb-6">
+            <Trophy className="w-6 h-6 text-charcoal" />
+            <span className="font-display text-lg font-semibold text-charcoal">Live Leaderboard</span>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Create your account</h1>
-          <p className="text-slate-400">Join thousands of event organizers</p>
+          <h1 className="font-display text-3xl font-semibold text-charcoal mb-2">Create your account</h1>
+          <p className="text-charcoal/50">Join thousands of event organizers</p>
         </div>
 
         {/* Card */}
-        <div className="glass-card p-8 md:p-10 shadow-2xl backdrop-blur-xl bg-slate-900/40">
+        <div className="card p-8 md:p-10">
           {/* Promo Badge */}
           <div className="mb-6 flex justify-center">
-            <span className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 text-blue-300">
-              <Sparkles className="w-3 h-3" /> Start your free trial today
+            <span className="badge-minimal">
+              Start your free trial today
             </span>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-sm font-medium flex items-center animate-shake">
+              <div className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-medium">
                 {error}
               </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Organization</label>
+                <label className="block text-sm font-medium text-charcoal mb-2">Organization</label>
                 <input
                   id="organizationName"
                   type="text"
                   value={formData.organizationName}
                   onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
                   required
-                  className="w-full glass-input px-4 py-3"
+                  className="input w-full"
                   placeholder="Acme Inc"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
+                <label className="block text-sm font-medium text-charcoal mb-2">Full Name</label>
                 <input
                   id="name"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full glass-input px-4 py-3"
+                  className="input w-full"
                   placeholder="John Doe"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Email address</label>
+              <label className="block text-sm font-medium text-charcoal mb-2">Email address</label>
               <input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                className="w-full glass-input px-4 py-3"
+                className="input w-full"
                 placeholder="name@company.com"
                 autoComplete="email"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+              <label className="block text-sm font-medium text-charcoal mb-2">Password</label>
               <input
                 id="password"
                 type="password"
@@ -141,38 +134,35 @@ export default function SignUpPage() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
                 minLength={8}
-                className="w-full glass-input px-4 py-3"
-                placeholder="Discreet password"
+                className="input w-full"
+                placeholder="Minimum 8 characters"
                 autoComplete="new-password"
               />
-              <p className="text-xs text-slate-500 mt-2 ml-1">Must be at least 8 characters</p>
+              <p className="text-xs text-charcoal/40 mt-2">Must be at least 8 characters</p>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full glass-button glass-button-primary py-3.5 mt-4 flex items-center justify-center gap-2 group shadow-lg shadow-blue-900/20"
+              className="btn-primary w-full h-12 rounded-full flex items-center justify-center gap-2 mt-6"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <>
-                  Get Started Free
-                  <ArrowLeft className="w-4 h-4 rotate-180 transition-transform group-hover:translate-x-1" />
-                </>
+                'Get Started Free'
               )}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-slate-500">
-            By joining, you agree to our <Link href="/legal/terms" className="text-slate-400 underline hover:text-white">Terms</Link> and <Link href="/legal/privacy" className="text-slate-400 underline hover:text-white">Privacy Policy</Link>.
+          <p className="mt-6 text-center text-xs text-charcoal/40">
+            By joining, you agree to our <Link href="/legal/terms" className="text-charcoal/60 underline hover:text-charcoal">Terms</Link> and <Link href="/legal/privacy" className="text-charcoal/60 underline hover:text-charcoal">Privacy Policy</Link>.
           </p>
         </div>
 
         <div className="mt-8 text-center pb-8">
-          <p className="text-slate-400 text-sm">
+          <p className="text-charcoal/50 text-sm">
             Already have an account?{' '}
-            <Link href="/auth/signin" className="text-blue-400 hover:text-blue-300 font-medium transition-colors hover:underline decoration-blue-400/30 underline-offset-4">
+            <Link href="/auth/signin" className="text-charcoal font-medium hover:underline">
               Sign in
             </Link>
           </p>

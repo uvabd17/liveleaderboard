@@ -230,9 +230,9 @@ export function CircularTimerControl({
             cy="64"
             r="60"
             stroke="currentColor"
-            strokeWidth="8"
+            strokeWidth="6"
             fill="none"
-            className="text-slate-600"
+            className="text-charcoal/10 dark:text-white/10"
           />
           {/* Progress Circle */}
           <circle
@@ -240,24 +240,25 @@ export function CircularTimerControl({
             cy="64"
             r="60"
             stroke="currentColor"
-            strokeWidth="8"
+            strokeWidth="6"
             fill="none"
             strokeDasharray={`${2 * Math.PI * 60}`}
             strokeDashoffset={`${2 * Math.PI * 60 * (1 - progress / 100)}`}
-            className={`transition-all duration-1000 ${isRunning ? 'text-blue-500' :
-              isPaused ? 'text-yellow-500' :
-                'text-slate-500'
+            strokeLinecap="round"
+            className={`transition-all duration-1000 ${isRunning ? 'text-charcoal dark:text-white' :
+              isPaused ? 'text-amber-500' :
+                'text-charcoal/30 dark:text-white/30'
               }`}
           />
         </svg>
 
         {/* Timer Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className={`text-lg font-black font-outfit transition-all duration-300 ${isCritical ? 'text-red-500 scale-125 italic' :
-            isWarning ? 'text-amber-400' :
-              isRunning ? 'text-blue-400 italic' :
-                isPaused ? 'text-yellow-400' :
-                  'text-slate-400'
+          <div className={`font-mono text-2xl font-bold transition-all duration-300 ${isCritical ? 'text-rose-500 scale-110' :
+            isWarning ? 'text-amber-500' :
+              isRunning ? 'text-charcoal dark:text-white' :
+                isPaused ? 'text-amber-500' :
+                  'text-charcoal/40 dark:text-white/40'
             }`}>
             {formatTime(timerState.left)}
           </div>
@@ -266,8 +267,8 @@ export function CircularTimerControl({
 
       {/* Round Info */}
       <div className="text-center">
-        <div className="text-sm font-medium text-white">{round.name}</div>
-        <div className="text-xs text-slate-400">
+        <div className="text-sm font-medium text-charcoal dark:text-white">{round.name}</div>
+        <div className="text-xs text-charcoal/50 dark:text-white/50">
           Round {roundIdx + 1} • {round.roundDurationMinutes}m
         </div>
       </div>
@@ -278,9 +279,9 @@ export function CircularTimerControl({
         <Button
           onClick={onStartTimer}
           disabled={loading || isRunning}
-          className={`px-4 py-2 text-sm font-black font-mono uppercase tracking-widest rounded-xl ${isRunning
-            ? 'bg-blue-900 text-blue-300 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
+          className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${isRunning
+            ? 'bg-charcoal/10 text-charcoal/30 dark:bg-white/10 dark:text-white/30 cursor-not-allowed'
+            : 'bg-charcoal text-cream hover:bg-charcoal/90 dark:bg-white dark:text-charcoal dark:hover:bg-white/90'
             }`}
         >
           Start
@@ -290,9 +291,9 @@ export function CircularTimerControl({
         <Button
           onClick={onPauseTimer}
           disabled={loading || !isRunning}
-          className={`px-4 py-2 text-sm font-black font-mono uppercase tracking-widest rounded-xl ${!isRunning
-            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-            : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+          className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${!isRunning
+            ? 'bg-charcoal/10 text-charcoal/30 dark:bg-white/10 dark:text-white/30 cursor-not-allowed'
+            : 'bg-amber-500 text-white hover:bg-amber-600'
             }`}
         >
           Pause
@@ -302,9 +303,9 @@ export function CircularTimerControl({
         <Button
           onClick={onResumeTimer}
           disabled={loading || !isPaused}
-          className={`px-4 py-2 text-sm font-black font-mono uppercase tracking-widest rounded-xl ${!isPaused
-            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-            : 'bg-green-600 hover:bg-green-700 text-white'
+          className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${!isPaused
+            ? 'bg-charcoal/10 text-charcoal/30 dark:bg-white/10 dark:text-white/30 cursor-not-allowed'
+            : 'bg-emerald-500 text-white hover:bg-emerald-600'
             }`}
         >
           Resume
@@ -314,9 +315,9 @@ export function CircularTimerControl({
         <Button
           onClick={onStopTimer}
           disabled={loading || (!isRunning && !isPaused)}
-          className={`px-4 py-2 text-sm font-black font-mono uppercase tracking-widest rounded-xl ${(!isRunning && !isPaused)
-            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-            : 'bg-red-600 hover:bg-red-700 text-white'
+          className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${(!isRunning && !isPaused)
+            ? 'bg-charcoal/10 text-charcoal/30 dark:bg-white/10 dark:text-white/30 cursor-not-allowed'
+            : 'bg-rose-500 text-white hover:bg-rose-600'
             }`}
         >
           Stop
@@ -329,10 +330,10 @@ export function CircularTimerControl({
             // Initialize audio context on first click
             if (!soundEnabled) initAudio()
           }}
-          className={`px-3 py-2 rounded-xl transition-all ${
+          className={`px-3 py-2 rounded-full transition-all ${
             soundEnabled
-              ? 'bg-slate-700 hover:bg-slate-600 text-white'
-              : 'bg-slate-800 text-slate-500 hover:bg-slate-700'
+              ? 'bg-charcoal/10 hover:bg-charcoal/20 text-charcoal dark:bg-white/10 dark:hover:bg-white/20 dark:text-white'
+              : 'bg-charcoal/5 text-charcoal/30 dark:bg-white/5 dark:text-white/30'
           }`}
           title={soundEnabled ? 'Sound enabled' : 'Sound muted'}
         >
@@ -342,24 +343,24 @@ export function CircularTimerControl({
 
       {/* Warning/Critical Status */}
       {(isWarning || isCritical || isFinished) && (
-        <div className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse ${
-          isFinished ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30' :
-          isCritical ? 'bg-red-600/20 text-red-400 border border-red-500/30' :
-          'bg-amber-600/20 text-amber-400 border border-amber-500/30'
+        <div className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 ${
+          isFinished ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' :
+          isCritical ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 animate-pulse' :
+          'bg-amber-50 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400'
         }`}>
-          <span className="text-lg">{isFinished ? '🏁' : isCritical ? '⚠️' : '⏰'}</span>
+          <span>{isFinished ? '✓' : isCritical ? '!' : '⏱'}</span>
           <span>
-            {isFinished ? 'TIME\'S UP!' :
-             isCritical ? 'FINAL MINUTE!' :
-             `${Math.ceil(timerState.left / 60)} min remaining`}
+            {isFinished ? 'Time\'s up' :
+             isCritical ? 'Final minute' :
+             `${Math.ceil(timerState.left / 60)} min left`}
           </span>
         </div>
       )}
 
       {/* Judging Status */}
       {round.judgingOpen && (
-        <div className="flex items-center space-x-2 text-green-400 text-sm">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 text-sm">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
           <span>Judging Open</span>
         </div>
       )}
