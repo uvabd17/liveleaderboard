@@ -426,7 +426,7 @@ export default function EventAdminPage() {
                   "px-6 py-3 rounded-xl font-medium text-sm transition-all whitespace-nowrap flex items-center gap-2",
                   activeTab === tab.id
                     ? "bg-charcoal text-cream dark:bg-cream dark:text-charcoal"
-                    : "text-charcoal/50 dark:text-white/50 hover:text-charcoal dark:hover:text-white hover:bg-charcoal/5 dark:hover:bg-white/5"
+                    : "text-charcoal/70 dark:text-white/80 hover:text-charcoal dark:hover:text-white hover:bg-charcoal/5 dark:hover:bg-white/5"
                 )}
               >
                 <span className="opacity-70">{tab.icon}</span>
@@ -444,15 +444,15 @@ export default function EventAdminPage() {
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="card p-6">
-                  <div className="text-charcoal/50 dark:text-white/50 text-xs uppercase tracking-wider mb-1">Participants</div>
+                  <div className="text-charcoal/70 dark:text-white/80 text-xs uppercase tracking-wider mb-1">Participants</div>
                   <div className="text-3xl font-mono font-bold text-charcoal dark:text-white">{event._count.participants}</div>
                 </div>
                 <div className="card p-6">
-                  <div className="text-charcoal/50 dark:text-white/50 text-xs uppercase tracking-wider mb-1">Judges</div>
+                  <div className="text-charcoal/70 dark:text-white/80 text-xs uppercase tracking-wider mb-1">Judges</div>
                   <div className="text-3xl font-mono font-bold text-charcoal dark:text-white">{event._count.judges}</div>
                 </div>
                 <div className="card p-6">
-                  <div className="text-charcoal/50 dark:text-white/50 text-xs uppercase tracking-wider mb-1">Avg Score</div>
+                  <div className="text-charcoal/70 dark:text-white/80 text-xs uppercase tracking-wider mb-1">Avg Score</div>
                   <div className="text-3xl font-mono font-bold text-charcoal dark:text-white">
                     {participants.length > 0
                       ? Math.round(participants.reduce((sum, p) => sum + p.totalScore, 0) / participants.length)
@@ -461,7 +461,7 @@ export default function EventAdminPage() {
                   </div>
                 </div>
                 <div className="card p-6">
-                  <div className="text-charcoal/50 dark:text-white/50 text-xs uppercase tracking-wider mb-1">Status</div>
+                  <div className="text-charcoal/70 dark:text-white/80 text-xs uppercase tracking-wider mb-1">Status</div>
                   <div className="text-lg font-semibold text-emerald-600 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Active
                   </div>

@@ -93,7 +93,7 @@ export default function StagePage() {
           </div>
           <div className="space-y-2">
             <h2 className="font-display text-2xl font-semibold text-white">Admin Access Required</h2>
-            <p className="text-white/50">The Stage Display is only accessible to event administrators.</p>
+            <p className="text-white/80">The Stage Display is only accessible to event administrators.</p>
           </div>
           <button
             onClick={() => router.push(`/e/${eventSlug}`)}
@@ -512,7 +512,7 @@ export default function StagePage() {
       <div className="min-h-screen bg-charcoal flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-white/10 border-t-white/60 rounded-full animate-spin"></div>
-          <div className="text-white/50 text-sm font-medium">Loading stage...</div>
+          <div className="text-white/80 text-sm font-medium">Loading stage...</div>
         </div>
       </div>
     )

@@ -268,7 +268,7 @@ export function CircularTimerControl({
       {/* Round Info */}
       <div className="text-center">
         <div className="text-sm font-medium text-charcoal dark:text-white">{round.name}</div>
-        <div className="text-xs text-charcoal/50 dark:text-white/50">
+        <div className="text-xs text-charcoal/70 dark:text-white/80">
           Round {roundIdx + 1} • {round.roundDurationMinutes}m
         </div>
       </div>

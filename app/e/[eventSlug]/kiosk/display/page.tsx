@@ -137,7 +137,7 @@ export default function KioskDisplayPage() {
             <span className="text-3xl">🔒</span>
           </div>
           <h2 className="font-display text-2xl font-semibold text-white">Admin Access Required</h2>
-          <p className="text-white/50">The Kiosk Display is only accessible to event administrators.</p>
+          <p className="text-white/80">The Kiosk Display is only accessible to event administrators.</p>
           <button onClick={() => router.push(`/e/${eventSlug}`)} className="w-full py-3 bg-cream text-charcoal rounded-full font-medium hover:bg-white transition-colors">Return to Event</button>
         </div>
       </div>
