@@ -1,17 +1,56 @@
 'use client'
 import React from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/auth-context'
 import toast from 'react-hot-toast'
 import { QRCodeSVG } from 'qrcode.react'
+import { PageLoading } from '@/components/loading-spinner'
 
 export default function KioskPage() {
   const params = useParams()
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const { role } = useAuth()
   const eventSlug = params.eventSlug as string
   const [tokenUrl, setTokenUrl] = React.useState<string | null>(null)
   const [token, setToken] = React.useState<string | null>(null)
   const [name, setName] = React.useState('')
   const [kind, setKind] = React.useState<'team' | 'individual'>('team')
   const [loading, setLoading] = React.useState(false)
+
+  // Access control: Only admins can access Kiosk Setup
+  React.useEffect(() => {
+    if (status === 'loading') return
+    if (status === 'unauthenticated' || (status === 'authenticated' && role !== 'admin')) {
+      router.replace(`/e/${eventSlug}`)
+    }
+  }, [status, role, eventSlug, router])
+
+  // Show loading while checking auth
+  if (status === 'loading') {
+    return <PageLoading message="Verifying Access..." />
+  }
+
+  // Block non-admins
+  if (status === 'authenticated' && role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-charcoal flex items-center justify-center p-4">
+        <div className="bg-white/5 border border-white/10 p-12 rounded-2xl text-center space-y-6 max-w-md">
+          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto">
+            <span className="text-3xl">🔒</span>
+          </div>
+          <h2 className="font-display text-2xl font-semibold text-white">Admin Access Required</h2>
+          <p className="text-white/50">The Kiosk Setup is only accessible to event administrators.</p>
+          <button onClick={() => router.push(`/e/${eventSlug}`)} className="w-full py-3 bg-cream text-charcoal rounded-full font-medium hover:bg-white transition-colors">Return to Event</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'unauthenticated') {
+    return <PageLoading message="Redirecting..." />
+  }
 
   const createKiosk = async () => {
     try {
