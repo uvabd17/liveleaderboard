@@ -152,13 +152,13 @@ const PRESET_LOGOS = [
 // --- Components ---
 
 const GlassCard = ({ children, className, id, title, icon }: { children: React.ReactNode, className?: string, id?: string, title?: string, icon?: React.ReactNode }) => (
-  <div id={id} className={cn("group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl transition-all hover:border-white/20", className)}>
-    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none" />
+  <div id={id} className={cn("group relative overflow-hidden rounded-2xl border border-[#1A1A1A]/10 dark:border-white/10 bg-[#1A1A1A]/5 dark:bg-white/5 backdrop-blur-xl transition-all hover:border-[#1A1A1A]/20 dark:hover:border-white/20", className)}>
+    <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A1A]/5 dark:from-white/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none" />
     <div className="relative p-6">
       {title && (
         <div className="flex items-center gap-3 mb-6">
-          {icon && <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-white shadow-inner">{icon}</div>}
-          <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">{title}</h3>
+          {icon && <div className="p-2 rounded-lg bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 text-[#1A1A1A] dark:text-white shadow-inner">{icon}</div>}
+          <h3 className="text-xl font-bold text-[#1A1A1A] dark:text-white">{title}</h3>
         </div>
       )}
       {children}
@@ -173,10 +173,10 @@ const SectionNav = ({ active, id, label, icon, onClick }: { active: boolean, id:
       "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
       active
         ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.2)]"
-        : "text-slate-400 hover:text-white hover:bg-white/5 hover:border hover:border-white/10"
+        : "text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white hover:bg-[#1A1A1A]/5 dark:hover:bg-white/5 hover:border hover:border-[#1A1A1A]/10 dark:hover:border-white/10"
     )}
   >
-    <div className={cn("transition-colors", active ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")}>
+    <div className={cn("transition-colors", active ? "text-blue-400" : "text-[#1A1A1A]/40 dark:text-slate-500 group-hover:text-[#1A1A1A]/70 dark:group-hover:text-slate-300")}>
       {icon}
     </div>
     <span className="font-medium tracking-wide">{label}</span>
@@ -420,13 +420,13 @@ export default function EventSettingsPage() {
             <div className="px-4">
               <Link
                 href={`/e/${eventSlug}/admin`}
-                className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-400 transition-colors group mb-6"
+                className="inline-flex items-center gap-2 text-sm text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white transition-colors group mb-6"
               >
                 <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
                 Back to Dashboard
               </Link>
-              <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Settings</h1>
-              <p className="text-slate-500 text-sm font-medium">Manage event configuration</p>
+              <h1 className="text-3xl font-bold text-[#1A1A1A] dark:text-white tracking-tight mb-2">Settings</h1>
+              <p className="text-[#1A1A1A]/60 dark:text-slate-400 text-sm font-medium">Manage event configuration</p>
             </div>
 
             <nav className="space-y-2">
@@ -460,18 +460,18 @@ export default function EventSettingsPage() {
               />
             </nav>
 
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-500/20">
               <div className="flex items-start gap-3">
-                <HelpCircle className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                <HelpCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-indigo-100 text-sm">Need Help?</h4>
-                  <p className="text-xs text-indigo-300/80 leading-relaxed">
+                  <h4 className="font-semibold text-indigo-900 dark:text-indigo-100 text-sm">Need Help?</h4>
+                  <p className="text-xs text-indigo-900/70 dark:text-indigo-300/80 leading-relaxed">
                     Check out our comprehensive guide for detailed explanations of all settings.
                   </p>
                   <a
                     href="/USER_GUIDE.md"
                     target="_blank"
-                    className="inline-flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
                   >
                     View Guide <ChevronRight className="w-3 h-3" />
                   </a>
@@ -526,10 +526,10 @@ export default function EventSettingsPage() {
           </div>
 
           {/* Features Section */}
-          <div ref={sectionRefs.features} className="space-y-6 pt-12 border-t border-white/5">
+          <div ref={sectionRefs.features} className="space-y-6 pt-12 border-t border-[#1A1A1A]/10 dark:border-white/5">
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-2">Features & Rules</h2>
-              <p className="text-slate-400">Toggle and configure event capabilities.</p>
+              <h2 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-2">Features & Rules</h2>
+              <p className="text-[#1A1A1A]/60 dark:text-slate-400">Toggle and configure event capabilities.</p>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -541,14 +541,14 @@ export default function EventSettingsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold text-white truncate">{f.label}</h3>
+                        <h3 className="font-semibold text-[#1A1A1A] dark:text-white truncate">{f.label}</h3>
                         <Toggle
                           checked={!!features[f.key as keyof EventFeatures]}
                           disabled={f.mode === 'locked-on' || f.mode === 'auto'}
                           onChange={() => handleFeatureToggle(f.key)}
                         />
                       </div>
-                      <p className="text-sm text-slate-400 leading-relaxed mb-2">{f.description}</p>
+                      <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 leading-relaxed mb-2">{f.description}</p>
                       {f.mode === 'locked-on' && (
                         <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-xs font-medium border border-blue-500/20">
                           <Shield className="w-3 h-3" /> Core Feature
@@ -569,7 +569,7 @@ export default function EventSettingsPage() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Tie-Breaking Protocol</label>
-                  <p className="text-xs text-slate-500 mb-4">How should the engine resolve identical total scores?</p>
+                  <p className="text-xs text-[#1A1A1A]/50 dark:text-slate-500 mb-4">How should the engine resolve identical total scores?</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                       { id: 'alphabetical', label: 'Alphabetical', desc: 'Sort by name (default)' },
@@ -616,7 +616,7 @@ export default function EventSettingsPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <label className="text-slate-300">Warning Threshold (Minutes)</label>
-                      <span className="text-slate-500">{rules.timerSettings?.warningThreshold || 5} min</span>
+                      <span className="text-[#1A1A1A]/60 dark:text-slate-500">{rules.timerSettings?.warningThreshold || 5} min</span>
                     </div>
                     <input
                       type="range"
@@ -635,10 +635,10 @@ export default function EventSettingsPage() {
           </div>
 
           {/* Branding Section */}
-          <div ref={sectionRefs.branding} className="space-y-6 pt-12 border-t border-white/5">
+          <div ref={sectionRefs.branding} className="space-y-6 pt-12 border-t border-[#1A1A1A]/10 dark:border-white/5">
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-2">Visual Identity</h2>
-              <p className="text-slate-400">Manage your event's visual presence and branding.</p>
+              <h2 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-2">Visual Identity</h2>
+              <p className="text-[#1A1A1A]/60 dark:text-slate-400">Manage your event's visual presence and branding.</p>
             </div>
 
             <GlassCard>
@@ -682,7 +682,7 @@ export default function EventSettingsPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Quick Select</div>
+                    <div className="text-xs font-semibold text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-wider">Quick Select</div>
                     <div className="flex flex-wrap gap-2">
                       {PRESET_LOGOS.map(p => (
                         <button
@@ -709,10 +709,10 @@ export default function EventSettingsPage() {
           </div>
 
           {/* Advanced Section */}
-          <div ref={sectionRefs.advanced} className="space-y-6 pt-12 border-t border-white/5">
+          <div ref={sectionRefs.advanced} className="space-y-6 pt-12 border-t border-[#1A1A1A]/10 dark:border-white/5">
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-2">Advanced System</h2>
-              <p className="text-slate-400">Fine-tune scoring calculations and system performance.</p>
+              <h2 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-2">Advanced System</h2>
+              <p className="text-[#1A1A1A]/60 dark:text-slate-400">Fine-tune scoring calculations and system performance.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -732,10 +732,10 @@ export default function EventSettingsPage() {
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className={cn("font-semibold", rules.settings?.judgingMode !== 'blinded' ? "text-blue-400" : "text-slate-300")}>Open / Aggregate</span>
+                      <span className={cn("font-semibold", rules.settings?.judgingMode !== 'blinded' ? "text-blue-400" : "text-[#1A1A1A]/70 dark:text-slate-300")}>Open / Aggregate</span>
                       {rules.settings?.judgingMode !== 'blinded' && <CheckCircle2 className="w-4 h-4 text-blue-400" />}
                     </div>
-                    <p className="text-xs text-slate-500">Judges can see total scores from all judges.</p>
+                    <p className="text-xs text-[#1A1A1A]/50 dark:text-slate-500">Judges can see total scores from all judges.</p>
                   </button>
 
                   <button
@@ -751,10 +751,10 @@ export default function EventSettingsPage() {
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className={cn("font-semibold", rules.settings?.judgingMode === 'blinded' ? "text-blue-400" : "text-slate-300")}>Blinded</span>
+                      <span className={cn("font-semibold", rules.settings?.judgingMode === 'blinded' ? "text-blue-400" : "text-[#1A1A1A]/70 dark:text-slate-300")}>Blinded</span>
                       {rules.settings?.judgingMode === 'blinded' && <CheckCircle2 className="w-4 h-4 text-blue-400" />}
                     </div>
-                    <p className="text-xs text-slate-500">Judges score independently. No peer visibility.</p>
+                    <p className="text-xs text-[#1A1A1A]/50 dark:text-slate-500">Judges score independently. No peer visibility.</p>
                   </button>
                 </div>
               </GlassCard>
@@ -762,7 +762,7 @@ export default function EventSettingsPage() {
               <GlassCard title="Performance" icon={<Zap className="w-5 h-5" />}>
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Real-time Update Rate</label>
+                    <label className="block text-sm font-medium text-[#1A1A1A]/70 dark:text-slate-300 mb-2">Real-time Update Rate</label>
                     <div className="flex items-center gap-4">
                       <input
                         type="number"
@@ -773,9 +773,9 @@ export default function EventSettingsPage() {
                         }}
                         className="bg-[#FAF9F6] dark:bg-slate-950 border border-[#1A1A1A]/10 dark:border-white/10 rounded-lg px-4 py-2 w-32 text-center font-mono text-sm text-[#1A1A1A] dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                       />
-                      <span className="text-slate-500 text-sm">ms</span>
+                      <span className="text-[#1A1A1A]/60 dark:text-slate-500 text-sm">ms</span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-2">Lower = faster updates, higher server load.</p>
+                    <p className="text-xs text-[#1A1A1A]/50 dark:text-slate-500 mt-2">Lower = faster updates, higher server load.</p>
                   </div>
 
                   <div>
