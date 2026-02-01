@@ -209,7 +209,7 @@ export default function ParticipantDashboardPage() {
                   toast.success('Link copied to clipboard')
                 }
               }}
-              className="p-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
+              className="p-2.5 bg-[#1A1A1A] dark:bg-indigo-600 hover:bg-[#1A1A1A]/80 dark:hover:bg-indigo-500 rounded-xl shadow-lg shadow-[#1A1A1A]/20 dark:shadow-indigo-500/20 transition-all active:scale-95"
             >
               <Share2 className="w-4 h-4 text-white" />
             </button>
@@ -221,44 +221,44 @@ export default function ParticipantDashboardPage() {
 
         {/* HERO STATS HUD */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="relative overflow-hidden glass-panel rounded-[2rem] p-8 border-white/10 group">
+          <div className="relative overflow-hidden card rounded-[2rem] p-8 border-[#1A1A1A]/10 dark:border-white/10 group">
             <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
-              <Trophy className="w-20 h-20 text-indigo-400" />
+              <Trophy className="w-20 h-20 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div className="relative z-10 space-y-1">
-              <span className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase">Global Ranking</span>
+              <span className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.2em] uppercase">Global Ranking</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-6xl font-black text-white italic tracking-tighter">#{participant.rank}</span>
-                <span className="text-sm font-bold text-slate-500 uppercase italic">Overall</span>
+                <span className="text-6xl font-black text-[#1A1A1A] dark:text-white italic tracking-tighter">#{participant.rank}</span>
+                <span className="text-sm font-bold text-[#1A1A1A]/50 dark:text-slate-500 uppercase italic">Overall</span>
               </div>
             </div>
           </div>
 
-          <div className="relative overflow-hidden glass-panel rounded-[2rem] p-8 border-white/10 group">
+          <div className="relative overflow-hidden card rounded-[2rem] p-8 border-[#1A1A1A]/10 dark:border-white/10 group">
             <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
-              <Activity className="w-20 h-20 text-emerald-400" />
+              <Activity className="w-20 h-20 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="relative z-10 space-y-1">
-              <span className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase">Total Performance</span>
+              <span className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.2em] uppercase">Total Performance</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-6xl font-black text-white italic tracking-tighter">{participant.totalScore}</span>
-                <span className="text-sm font-bold text-slate-500 uppercase italic">PTS</span>
+                <span className="text-6xl font-black text-[#1A1A1A] dark:text-white italic tracking-tighter">{participant.totalScore}</span>
+                <span className="text-sm font-bold text-[#1A1A1A]/50 dark:text-slate-500 uppercase italic">PTS</span>
               </div>
             </div>
           </div>
 
-          <div className="relative overflow-hidden glass-panel rounded-[2rem] p-8 border-white/10 group">
+          <div className="relative overflow-hidden card rounded-[2rem] p-8 border-[#1A1A1A]/10 dark:border-white/10 group">
             <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform">
-              <Target className="w-20 h-20 text-blue-400" />
+              <Target className="w-20 h-20 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="relative z-10 space-y-1">
-              <span className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase">Class / Format</span>
+              <span className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.2em] uppercase">Class / Format</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white italic tracking-tighter uppercase truncate">{participant.kind}</span>
+                <span className="text-4xl font-black text-[#1A1A1A] dark:text-white italic tracking-tighter uppercase truncate">{participant.kind}</span>
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <span className="text-[10px] font-black font-mono text-blue-400 uppercase tracking-widest">Active Status</span>
+                <span className="text-[10px] font-black font-mono text-blue-600 dark:text-blue-400 uppercase tracking-widest">Active Status</span>
               </div>
             </div>
           </div>
@@ -269,8 +269,8 @@ export default function ParticipantDashboardPage() {
           {/* ROUND PROGRESSION */}
           <div className="space-y-6">
             <div className="flex items-center justify-between px-2">
-              <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.3em] uppercase italic">Event Logs</h3>
-              <div className="text-[10px] text-slate-600 font-mono italic">{completedRounds.length} / {roundsConfig.length} COMPLETED</div>
+              <h3 className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.3em] uppercase italic">Event Logs</h3>
+              <div className="text-[10px] text-[#1A1A1A]/40 dark:text-slate-600 font-mono italic">{completedRounds.length} / {roundsConfig.length} COMPLETED</div>
             </div>
 
             <div className="space-y-4">
@@ -281,16 +281,16 @@ export default function ParticipantDashboardPage() {
                 return (
                   <div
                     key={idx}
-                    className={`glass-panel p-6 rounded-3xl border transition-all duration-300 ${completed ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-white/5 bg-slate-900/40'
+                    className={`card p-6 rounded-3xl border transition-all duration-300 ${completed ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-[#1A1A1A]/5 dark:border-white/5 bg-[#1A1A1A]/5 dark:bg-slate-900/40'
                       }`}
                   >
                     <div className="flex items-center justify-between gap-6">
                       <div className="flex-grow">
                         <div className="flex items-center gap-3 mb-1">
-                          <span className="text-[10px] font-black font-mono px-2 py-0.5 bg-white/5 rounded text-slate-500">PHASE 0{rn}</span>
-                          <h4 className="font-black text-white uppercase italic tracking-tight">{r.name || `Round ${rn}`}</h4>
+                          <span className="text-[10px] font-black font-mono px-2 py-0.5 bg-[#1A1A1A]/5 dark:bg-white/5 rounded text-[#1A1A1A]/50 dark:text-slate-500">PHASE 0{rn}</span>
+                          <h4 className="font-black text-[#1A1A1A] dark:text-white uppercase italic tracking-tight">{r.name || `Round ${rn}`}</h4>
                         </div>
-                        <div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
+                        <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono uppercase tracking-widest">
                           {r.roundDurationMinutes} MINUTE WINDOW
                         </div>
                       </div>
@@ -301,9 +301,9 @@ export default function ParticipantDashboardPage() {
                             <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest italic">Success</span>
                           </div>
                         ) : (
-                          <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Pending</span>
+                          <div className="px-3 py-1 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-full flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A]/30 dark:bg-slate-500" />
+                            <span className="text-[10px] font-black text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-widest italic">Pending</span>
                           </div>
                         )}
                         {detail && (
@@ -313,16 +313,16 @@ export default function ParticipantDashboardPage() {
                     </div>
 
                     {detail && detail.comments && detail.comments.length > 0 && (
-                      <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
+                      <div className="mt-6 pt-6 border-t border-[#1A1A1A]/5 dark:border-white/5 space-y-3">
                         <div className="flex items-center gap-2">
-                          <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
-                          <span className="text-[10px] font-black font-mono text-indigo-400 uppercase tracking-widest">Feedback Intercepted</span>
+                          <MessageSquare className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                          <span className="text-[10px] font-black font-mono text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Feedback Intercepted</span>
                         </div>
                         <div className="space-y-2">
                           {detail.comments.map((c: any, i: number) => (
-                            <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/5 italic text-sm text-slate-400 leading-relaxed">
+                            <div key={i} className="p-3 bg-[#1A1A1A]/5 dark:bg-white/5 rounded-xl border border-[#1A1A1A]/5 dark:border-white/5 italic text-sm text-[#1A1A1A]/60 dark:text-slate-400 leading-relaxed">
                               "{c.comment}"
-                              <div className="mt-2 text-[8px] font-mono text-slate-600 uppercase tracking-[0.2em]">{c.judgeUserId || 'JUDGE_01'} // FIELD_REPORT</div>
+                              <div className="mt-2 text-[8px] font-mono text-[#1A1A1A]/40 dark:text-slate-600 uppercase tracking-[0.2em]">{c.judgeUserId || 'JUDGE_01'} // FIELD_REPORT</div>
                             </div>
                           ))}
                         </div>
@@ -336,10 +336,10 @@ export default function ParticipantDashboardPage() {
 
           {/* IDENTITY & PROFILE */}
           <div className="space-y-8">
-            <div className="glass-panel p-10 rounded-[2.5rem] border-white/10 bg-gradient-to-br from-indigo-900/10 to-transparent">
+            <div className="card p-10 rounded-[2.5rem] border-[#1A1A1A]/10 dark:border-white/10 bg-gradient-to-br from-indigo-100/30 dark:from-indigo-900/10 to-transparent">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.3em] uppercase italic">Participant Identity</h3>
-                <Settings className="w-4 h-4 text-slate-600" />
+                <h3 className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.3em] uppercase italic">Participant Identity</h3>
+                <Settings className="w-4 h-4 text-[#1A1A1A]/40 dark:text-slate-600" />
               </div>
 
               <div className="space-y-8">
@@ -356,18 +356,18 @@ export default function ParticipantDashboardPage() {
                     </div>
                   </div>
                   <div className="flex-grow text-center md:text-left">
-                    <div className="text-[10px] font-black font-mono text-indigo-400 uppercase mb-1">{participant.kind} REGISTERED</div>
-                    <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">{participant.name}</h2>
-                    <p className="text-xs text-slate-500 font-mono mt-2 truncate max-w-xs">{participant.event.organization.name} // AUTH_OK</p>
+                    <div className="text-[10px] font-black font-mono text-indigo-600 dark:text-indigo-400 uppercase mb-1">{participant.kind} REGISTERED</div>
+                    <h2 className="text-4xl font-black text-[#1A1A1A] dark:text-white italic tracking-tighter uppercase">{participant.name}</h2>
+                    <p className="text-xs text-[#1A1A1A]/50 dark:text-slate-500 font-mono mt-2 truncate max-w-xs">{participant.event.organization.name} // AUTH_OK</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between px-1">
-                    <label className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Strategy / Pitch</label>
+                    <label className="text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-widest">Strategy / Pitch</label>
                     <button
                       onClick={handleSaveProfileContent}
-                      className="text-[10px] font-black text-indigo-400 uppercase hover:underline"
+                      className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase hover:underline"
                     >
                       Update Status
                     </button>
@@ -375,7 +375,7 @@ export default function ParticipantDashboardPage() {
                   <textarea
                     value={idea}
                     onChange={(e) => setIdea(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-slate-300 font-medium placeholder:text-slate-800 min-h-[140px] focus:border-indigo-500/30 outline-none transition-all resize-none italic"
+                    className="w-full bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-2xl p-6 text-[#1A1A1A] dark:text-slate-300 font-medium placeholder:text-[#1A1A1A]/30 dark:placeholder:text-slate-800 min-h-[140px] focus:border-indigo-500/30 outline-none transition-all resize-none italic"
                     placeholder="Describe your solution or presentation focus..."
                   />
                 </div>
@@ -383,10 +383,10 @@ export default function ParticipantDashboardPage() {
                 {participant.kind === 'team' && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
-                      <label className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Squad Roster</label>
+                      <label className="text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-widest">Squad Roster</label>
                       <button
                         onClick={() => setEditing(!editing)}
-                        className={`text-[10px] font-black uppercase hover:underline ${editing ? 'text-emerald-400' : 'text-indigo-400'}`}
+                        className={`text-[10px] font-black uppercase hover:underline ${editing ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'}`}
                       >
                         {editing ? 'FINALIZE' : 'MODIFY'}
                       </button>
@@ -405,7 +405,7 @@ export default function ParticipantDashboardPage() {
                                   n[idx] = e.target.value
                                   setTeamMembers(n)
                                 }}
-                                className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-indigo-500/30 outline-none"
+                                className="flex-grow bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-[#1A1A1A] dark:text-white focus:border-indigo-500/30 outline-none"
                                 placeholder="Operator Name"
                               />
                               <button
@@ -418,7 +418,7 @@ export default function ParticipantDashboardPage() {
                           ))}
                           <button
                             onClick={() => setTeamMembers([...teamMembers, ''])}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-dashed border-white/10 rounded-xl text-[10px] font-black font-mono text-slate-500 uppercase transition-all"
+                            className="w-full py-3 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 border border-dashed border-[#1A1A1A]/10 dark:border-white/10 rounded-xl text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 uppercase transition-all"
                           >
                             + Add Operator
                           </button>
@@ -426,11 +426,11 @@ export default function ParticipantDashboardPage() {
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {teamMembers.length > 0 ? teamMembers.map((m, idx) => (
-                            <span key={idx} className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-slate-300">
+                            <span key={idx} className="px-3 py-1.5 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-lg text-xs font-bold text-[#1A1A1A] dark:text-slate-300">
                               {m}
                             </span>
                           )) : (
-                            <span className="text-xs text-slate-600 font-mono italic">NO REGISTERED OPERATORS</span>
+                            <span className="text-xs text-[#1A1A1A]/40 dark:text-slate-600 font-mono italic">NO REGISTERED OPERATORS</span>
                           )}
                         </div>
                       )}
@@ -440,16 +440,16 @@ export default function ParticipantDashboardPage() {
               </div>
             </div>
 
-            <div className="glass-panel p-8 rounded-3xl border-white/5 bg-slate-900/40">
-              <h3 className="text-[10px] font-black font-mono text-slate-500 tracking-[0.2em] uppercase mb-4">Event Operations</h3>
+            <div className="card p-8 rounded-3xl border-[#1A1A1A]/5 dark:border-white/5 bg-[#1A1A1A]/5 dark:bg-slate-900/40">
+              <h3 className="text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.2em] uppercase mb-4">Event Operations</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-[10px] text-slate-600 block uppercase font-mono">Org</span>
-                  <span className="text-sm font-bold text-white uppercase">{participant.event.organization.name}</span>
+                  <span className="text-[10px] text-[#1A1A1A]/40 dark:text-slate-600 block uppercase font-mono">Org</span>
+                  <span className="text-sm font-bold text-[#1A1A1A] dark:text-white uppercase">{participant.event.organization.name}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-600 block uppercase font-mono">Start</span>
-                  <span className="text-sm font-bold text-white uppercase">{participant.event.startAt ? new Date(participant.event.startAt).toLocaleDateString() : 'TBD'}</span>
+                  <span className="text-[10px] text-[#1A1A1A]/40 dark:text-slate-600 block uppercase font-mono">Start</span>
+                  <span className="text-sm font-bold text-[#1A1A1A] dark:text-white uppercase">{participant.event.startAt ? new Date(participant.event.startAt).toLocaleDateString() : 'TBD'}</span>
                 </div>
               </div>
             </div>
@@ -458,11 +458,11 @@ export default function ParticipantDashboardPage() {
       </main>
 
       <footer className="max-w-7xl mx-auto px-6 py-20 opacity-30">
-        <div className="flex items-center justify-center gap-4 text-[10px] font-black font-mono text-slate-600 uppercase tracking-[0.5em]">
+        <div className="flex items-center justify-center gap-4 text-[10px] font-black font-mono text-[#1A1A1A]/40 dark:text-slate-600 uppercase tracking-[0.5em]">
           <span>Secured Link</span>
-          <div className="w-1 h-1 rounded-full bg-slate-800" />
+          <div className="w-1 h-1 rounded-full bg-[#1A1A1A]/20 dark:bg-slate-800" />
           <span>Participant Console v{participant.rank}</span>
-          <div className="w-1 h-1 rounded-full bg-slate-800" />
+          <div className="w-1 h-1 rounded-full bg-[#1A1A1A]/20 dark:bg-slate-800" />
           <span>Ready for Sync</span>
         </div>
       </footer>

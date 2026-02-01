@@ -100,8 +100,8 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Connect & Share</h2>
-          <p className="text-slate-500 font-mono text-sm">QR CODES // ACCESS LINKS // PORTALS</p>
+          <h2 className="text-3xl font-black text-[#1A1A1A] dark:text-white italic uppercase tracking-tighter">Connect & Share</h2>
+          <p className="text-[#1A1A1A]/50 dark:text-slate-500 font-mono text-sm">QR CODES // ACCESS LINKS // PORTALS</p>
         </div>
       </div>
 
@@ -119,8 +119,8 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
               onClick={() => setActiveSection(item.id as any)}
               className={`w-full text-left px-6 py-4 rounded-2xl font-bold transition-all flex items-center gap-3 ${
                 activeSection === item.id
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                  : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                  ? 'bg-[#1A1A1A] dark:bg-blue-600 text-white shadow-lg shadow-[#1A1A1A]/20 dark:shadow-blue-500/20'
+                  : 'bg-[#1A1A1A]/5 dark:bg-white/5 text-[#1A1A1A]/60 dark:text-slate-400 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 hover:text-[#1A1A1A] dark:hover:text-white'
               }`}
             >
               <span className="text-xl">{item.icon}</span>
@@ -131,15 +131,15 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
 
         {/* Main Content Area */}
         <div className="lg:col-span-9">
-          <div className="glass-panel rounded-[2.5rem] p-10 border-white/10 min-h-[500px] relative overflow-hidden">
+          <div className="card rounded-[2.5rem] p-10 border-[#1A1A1A]/10 dark:border-white/10 min-h-[500px] relative overflow-hidden">
             {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#1A1A1A]/5 dark:bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
 
             {activeSection === 'leaderboard' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-2xl font-black text-white uppercase italic">Public Standings</h3>
-                  <p className="text-slate-500 mt-2 max-w-lg">
+                  <h3 className="text-2xl font-black text-[#1A1A1A] dark:text-white uppercase italic">Public Standings</h3>
+                  <p className="text-[#1A1A1A]/50 dark:text-slate-500 mt-2 max-w-lg">
                     The main leaderboard view for spectators. Share this link or display this QR code around the venue.
                   </p>
                 </div>
@@ -149,16 +149,16 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   </div>
                   <div className="flex-1 space-y-6 w-full max-w-md">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Public URL</label>
+                      <label className="text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-widest">Public URL</label>
                       <div className="flex gap-2">
                         <input 
                           readOnly 
                           value={publicURL} 
-                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none"
+                          className="flex-1 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl px-4 py-3 text-[#1A1A1A] dark:text-white font-mono text-sm focus:outline-none"
                         />
                         <button 
                           onClick={() => copyToClipboard(publicURL, 'URL')}
-                          className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors"
+                          className="p-3 bg-[#1A1A1A] dark:bg-blue-600 hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-500 text-white rounded-xl transition-colors"
                         >
                           <Copy className="w-5 h-5" />
                         </button>
@@ -167,7 +167,7 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                     <a 
                       href={publicURL} 
                       target="_blank" 
-                      className="flex items-center justify-center gap-2 w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-bold transition-all"
+                      className="flex items-center justify-center gap-2 w-full py-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl text-[#1A1A1A] dark:text-white font-bold transition-all"
                     >
                       <ExternalLink className="w-4 h-4" />
                       Open in New Tab
@@ -180,8 +180,8 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
             {activeSection === 'stage' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-2xl font-black text-white uppercase italic">Master Event Display</h3>
-                  <p className="text-slate-500 mt-2 max-w-lg">
+                  <h3 className="text-2xl font-black text-[#1A1A1A] dark:text-white uppercase italic">Master Event Display</h3>
+                  <p className="text-[#1A1A1A]/50 dark:text-slate-500 mt-2 max-w-lg">
                     The unified display for projectors. Includes Live Leaderboard, Round Timers, and togglable Kiosk/QR Code mode for potential participants.
                   </p>
                 </div>
@@ -191,16 +191,16 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   </div>
                   <div className="flex-1 space-y-6 w-full max-w-md">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Display URL</label>
+                      <label className="text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-widest">Display URL</label>
                       <div className="flex gap-2">
                         <input 
                           readOnly 
                           value={`${publicURL}/stage`} 
-                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none"
+                          className="flex-1 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl px-4 py-3 text-[#1A1A1A] dark:text-white font-mono text-sm focus:outline-none"
                         />
                         <button 
                           onClick={() => copyToClipboard(`${publicURL}/stage`, 'Display URL')}
-                          className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors"
+                          className="p-3 bg-[#1A1A1A] dark:bg-blue-600 hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-500 text-white rounded-xl transition-colors"
                         >
                           <Copy className="w-5 h-5" />
                         </button>
@@ -209,7 +209,7 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                     <a 
                       href={`${publicURL}/stage`} 
                       target="_blank" 
-                      className="flex items-center justify-center gap-2 w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-bold transition-all"
+                      className="flex items-center justify-center gap-2 w-full py-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl text-[#1A1A1A] dark:text-white font-bold transition-all"
                     >
                       <ExternalLink className="w-4 h-4" />
                       Launch Stage Display
@@ -222,8 +222,8 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
             {activeSection === 'registration' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-2xl font-black text-white uppercase italic">Registration Kiosk</h3>
-                  <p className="text-slate-500 mt-2 max-w-lg">
+                  <h3 className="text-2xl font-black text-[#1A1A1A] dark:text-white uppercase italic">Registration Kiosk</h3>
+                  <p className="text-[#1A1A1A]/50 dark:text-slate-500 mt-2 max-w-lg">
                     Direct link for participants to register. This link includes a secure token so they don't need an account.
                   </p>
                 </div>
@@ -239,17 +239,17 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   </div>
                   <div className="flex-1 space-y-6 w-full max-w-md">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Kiosk URL</label>
+                      <label className="text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-widest">Kiosk URL</label>
                       <div className="flex gap-2">
                         <input 
                           readOnly 
                           value={registrationLink || 'Generating...'} 
-                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none"
+                          className="flex-1 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl px-4 py-3 text-[#1A1A1A] dark:text-white font-mono text-sm focus:outline-none"
                         />
                         <button 
                           onClick={() => registrationLink && copyToClipboard(registrationLink, 'Kiosk URL')}
                           disabled={!registrationLink}
-                          className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors disabled:opacity-50"
+                          className="p-3 bg-[#1A1A1A] dark:bg-blue-600 hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-500 text-white rounded-xl transition-colors disabled:opacity-50"
                         >
                           <Copy className="w-5 h-5" />
                         </button>
@@ -258,7 +258,7 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                     <button 
                       onClick={() => ensureRegistrationLink(true)}
                       disabled={registrationLinkLoading}
-                      className="flex items-center justify-center gap-2 w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-bold transition-all"
+                      className="flex items-center justify-center gap-2 w-full py-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl text-[#1A1A1A] dark:text-white font-bold transition-all"
                     >
                       <RefreshCw className={`w-4 h-4 ${registrationLinkLoading ? 'animate-spin' : ''}`} />
                       Generate New Token
@@ -271,8 +271,8 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
             {activeSection === 'judge' && (
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-2xl font-black text-white uppercase italic">Judge Invitation</h3>
-                  <p className="text-slate-500 mt-2 max-w-lg">
+                  <h3 className="text-2xl font-black text-[#1A1A1A] dark:text-white uppercase italic">Judge Invitation</h3>
+                  <p className="text-[#1A1A1A]/50 dark:text-slate-500 mt-2 max-w-lg">
                     Secure link for judges to access the scoring portal. Do not share this publicly.
                   </p>
                 </div>
@@ -288,17 +288,17 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   </div>
                   <div className="flex-1 space-y-6 w-full max-w-md">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black font-mono text-slate-500 uppercase tracking-widest">Invite Link</label>
+                      <label className="text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 uppercase tracking-widest">Invite Link</label>
                       <div className="flex gap-2">
                         <input 
                           readOnly 
                           value={judgeInvite?.inviteUrl || 'Generating...'} 
-                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none"
+                          className="flex-1 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl px-4 py-3 text-[#1A1A1A] dark:text-white font-mono text-sm focus:outline-none"
                         />
                         <button 
                           onClick={() => judgeInvite && copyToClipboard(judgeInvite.inviteUrl, 'Invite Link')}
                           disabled={!judgeInvite}
-                          className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors disabled:opacity-50"
+                          className="p-3 bg-[#1A1A1A] dark:bg-blue-600 hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-500 text-white rounded-xl transition-colors disabled:opacity-50"
                         >
                           <Copy className="w-5 h-5" />
                         </button>
@@ -307,7 +307,7 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                     <button 
                       onClick={() => ensureJudgeInvite(true)}
                       disabled={judgeInviteLoading}
-                      className="flex items-center justify-center gap-2 w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-bold transition-all"
+                      className="flex items-center justify-center gap-2 w-full py-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl text-[#1A1A1A] dark:text-white font-bold transition-all"
                     >
                       <RefreshCw className={`w-4 h-4 ${judgeInviteLoading ? 'animate-spin' : ''}`} />
                       Generate New Invite

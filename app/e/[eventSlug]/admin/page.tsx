@@ -474,10 +474,10 @@ export default function EventAdminPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <button
                     onClick={() => { setShowQR(true); setQrTab('registration') }}
-                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
                     <div className="text-4xl">📱</div>
-                    <div className="text-white font-medium">Generate QR</div>
+                    <div className="text-charcoal dark:text-white font-medium">Generate QR</div>
                   </button>
                   <button
                     onClick={async () => {
@@ -497,48 +497,48 @@ export default function EventAdminPage() {
                         toast.error('Failed to create judge invite')
                       }
                     }}
-                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
                     <div className="text-4xl">✉️</div>
-                    <div className="text-white font-medium">Invite Judge</div>
+                    <div className="text-charcoal dark:text-white font-medium">Invite Judge</div>
                   </button>
                   <Link
                     href={`/e/${eventSlug}/admin/rubric`}
-                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
                     <div className="text-4xl">📋</div>
-                    <div className="text-white font-medium">Rubric</div>
+                    <div className="text-charcoal dark:text-white font-medium">Rubric</div>
                   </Link>
                   <button
                     onClick={() => setShowManualRegister(true)}
-                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
                     <div className="text-4xl">✍️</div>
-                    <div className="text-white font-medium">Manual Register</div>
+                    <div className="text-charcoal dark:text-white font-medium">Manual Register</div>
                   </button>
                   <Link
                     href={`/e/${eventSlug}/admin/score-adjust`}
-                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
                     <div className="text-4xl">✏️</div>
-                    <div className="text-white font-medium">Adjust Scores</div>
+                    <div className="text-charcoal dark:text-white font-medium">Adjust Scores</div>
                   </Link>
                   <Link
                     href={`/e/${eventSlug}/admin/rounds`}
-                    className="flex flex-col items-center gap-2 p-6 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
                     <div className="text-4xl">🔄</div>
-                    <div className="text-white font-medium">Rounds & Timers</div>
+                    <div className="text-charcoal dark:text-white font-medium">Rounds & Timers</div>
                   </Link>
                 </div>
               </div>
 
               {/* Registration Control */}
-              <div className="glass-panel p-6">
-                <h2 className="text-xl font-bold text-white mb-4">📝 Registration Control</h2>
-                <div className={`p-5 rounded-lg border-2 transition-all ${rules?.registrationClosed
-                  ? 'border-red-500 bg-red-500/10'
-                  : 'border-green-500 bg-green-500/10'
+              <div className="card p-6">
+                <h2 className="font-display text-lg font-semibold text-charcoal dark:text-white mb-4">Registration Control</h2>
+                <div className={`p-5 rounded-xl border transition-all ${rules?.registrationClosed
+                  ? 'border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10'
+                  : 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
                   }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -546,11 +546,11 @@ export default function EventAdminPage() {
                         {rules?.registrationClosed ? '🔒' : '✅'}
                       </div>
                       <div>
-                        <h3 className={`text-lg font-bold mb-1 ${rules?.registrationClosed ? 'text-red-400' : 'text-green-400'
+                        <h3 className={`text-lg font-semibold mb-1 ${rules?.registrationClosed ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                           }`}>
                           {rules?.registrationClosed ? 'Registrations Closed' : 'Registrations Open'}
                         </h3>
-                        <p className="text-sm text-slate-300">
+                        <p className="text-sm text-charcoal/60 dark:text-slate-300">
                           {rules?.registrationClosed
                             ? 'New participants cannot register'
                             : 'Participants can register via link or QR code'}
@@ -563,9 +563,9 @@ export default function EventAdminPage() {
                         const next = { ...(rules || {}), registrationClosed: newVal }
                         await updateRules(next)
                       }}
-                      className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${rules?.registrationClosed
-                        ? 'bg-green-500 hover:bg-green-600 text-white'
-                        : 'bg-red-500 hover:bg-red-600 text-white'
+                      className={`px-5 py-2.5 rounded-lg font-medium transition-all ${rules?.registrationClosed
+                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                        : 'bg-rose-500 hover:bg-rose-600 text-white'
                         }`}
                     >
                       {rules?.registrationClosed ? '🔓 Open' : '🔒 Close'}
@@ -578,13 +578,13 @@ export default function EventAdminPage() {
 
           {/* Participants Tab */}
           {activeTab === 'participants' && (
-            <div className="glass-panel overflow-hidden">
-              <div className="p-6 border-b border-white/5">
+            <div className="card overflow-hidden">
+              <div className="p-6 border-b border-charcoal/5 dark:border-white/5">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-white">Participants</h2>
+                  <h2 className="font-display text-lg font-semibold text-charcoal dark:text-white">Participants</h2>
                   <button
                     onClick={() => setShowManualRegister(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                    className="btn-primary px-4 py-2 rounded-lg text-sm"
                   >
                     + Add Participant
                   </button>
@@ -593,11 +593,11 @@ export default function EventAdminPage() {
                 {/* Filters */}
                 <div className="flex gap-4 items-center flex-wrap">
                   <div className="flex items-center gap-2">
-                    <label className="text-sm text-slate-400">Filter by Round:</label>
+                    <label className="text-sm text-charcoal/50 dark:text-slate-400">Filter by Round:</label>
                     <select
                       value={selectedRoundFilter ?? ''}
                       onChange={(e) => setSelectedRoundFilter(e.target.value ? Number(e.target.value) : null)}
-                      className="glass-input py-1 px-3 text-sm"
+                      className="input py-1 px-3 text-sm"
                     >
                       <option value="">All Rounds</option>
                       {Array.isArray(rules?.rounds) && rules.rounds.map((r: any, idx: number) => (
@@ -719,9 +719,9 @@ export default function EventAdminPage() {
 
           {/* Judges Tab */}
           {activeTab === 'judges' && (
-            <div className="glass-panel p-6">
+            <div className="card p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-white">Judges</h2>
+                <h2 className="font-display text-lg font-semibold text-charcoal dark:text-white">Judges</h2>
                 <button
                   onClick={async () => {
                     try {
@@ -740,14 +740,14 @@ export default function EventAdminPage() {
                       toast.error('Failed to create judge invite')
                     }
                   }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                  className="btn-primary px-4 py-2 rounded-lg text-sm"
                 >
                   + Invite Judge
                 </button>
               </div>
-              <p className="text-slate-400 mb-4">Manage judges and generate invite codes for the judge console.</p>
-              <div className="bg-slate-700/50 rounded-lg p-4 mb-4">
-                <p className="text-slate-300 text-sm">
+              <p className="text-charcoal/50 dark:text-slate-400 mb-4">Manage judges and generate invite codes for the judge console.</p>
+              <div className="bg-charcoal/5 dark:bg-slate-700/50 rounded-lg p-4 mb-4">
+                <p className="text-charcoal/70 dark:text-slate-300 text-sm">
                   Use the "Invite Judge" button to generate a shareable link and QR code for judges.
                 </p>
               </div>
@@ -791,32 +791,32 @@ export default function EventAdminPage() {
           {/* Settings Tab */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              <div className="glass-panel p-6">
-                <h2 className="text-xl font-bold text-white mb-4">Event Settings</h2>
-                <p className="text-slate-400 text-sm mb-4">
+              <div className="card p-6">
+                <h2 className="font-display text-lg font-semibold text-charcoal dark:text-white mb-4">Event Settings</h2>
+                <p className="text-charcoal/50 dark:text-slate-400 text-sm mb-4">
                   Configure rounds, timers, judging locks, and elimination controls.
                 </p>
                 <div className="space-y-4">
                   <Link
                     href={`/e/${eventSlug}/stage`}
-                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="block p-4 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="font-semibold text-white mb-1">📺 Live Display</div>
-                    <div className="text-sm text-slate-400">View the public live display for this event</div>
+                    <div className="font-medium text-charcoal dark:text-white mb-1">📺 Live Display</div>
+                    <div className="text-sm text-charcoal/50 dark:text-slate-400">View the public live display for this event</div>
                   </Link>
                   <Link
                     href={`/e/${eventSlug}/admin/settings`}
-                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="block p-4 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="font-semibold text-white mb-1">⚙️ Advanced Settings</div>
-                    <div className="text-sm text-slate-400">Configure rounds, judging modes, and advanced features</div>
+                    <div className="font-medium text-charcoal dark:text-white mb-1">⚙️ Advanced Settings</div>
+                    <div className="text-sm text-charcoal/50 dark:text-slate-400">Configure rounds, judging modes, and advanced features</div>
                   </Link>
                   <Link
                     href={`/e/${eventSlug}/admin/rubric`}
-                    className="block p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                    className="block p-4 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="font-semibold text-white mb-1">📋 Scoring Rubric</div>
-                    <div className="text-sm text-slate-400">Edit scoring criteria and weights</div>
+                    <div className="font-medium text-charcoal dark:text-white mb-1">📋 Scoring Rubric</div>
+                    <div className="text-sm text-charcoal/50 dark:text-slate-400">Edit scoring criteria and weights</div>
                   </Link>
                   <button
                     onClick={async () => {
@@ -852,9 +852,9 @@ export default function EventAdminPage() {
               </div>
 
               {/* Event Branding Section (consolidated from old Branding tab) */}
-              <div className="glass-panel p-6">
-                <h2 className="text-xl font-bold text-white mb-4">🎨 Event Branding</h2>
-                <p className="text-slate-400 mb-6">
+              <div className="card p-6">
+                <h2 className="font-display text-lg font-semibold text-charcoal dark:text-white mb-4">Event Branding</h2>
+                <p className="text-charcoal/50 dark:text-slate-400 mb-6">
                   Upload a logo and customize your event's branding. Colors will be automatically extracted from your logo.
                 </p>
                 <BrandingUpload
@@ -871,21 +871,21 @@ export default function EventAdminPage() {
           {/* Broadcast Tab */}
           {activeTab === 'broadcast' && (
             <div className="space-y-6">
-              <div className="glass-panel p-8 border-white/5">
+              <div className="card p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-white/10">
-                    <Radio className="w-6 h-6 text-blue-400" />
+                  <div className="w-12 h-12 rounded-2xl bg-charcoal/5 dark:bg-white/5 flex items-center justify-center">
+                    <Radio className="w-6 h-6 text-charcoal/60 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Broadcast Center</h2>
-                    <p className="text-sm text-slate-500">Send real-time announcements to all displays</p>
+                    <h2 className="font-display text-lg font-semibold text-charcoal dark:text-white">Broadcast Center</h2>
+                    <p className="text-sm text-charcoal/50 dark:text-slate-500">Send real-time announcements to all displays</p>
                   </div>
                 </div>
 
                 <div className="space-y-6">
                   {/* Message Type */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Message Type</label>
+                    <label className="block text-xs font-medium text-charcoal/50 dark:text-slate-500 uppercase tracking-wider mb-3">Message Type</label>
                     <div className="flex gap-3">
                       {[
                         { type: 'info' as const, label: 'Info', icon: '📢', color: 'blue' },
@@ -945,8 +945,8 @@ export default function EventAdminPage() {
 
               {/* Broadcast History */}
               {broadcastHistory.length > 0 && (
-                <div className="glass-panel p-6 border-white/5">
-                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Recent Broadcasts</h3>
+                <div className="card p-6">
+                  <h3 className="text-sm font-medium text-charcoal/50 dark:text-slate-500 uppercase tracking-wider mb-4">Recent Broadcasts</h3>
                   <div className="space-y-3">
                     {broadcastHistory.map((item, i) => (
                       <div
