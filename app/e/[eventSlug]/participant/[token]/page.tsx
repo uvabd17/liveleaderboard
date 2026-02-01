@@ -154,10 +154,10 @@ export default function ParticipantDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-          <div className="text-slate-500 font-mono text-[10px] tracking-widest uppercase animate-pulse">Initializing Participant Dashboard...</div>
+          <div className="w-12 h-12 border-4 border-[#1A1A1A]/20 dark:border-indigo-500/20 border-t-[#1A1A1A] dark:border-t-indigo-500 rounded-full animate-spin" />
+          <div className="text-[#1A1A1A]/50 dark:text-slate-500 font-mono text-[10px] tracking-widest uppercase animate-pulse">Initializing Participant Dashboard...</div>
         </div>
       </div>
     )
@@ -166,7 +166,7 @@ export default function ParticipantDashboardPage() {
   if (!participant) return null
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-indigo-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-slate-200 selection:bg-[#1A1A1A]/10 dark:selection:bg-indigo-500/30 overflow-x-hidden">
       <BroadcastTicker />
 
       {/* Background Ambience */}

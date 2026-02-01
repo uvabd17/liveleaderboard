@@ -370,13 +370,13 @@ export default function EventSettingsPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1A1A1A] dark:border-blue-500"></div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-200 selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] dark:from-slate-900 dark:via-slate-950 dark:to-black text-[#1A1A1A] dark:text-slate-200 selection:bg-[#1A1A1A]/10 dark:selection:bg-blue-500/30">
 
       {/* Floating Save Bar */}
       <div className={cn(
@@ -488,22 +488,22 @@ export default function EventSettingsPage() {
           <div ref={sectionRefs.general} className="space-y-6 pt-2">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">General Basics</h2>
-                <p className="text-slate-400">Core configuration for your event.</p>
+                <h2 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-2">General Basics</h2>
+                <p className="text-[#1A1A1A]/60 dark:text-slate-400">Core configuration for your event.</p>
               </div>
-              <div className="px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800 text-slate-400 font-mono text-sm">
+              <div className="px-4 py-2 rounded-full bg-[#1A1A1A]/5 dark:bg-slate-900/50 border border-[#1A1A1A]/10 dark:border-slate-800 text-[#1A1A1A]/60 dark:text-slate-400 font-mono text-sm">
                 /e/{eventSlug}
               </div>
             </div>
 
             <GlassCard className="p-0">
-              <div className="grid grid-cols-1 divide-y divide-white/5">
+              <div className="grid grid-cols-1 divide-y divide-[#1A1A1A]/5 dark:divide-white/5">
                 <div className="p-6">
-                  <label className="block text-sm font-medium text-slate-300 mb-4">Event Status</label>
-                  <div className="flex items-center justify-between bg-slate-950/30 p-4 rounded-xl border border-white/5">
+                  <label className="block text-sm font-medium text-[#1A1A1A]/70 dark:text-slate-300 mb-4">Event Status</label>
+                  <div className="flex items-center justify-between bg-[#1A1A1A]/5 dark:bg-slate-950/30 p-4 rounded-xl border border-[#1A1A1A]/5 dark:border-white/5">
                     <div className="space-y-1">
-                      <div className="font-medium text-white">Registration Status</div>
-                      <div className="text-sm text-slate-500">
+                      <div className="font-medium text-[#1A1A1A] dark:text-white">Registration Status</div>
+                      <div className="text-sm text-[#1A1A1A]/50 dark:text-slate-500">
                         {rules.registrationClosed ? 'Registration is currently closed.' : 'New participants can register.'}
                       </div>
                     </div>

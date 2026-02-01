@@ -266,7 +266,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
   }, [activeRound])
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-blue-500/30 pt-24">
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-slate-200 selection:bg-[#1A1A1A]/10 dark:selection:bg-blue-500/30 pt-24">
       <EventNavigation />
 
       <main className="max-w-[1400px] mx-auto px-6 py-10 space-y-12 animate-fade-in">
@@ -276,15 +276,15 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
           <div className="flex items-end justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic">Live Event Control</h1>
-                <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${systemStatus.label.includes('LIVE') ? 'bg-blue-500' : 'bg-slate-500'}`} />
+                <h1 className="text-4xl font-black tracking-tighter text-[#1A1A1A] dark:text-white uppercase italic">Live Event Control</h1>
+                <div className="px-3 py-1 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-full flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${systemStatus.label.includes('LIVE') ? 'bg-blue-500' : 'bg-[#1A1A1A]/30 dark:bg-slate-500'}`} />
                   <span className={`text-[10px] font-black font-mono tracking-widest ${systemStatus.color}`}>
                     SYSTEM: {systemStatus.label}
                   </span>
                 </div>
               </div>
-              <p className="text-slate-500 font-mono text-sm tracking-wider">EVENT CONSOLE // ROUND MANAGEMENT</p>
+              <p className="text-[#1A1A1A]/50 dark:text-slate-500 font-mono text-sm tracking-wider">EVENT CONSOLE // ROUND MANAGEMENT</p>
             </div>
             <div className="flex gap-3">
               <Button
@@ -298,7 +298,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
 
           {rounds.length > 0 ? (
             <div className="space-y-2">
-              <div className="flex items-center text-xs font-black font-mono text-slate-600 gap-2">
+              <div className="flex items-center text-xs font-black font-mono text-[#1A1A1A]/40 dark:text-slate-600 gap-2">
                 <span>ROUND TIMELINE</span>
                 <InfoTip>Click any round to activate it. The active round is what spectators see on the Stage display.</InfoTip>
               </div>
@@ -310,26 +310,26 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                       key={idx}
                       onClick={() => handleSetCurrent(idx)}
                       className={`group relative flex-shrink-0 min-w-[200px] p-4 rounded-2xl border transition-all duration-500 ${isActive
-                        ? 'bg-white/10 border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.05)]'
-                        : 'bg-white/5 border-white/5 hover:border-white/10 opacity-60 hover:opacity-100'
+                        ? 'bg-[#1A1A1A]/10 dark:bg-white/10 border-[#1A1A1A]/20 dark:border-white/20 shadow-[0_0_30px_rgba(0,0,0,0.05)] dark:shadow-[0_0_30px_rgba(255,255,255,0.05)]'
+                        : 'bg-[#1A1A1A]/5 dark:bg-white/5 border-[#1A1A1A]/5 dark:border-white/5 hover:border-[#1A1A1A]/10 dark:hover:border-white/10 opacity-60 hover:opacity-100'
                         }`}
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded ${isActive ? 'bg-white text-black' : 'bg-white/10 text-white/40 group-hover:bg-white/20'
+                        <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded ${isActive ? 'bg-[#1A1A1A] dark:bg-white text-white dark:text-black' : 'bg-[#1A1A1A]/10 dark:bg-white/10 text-[#1A1A1A]/40 dark:text-white/40 group-hover:bg-[#1A1A1A]/20 dark:group-hover:bg-white/20'
                           }`}>
                           R{idx + 1}
                         </span>
                         {isActive && (
-                          <span className="text-[10px] font-black font-mono text-blue-400">ACTIVE</span>
+                          <span className="text-[10px] font-black font-mono text-blue-600 dark:text-blue-400">ACTIVE</span>
                         )}
                         {r.timerRunning && !isActive && (
                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
                         )}
                       </div>
-                      <div className={`font-bold truncate transition-colors ${isActive ? 'text-white' : 'text-slate-400'}`}>
+                      <div className={`font-bold truncate transition-colors ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#1A1A1A]/60 dark:text-slate-400'}`}>
                         {r.name}
                       </div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-1">
+                      <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono mt-1">
                         {r.roundDurationMinutes}m DURATION
                       </div>
 
@@ -345,10 +345,10 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
               </div>
             </div>
           ) : (
-            <div className="glass-panel rounded-3xl p-12 text-center border-dashed border-2 border-white/10">
+            <div className="card rounded-3xl p-12 text-center border-dashed border-2 border-[#1A1A1A]/10 dark:border-white/10">
               <div className="text-4xl mb-4">🚀</div>
-              <h3 className="text-xl font-bold text-white mb-2">Ready for Lift-off</h3>
-              <p className="text-slate-500 max-w-md mx-auto mb-8 font-mono text-sm">You haven't created any rounds yet. Rounds define the timeline of your event and manage when judging is open.</p>
+              <h3 className="text-xl font-bold text-[#1A1A1A] dark:text-white mb-2">Ready for Lift-off</h3>
+              <p className="text-[#1A1A1A]/50 dark:text-slate-500 max-w-md mx-auto mb-8 font-mono text-sm">You haven't created any rounds yet. Rounds define the timeline of your event and manage when judging is open.</p>
               <Button
                 onClick={() => setShowCreate(true)}
                 className="bg-blue-600 hover:bg-blue-500 text-white font-black px-10 py-6 h-auto text-lg rounded-2xl shadow-xl shadow-blue-500/20"
@@ -371,7 +371,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                   style={{ backgroundColor: brandPrimary }}
                 />
 
-                <div className="relative glass-panel rounded-[2.5rem] p-10 border-white/10 flex flex-col md:flex-row items-center gap-12 overflow-hidden">
+                <div className="relative card rounded-[2.5rem] p-10 border-[#1A1A1A]/10 dark:border-white/10 flex flex-col md:flex-row items-center gap-12 overflow-hidden">
                   {/* Massive Timer Section */}
                   {activeRound ? (
                     <>
@@ -395,41 +395,41 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                       <div className="flex-grow space-y-6 text-center md:text-left pt-6">
                         <div>
                           <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
-                            <span className="text-blue-400 font-mono text-xs tracking-[0.3em] font-black uppercase">Live Round Engine</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-mono text-xs tracking-[0.3em] font-black uppercase">Live Round Engine</span>
                             {activeRound.judgingOpen && (
-                              <span className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black animate-pulse">
+                              <span className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-black animate-pulse">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 JUDGES ARE ACTIVE
                               </span>
                             )}
                           </div>
-                          <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-tight">
+                          <h2 className="text-5xl md:text-6xl font-black text-[#1A1A1A] dark:text-white tracking-tighter uppercase italic leading-tight">
                             {activeRound.name}
                           </h2>
                         </div>
 
                         <div className="grid grid-cols-3 gap-4">
-                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 relative">
-                            <div className="text-[10px] text-slate-500 font-mono mb-1 flex items-center justify-between">
+                          <div className="p-4 bg-[#1A1A1A]/5 dark:bg-white/5 rounded-2xl border border-[#1A1A1A]/5 dark:border-white/5 relative">
+                            <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono mb-1 flex items-center justify-between">
                               DURATION <InfoTip>The total time allowed for this round in minutes.</InfoTip>
                             </div>
-                            <div className="text-xl font-black text-white">{activeRound.roundDurationMinutes} minutes</div>
+                            <div className="text-xl font-black text-[#1A1A1A] dark:text-white">{activeRound.roundDurationMinutes} minutes</div>
                           </div>
-                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 relative">
-                            <div className="text-[10px] text-slate-500 font-mono mb-1 flex items-center justify-between">
+                          <div className="p-4 bg-[#1A1A1A]/5 dark:bg-white/5 rounded-2xl border border-[#1A1A1A]/5 dark:border-white/5 relative">
+                            <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono mb-1 flex items-center justify-between">
                               JUDGE WINDOW <InfoTip>How long the judging portal stays open. Sets to duration by default.</InfoTip>
                             </div>
-                            <div className="text-xl font-black text-white">{activeRound.judgingWindowMinutes || 'Unrestricted'}m</div>
+                            <div className="text-xl font-black text-[#1A1A1A] dark:text-white">{activeRound.judgingWindowMinutes || 'Unrestricted'}m</div>
                           </div>
-                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 relative">
-                            <div className="text-[10px] text-slate-500 font-mono mb-1 flex items-center justify-between">
+                          <div className="p-4 bg-[#1A1A1A]/5 dark:bg-white/5 rounded-2xl border border-[#1A1A1A]/5 dark:border-white/5 relative">
+                            <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono mb-1 flex items-center justify-between">
                               COMPLETION <InfoTip>Number of participants who have received a score for this round.</InfoTip>
                             </div>
                             <div className="flex items-baseline gap-1">
-                              <span className="text-xl font-black text-emerald-400">{completedCount}</span>
-                              <span className="text-sm font-bold text-slate-600">/ {participantsCount}</span>
+                              <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">{completedCount}</span>
+                              <span className="text-sm font-bold text-[#1A1A1A]/40 dark:text-slate-600">/ {participantsCount}</span>
                             </div>
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 rounded-b-2xl overflow-hidden">
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1A1A1A]/5 dark:bg-white/5 rounded-b-2xl overflow-hidden">
                               <div 
                                 className="h-full bg-emerald-500 transition-all duration-1000" 
                                 style={{ width: `${participantsCount > 0 ? (completedCount / participantsCount) * 100 : 0}%` }} 
@@ -482,19 +482,19 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
 
               {/* SIDEBAR: Tools & Reports */}
               <div className="lg:col-span-4 space-y-6">
-                <div className="glass-panel rounded-3xl p-6 border-white/10 space-y-4">
-                  <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase flex items-center justify-between">
+                <div className="card rounded-3xl p-6 border-[#1A1A1A]/10 dark:border-white/10 space-y-4">
+                  <h3 className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.2em] uppercase flex items-center justify-between">
                     REPORTS & EXPORTS <InfoTip>Download detailed participant performance data for the entire event or just this round.</InfoTip>
                   </h3>
                   <div className="space-y-2">
                     <Link
                       href={`/api/admin/export?eventSlug=${eventSlug}`}
                       target="_blank"
-                      className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
+                      className="flex items-center justify-between p-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 border border-[#1A1A1A]/5 dark:border-white/5 rounded-2xl transition-all group"
                     >
                       <div>
-                        <div className="font-bold text-sm text-white">Full Event Results</div>
-                        <div className="text-[10px] text-slate-500 font-mono uppercase">All scoring modules (.CSV)</div>
+                        <div className="font-bold text-sm text-[#1A1A1A] dark:text-white">Full Event Results</div>
+                        <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono uppercase">All scoring modules (.CSV)</div>
                       </div>
                       <div className="text-xl group-hover:translate-x-1 transition-transform">📊</div>
                     </Link>
@@ -503,11 +503,11 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                       <Link
                         href={`/api/events/${eventSlug}/round-completions?roundNumber=${currentRoundIdx}`}
                         target="_blank"
-                        className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all group"
+                        className="flex items-center justify-between p-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 border border-[#1A1A1A]/5 dark:border-white/5 rounded-2xl transition-all group"
                       >
                         <div>
-                          <div className="font-bold text-sm text-white">Active Round Scores</div>
-                          <div className="text-[10px] text-slate-500 font-mono uppercase">Single module only (.CSV)</div>
+                          <div className="font-bold text-sm text-[#1A1A1A] dark:text-white">Active Round Scores</div>
+                          <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono uppercase">Single module only (.CSV)</div>
                         </div>
                         <div className="text-xl group-hover:translate-x-1 transition-transform">🎯</div>
                       </Link>
@@ -515,19 +515,19 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
 
                     <Link
                       href={`/e/${eventSlug}/admin/analytics`}
-                      className="flex items-center justify-between p-4 bg-white/5 hover:bg-blue-600 border border-white/5 rounded-2xl transition-all group"
+                      className="flex items-center justify-between p-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-blue-600 border border-[#1A1A1A]/5 dark:border-white/5 rounded-2xl transition-all group"
                     >
                       <div>
-                        <div className="font-bold text-sm text-white group-hover:text-white">Live Observer Insights</div>
-                        <div className="text-[10px] text-slate-500 group-hover:text-white/60 font-mono uppercase">Judge bias & tracking</div>
+                        <div className="font-bold text-sm text-[#1A1A1A] dark:text-white group-hover:text-white">Live Observer Insights</div>
+                        <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 group-hover:text-white/60 font-mono uppercase">Judge bias & tracking</div>
                       </div>
                       <div className="text-xl group-hover:translate-x-1 transition-transform">📈</div>
                     </Link>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-3xl p-6 border-white/10 space-y-4">
-                  <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase flex items-center justify-between">
+                <div className="card rounded-3xl p-6 border-[#1A1A1A]/10 dark:border-white/10 space-y-4">
+                  <h3 className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.2em] uppercase flex items-center justify-between">
                     ANNOUNCEMENT CENTER <InfoTip>Send real-time alerts to all active screens (Display, Official, Participant).</InfoTip>
                   </h3>
                   <div className="space-y-4">
@@ -535,7 +535,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                       value={broadcastMessage}
                       onChange={(e) => setBroadcastMessage(e.target.value)}
                       placeholder="Type a message to all screens..."
-                      className="w-full h-20 bg-white/5 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500/50 transition-all resize-none"
+                      className="w-full h-20 bg-[#1A1A1A]/5 dark:bg-white/5 border border-[#1A1A1A]/10 dark:border-white/10 rounded-xl p-3 text-sm text-[#1A1A1A] dark:text-white focus:outline-none focus:border-blue-500/50 transition-all resize-none"
                     />
                     <div className="flex gap-2">
                       {([['info', '🔵'], ['warning', '🟡'], ['urgent', '🔴']] as const).map(([type, icon]) => (
@@ -543,8 +543,8 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                           key={type}
                           onClick={() => setBroadcastType(type)}
                           className={`flex-1 py-2 rounded-lg border text-[10px] font-black font-mono transition-all ${broadcastType === type
-                            ? 'bg-white/10 border-white/20 text-white'
-                            : 'bg-transparent border-white/5 text-slate-500 hover:border-white/10'
+                            ? 'bg-[#1A1A1A]/10 dark:bg-white/10 border-[#1A1A1A]/20 dark:border-white/20 text-[#1A1A1A] dark:text-white'
+                            : 'bg-transparent border-[#1A1A1A]/5 dark:border-white/5 text-[#1A1A1A]/50 dark:text-slate-500 hover:border-[#1A1A1A]/10 dark:hover:border-white/10'
                             }`}
                         >
                           {icon} {type.toUpperCase()}
@@ -561,24 +561,24 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-3xl p-6 border-white/10">
-                  <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.2em] uppercase mb-4">Command History</h3>
+                <div className="card rounded-3xl p-6 border-[#1A1A1A]/10 dark:border-white/10">
+                  <h3 className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.2em] uppercase mb-4">Command History</h3>
                   <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 no-scrollbar font-mono text-[10px]">
-                    <div className="flex gap-3 text-emerald-400/60">
+                    <div className="flex gap-3 text-emerald-600/60 dark:text-emerald-400/60">
                       <span>[SYS]</span>
                       <span>EVENT CONTROL ONLINE - AUTHENTICATED</span>
                     </div>
                     {rounds.length > 0 && (
-                      <div className="flex gap-3 text-slate-500 border-l border-white/5 pl-3">
+                      <div className="flex gap-3 text-[#1A1A1A]/50 dark:text-slate-500 border-l border-[#1A1A1A]/5 dark:border-white/5 pl-3">
                         <span>[RND]</span>
                         <span>LOADED {rounds.length} MODULES INTO MEMORY</span>
                       </div>
                     )}
-                    <div className="flex gap-3 text-blue-400/60 border-l border-white/5 pl-3">
+                    <div className="flex gap-3 text-blue-600/60 dark:text-blue-400/60 border-l border-[#1A1A1A]/5 dark:border-white/5 pl-3">
                       <span>[SSE]</span>
                       <span>STAGE BROADCAST SYNC: ACTIVE</span>
                     </div>
-                    <div className="flex gap-3 text-slate-600 border-l border-white/5 pl-3">
+                    <div className="flex gap-3 text-[#1A1A1A]/40 dark:text-slate-600 border-l border-[#1A1A1A]/5 dark:border-white/5 pl-3">
                       <span>[CMD]</span>
                       <span>WAITING FOR OPERATOR INPUT...</span>
                     </div>
@@ -658,34 +658,34 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
       {edit && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-0">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setEdit(null)} />
-          <div className="relative glass-panel rounded-3xl border-white/10 p-8 w-full max-w-lg animate-bounce-in">
-            <h3 className="text-2xl font-black text-white italic uppercase mb-6 tracking-tighter">Adjust Module R{edit.idx + 1}</h3>
+          <div className="relative card rounded-3xl border-[#1A1A1A]/10 dark:border-white/10 p-8 w-full max-w-lg animate-bounce-in">
+            <h3 className="text-2xl font-black text-[#1A1A1A] dark:text-white italic uppercase mb-6 tracking-tighter">Adjust Module R{edit.idx + 1}</h3>
             <form onSubmit={handleEditSubmit} className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-black font-mono text-slate-500 tracking-widest uppercase mb-2">IDENTIFIER (NAME)</label>
+                  <label className="block text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-widest uppercase mb-2">IDENTIFIER (NAME)</label>
                   <input
                     value={edit.name}
                     onChange={(e) => setEdit({ ...edit, name: e.target.value })}
-                    className="glass-input w-full px-4 py-4 text-lg font-bold"
+                    className="input w-full px-4 py-4 text-lg font-bold"
                     placeholder="Round Name"
                     autoFocus
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black font-mono text-slate-500 tracking-widest uppercase mb-2 flex items-center justify-between">
+                    <label className="block text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-widest uppercase mb-2 flex items-center justify-between">
                       TIMER (MIN) <InfoTip>How long the timer should run when started.</InfoTip>
                     </label>
                     <input
                       type="number"
                       value={edit.timer}
                       onChange={(e) => setEdit({ ...edit, timer: Number(e.target.value) })}
-                      className="glass-input w-full px-4 py-4 text-lg font-bold"
+                      className="input w-full px-4 py-4 text-lg font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black font-mono text-slate-500 tracking-widest uppercase mb-2 flex items-center justify-between">
+                    <label className="block text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-widest uppercase mb-2 flex items-center justify-between">
                       JUDGING (MIN) <InfoTip>Optional: Locks judging automatically after this many minutes. Leave empty for infinite.</InfoTip>
                     </label>
                     <input
@@ -693,7 +693,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                       value={edit.judgingWindowMinutes || ''}
                       placeholder="Infinite"
                       onChange={(e) => setEdit({ ...edit, judgingWindowMinutes: e.target.value === '' ? null : Number(e.target.value) })}
-                      className="glass-input w-full px-4 py-4 text-lg font-bold"
+                      className="input w-full px-4 py-4 text-lg font-bold"
                     />
                   </div>
                 </div>
@@ -715,48 +715,48 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
       {showCreate && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-0">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowCreate(false)} />
-          <div className="relative glass-panel rounded-3xl border-white/10 p-8 w-full max-w-lg animate-bounce-in">
-            <h3 className="text-2xl font-black text-white italic uppercase mb-6 tracking-tighter">Create New Round</h3>
+          <div className="relative card rounded-3xl border-[#1A1A1A]/10 dark:border-white/10 p-8 w-full max-w-lg animate-bounce-in">
+            <h3 className="text-2xl font-black text-[#1A1A1A] dark:text-white italic uppercase mb-6 tracking-tighter">Create New Round</h3>
             <form onSubmit={handleCreateSubmit} className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-black font-mono text-slate-500 tracking-widest uppercase mb-2">ROUND NAME</label>
+                  <label className="block text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-widest uppercase mb-2">ROUND NAME</label>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="glass-input w-full px-4 py-4 text-lg font-bold"
+                    className="input w-full px-4 py-4 text-lg font-bold"
                     placeholder="e.g. Qualification Round"
                     autoFocus
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black font-mono text-slate-500 tracking-widest uppercase mb-2">TIMER DURATION (MIN)</label>
+                    <label className="block text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-widest uppercase mb-2">TIMER DURATION (MIN)</label>
                     <input
                       type="number"
                       value={timer || ''}
                       onChange={(e) => setTimer(Number(e.target.value))}
-                      className="glass-input w-full px-4 py-4 text-lg font-bold"
+                      className="input w-full px-4 py-4 text-lg font-bold"
                       placeholder="Minutes"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black font-mono text-slate-500 tracking-widest uppercase mb-2">JUDGING WINDOW</label>
+                    <label className="block text-[10px] font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-widest uppercase mb-2">JUDGING WINDOW</label>
                     <input
                       type="number"
                       value={judgingWindow || ''}
                       onChange={(e) => setJudgingWindow(e.target.value === '' ? null : Number(e.target.value))}
-                      className="glass-input w-full px-4 py-4 text-lg font-bold"
+                      className="input w-full px-4 py-4 text-lg font-bold"
                       placeholder="Optional"
                     />
                   </div>
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-grow bg-white text-black hover:bg-slate-200 font-black py-4 h-auto rounded-2xl transition-all text-lg shadow-xl">
+                <Button type="submit" className="flex-grow bg-[#1A1A1A] dark:bg-white text-white dark:text-black hover:bg-[#1A1A1A]/80 dark:hover:bg-slate-200 font-black py-4 h-auto rounded-2xl transition-all text-lg shadow-xl">
                   INITIALIZE MODULE
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} className="px-8 bg-white/5 border-white/5 text-white font-black py-4 h-auto rounded-2xl">
+                <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} className="px-8 bg-[#1A1A1A]/5 dark:bg-white/5 border-[#1A1A1A]/5 dark:border-white/5 text-[#1A1A1A] dark:text-white font-black py-4 h-auto rounded-2xl">
                   ABORT
                 </Button>
               </div>
