@@ -223,12 +223,12 @@ export default function DashboardPage() {
             <div key={i} className="card p-6 group">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-charcoal/40 mb-1">{stat.label}</p>
-                  <p className="text-3xl font-mono font-bold text-charcoal">
+                  <p className="text-xs uppercase tracking-wider text-charcoal/40 dark:text-cream/40 mb-1">{stat.label}</p>
+                  <p className="text-3xl font-mono font-bold text-charcoal dark:text-cream">
                     {stat.value}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-charcoal/5 text-charcoal/40">
+                <div className="p-3 rounded-xl bg-charcoal/5 dark:bg-white/5 text-charcoal/40 dark:text-cream/40">
                   {stat.icon}
                 </div>
               </div>
@@ -245,18 +245,18 @@ export default function DashboardPage() {
           <section className="lg:col-span-8 space-y-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <h2 className="font-display text-2xl font-semibold text-charcoal">Your Events</h2>
-                <p className="text-sm text-charcoal/50">Select an event to manage</p>
+                <h2 className="font-display text-2xl font-semibold text-charcoal dark:text-cream">Your Events</h2>
+                <p className="text-sm text-charcoal/50 dark:text-cream/50">Select an event to manage</p>
               </div>
 
-              <div className="flex items-center gap-1 p-1 bg-charcoal/5 rounded-full">
+              <div className="flex items-center gap-1 p-1 bg-charcoal/5 dark:bg-white/5 rounded-full">
                 {(['active', 'archived', 'all'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setFilter(tab)}
                     className={`px-4 py-2 text-sm font-medium rounded-full transition-all capitalize ${filter === tab
-                      ? 'bg-charcoal text-cream'
-                      : 'text-charcoal/50 hover:text-charcoal'
+                      ? 'bg-charcoal dark:bg-cream text-cream dark:text-charcoal'
+                      : 'text-charcoal/50 dark:text-cream/50 hover:text-charcoal dark:hover:text-cream'
                       }`}
                   >
                     {tab}
@@ -268,11 +268,11 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredEvents.length === 0 ? (
                 <div className="col-span-full py-16 card border-dashed flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-charcoal/5 flex items-center justify-center mb-4">
-                    <Layers className="w-6 h-6 text-charcoal/30" />
+                  <div className="w-12 h-12 rounded-full bg-charcoal/5 dark:bg-white/5 flex items-center justify-center mb-4">
+                    <Layers className="w-6 h-6 text-charcoal/30 dark:text-cream/30" />
                   </div>
-                  <h3 className="font-display text-lg font-semibold text-charcoal/60 mb-1">No Events Found</h3>
-                  <p className="text-charcoal/40 text-sm mb-6">Create your first event to get started</p>
+                  <h3 className="font-display text-lg font-semibold text-charcoal/60 dark:text-cream/60 mb-1">No Events Found</h3>
+                  <p className="text-charcoal/40 dark:text-cream/40 text-sm mb-6">Create your first event to get started</p>
                   <button
                     onClick={() => setShowCreateModal(true)}
                     className="btn-primary px-6 py-2.5 rounded-full text-sm"
@@ -292,15 +292,15 @@ export default function DashboardPage() {
                               {event.archived && (
                                 <span className="badge-minimal bg-rose-50 text-rose-600">Archived</span>
                               )}
-                              <span className="text-xs text-charcoal/40">/{event.slug}</span>
+                              <span className="text-xs text-charcoal/40 dark:text-cream/40">/{event.slug}</span>
                             </div>
-                            <h3 className="font-display text-xl font-semibold text-charcoal truncate leading-tight group-hover:text-charcoal/80 transition-colors">
+                            <h3 className="font-display text-xl font-semibold text-charcoal dark:text-cream truncate leading-tight group-hover:text-charcoal/80 dark:group-hover:text-cream/80 transition-colors">
                               {event.name}
                             </h3>
                           </div>
                           <Link
                             href={`/e/${event.slug}`}
-                            className="p-2 rounded-lg bg-charcoal/5 hover:bg-charcoal/10 transition-colors text-charcoal/40 hover:text-charcoal"
+                            className="p-2 rounded-lg bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 transition-colors text-charcoal/40 dark:text-cream/40 hover:text-charcoal dark:hover:text-cream"
                             title="View Live"
                           >
                             <ArrowRight className="w-4 h-4 -rotate-45" />
@@ -309,19 +309,19 @@ export default function DashboardPage() {
 
                         <div className="flex items-center gap-6">
                           <div className="flex flex-col">
-                            <span className="text-xs text-charcoal/40">Participants</span>
-                            <span className="text-lg font-mono font-bold text-charcoal">{event._count.participants}</span>
+                            <span className="text-xs text-charcoal/40 dark:text-cream/40">Participants</span>
+                            <span className="text-lg font-mono font-bold text-charcoal dark:text-cream">{event._count.participants}</span>
                           </div>
-                          <div className="w-px h-8 bg-charcoal/10" />
+                          <div className="w-px h-8 bg-charcoal/10 dark:bg-white/10" />
                           <div className="flex flex-col">
-                            <span className="text-xs text-charcoal/40">Judges</span>
-                            <span className="text-lg font-mono font-bold text-charcoal">{event._count.judges}</span>
+                            <span className="text-xs text-charcoal/40 dark:text-cream/40">Judges</span>
+                            <span className="text-lg font-mono font-bold text-charcoal dark:text-cream">{event._count.judges}</span>
                           </div>
                         </div>
 
                         <Link
                           href={`/e/${event.slug}/admin`}
-                          className="w-full py-3 bg-charcoal text-cream hover:bg-charcoal/90 flex items-center justify-center rounded-xl text-sm font-medium transition-all group/btn"
+                          className="w-full py-3 bg-charcoal dark:bg-cream text-cream dark:text-charcoal hover:bg-charcoal/90 dark:hover:bg-cream/90 flex items-center justify-center rounded-xl text-sm font-medium transition-all group/btn"
                         >
                           Manage Event <ChevronRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-0.5 transition-transform" />
                         </Link>
@@ -336,12 +336,12 @@ export default function DashboardPage() {
             <div className="pt-4">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="w-full card border-dashed py-8 flex flex-col items-center justify-center gap-3 group hover:border-charcoal/20 transition-all"
+                className="w-full card border-dashed py-8 flex flex-col items-center justify-center gap-3 group hover:border-charcoal/20 dark:hover:border-white/20 transition-all"
               >
-                <div className="w-12 h-12 rounded-xl bg-charcoal text-cream flex items-center justify-center group-hover:scale-105 transition-transform">
+                <div className="w-12 h-12 rounded-xl bg-charcoal dark:bg-cream text-cream dark:text-charcoal flex items-center justify-center group-hover:scale-105 transition-transform">
                   <Plus className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium text-charcoal/60 group-hover:text-charcoal transition-colors">Create New Event</span>
+                <span className="text-sm font-medium text-charcoal/60 dark:text-cream/60 group-hover:text-charcoal dark:group-hover:text-cream transition-colors">Create New Event</span>
               </button>
             </div>
           </section>
@@ -350,12 +350,12 @@ export default function DashboardPage() {
           <aside className="lg:col-span-4 space-y-6">
             <div className="card p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-medium text-charcoal">Organization Branding</h3>
-                <Settings className="w-4 h-4 text-charcoal/30" />
+                <h3 className="text-sm font-medium text-charcoal dark:text-cream">Organization Branding</h3>
+                <Settings className="w-4 h-4 text-charcoal/30 dark:text-cream/30" />
               </div>
 
               <div className="space-y-4">
-                <p className="text-xs text-charcoal/50 leading-relaxed">
+                <p className="text-xs text-charcoal/50 dark:text-cream/50 leading-relaxed">
                   Set global branding for all events under your organization.
                 </p>
 
@@ -372,7 +372,7 @@ export default function DashboardPage() {
             <div className="card p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                <h3 className="text-sm font-medium text-charcoal">Quick Tips</h3>
+                <h3 className="text-sm font-medium text-charcoal dark:text-cream">Quick Tips</h3>
               </div>
 
               <ul className="space-y-3">
@@ -383,15 +383,15 @@ export default function DashboardPage() {
                   "Event branding overrides organization defaults"
                 ].map((tip, i) => (
                   <li key={i} className="flex gap-3">
-                    <div className="w-1 h-1 rounded-full bg-charcoal/30 mt-2 shrink-0" />
-                    <span className="text-xs text-charcoal/50 leading-relaxed">{tip}</span>
+                    <div className="w-1 h-1 rounded-full bg-charcoal/30 dark:bg-cream/30 mt-2 shrink-0" />
+                    <span className="text-xs text-charcoal/50 dark:text-cream/50 leading-relaxed">{tip}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
             <div className="text-center py-4">
-              <div className="text-xs text-charcoal/30">Live Leaderboard v1.0</div>
+              <div className="text-xs text-charcoal/30 dark:text-cream/30">Live Leaderboard v1.0</div>
             </div>
           </aside>
 
@@ -400,8 +400,8 @@ export default function DashboardPage() {
 
       {/* CREATE MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-charcoal/60 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-2xl bg-cream border border-charcoal/10 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-charcoal/60 dark:bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-2xl bg-cream dark:bg-gray-900 border border-charcoal/10 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
             <EventCreationWizard
               onClose={() => setShowCreateModal(false)}
               onSuccess={() => {
