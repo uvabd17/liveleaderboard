@@ -225,7 +225,7 @@ export default function EventRubricPage() {
 
       if (rubricRes.ok && roundsRes.ok) {
         toast.success('✅ Rubric and rounds saved successfully!')
-        setExpandedIndex(null)
+        setEditingCriterionIdx(null)
       } else {
         const rubricError = !rubricRes.ok ? await rubricRes.json() : null
         const roundsError = !roundsRes.ok ? await roundsRes.json() : null

@@ -181,8 +181,8 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
   const [criteria, setCriteria] = useState([
     { name: 'Criterion 1', maxPoints: 100, weight: 1, description: '', rounds: [1] }
   ])
-  const [rounds, setRounds] = useState<Array<{ number: number; name: string; durationMinutes: number | null; eliminationCount: number | null }>>(
-    [{ number: 1, name: 'Round 1', durationMinutes: null, eliminationCount: null }]
+  const [rounds, setRounds] = useState<Array<{ number: number; name: string; durationMinutes: number | null; durationUnit: 'min' | 'sec' | 'hr'; eliminationCount: number | null }>>(
+    [{ number: 1, name: 'Round 1', durationMinutes: null, durationUnit: 'min', eliminationCount: null }]
   )
 
   const progressPercent = (step / 4) * 100
@@ -194,7 +194,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
       const next = [...prev]
       if (next.length < desired) {
         for (let i = next.length; i < desired; i++) {
-          next.push({ number: i + 1, name: `Round ${i + 1}`, durationMinutes: null, eliminationCount: null })
+          next.push({ number: i + 1, name: `Round ${i + 1}`, durationMinutes: null, durationUnit: 'min', eliminationCount: null })
         }
       } else if (next.length > desired) {
         next.length = desired
@@ -307,6 +307,17 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
     if (step > 1) setStep((step - 1) as WizardStep)
   }
 
+  // Helper to convert duration to minutes based on unit
+  const convertToMinutes = (value: number | null, unit: 'min' | 'sec' | 'hr'): number | null => {
+    if (value === null || value === 0) return null
+    switch (unit) {
+      case 'sec': return Math.round(value / 60 * 100) / 100 // Convert seconds to minutes
+      case 'hr': return value * 60 // Convert hours to minutes
+      case 'min':
+      default: return value
+    }
+  }
+
   const handleSubmit = async () => {
     setLoading(true)
     
@@ -320,21 +331,38 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
     // Extract numberOfRounds from basicInfo before spreading (don't send it to API)
     const { numberOfRounds, ...eventBasicInfo } = basicInfo
     
+    // Check if any round has a timer set - auto-enable timedRounds feature
+    const hasAnyTimer = rounds.some(r => r.durationMinutes !== null && r.durationMinutes > 0)
+    
+    // Prepare rounds data with converted durations
+    const roundsData = rounds.map((r, idx) => ({
+      number: idx + 1,
+      name: r.name || `Round ${idx + 1}`,
+      durationMinutes: convertToMinutes(r.durationMinutes, r.durationUnit || 'min'),
+      eliminationCount: r.eliminationCount ?? null,
+      eliminationType: r.eliminationCount ? 'count' : null,
+    }))
+    
     const requestBody = {
       ...eventBasicInfo,
       visibility: 'public',
       logoUrl: logoUrlToSend,
       brandColors: extractedColors,
-      features,
+      features: {
+        ...features,
+        // Auto-enable timedRounds if any round has a timer
+        timedRounds: hasAnyTimer ? true : (features as any)?.timedRounds,
+      },
       rules: {
         rubric: criteria,
-        rounds: rounds.map((r, idx) => ({
-          number: idx + 1,
-          name: r.name || `Round ${idx + 1}`,
-          durationMinutes: r.durationMinutes ?? null,
-          eliminationCount: r.eliminationCount ?? null,
-          eliminationType: r.eliminationCount ? 'count' : null,
-        })),
+        rounds: roundsData,
+        // Include timerSettings if any round has a timer
+        ...(hasAnyTimer && {
+          timerSettings: {
+            showPublicTimer: true,
+            warningThreshold: 60,
+          }
+        }),
       }
     }
     
@@ -347,6 +375,8 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
       hasFeatures: !!features,
       criteriaCount: criteria.length,
       numberOfRounds: basicInfo.numberOfRounds,
+      hasAnyTimer,
+      roundsData,
     })
     
     // Test JSON serialization before sending
@@ -369,6 +399,30 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
 
       if (response.ok) {
         const data = await response.json()
+        
+        // Also sync rounds with timers to the rounds API for immediate availability
+        if (hasAnyTimer && data.event?.slug) {
+          try {
+            await fetch('/api/rounds', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'configure-multiple',
+                eventSlug: data.event.slug,
+                rounds: roundsData.map(r => ({
+                  number: r.number,
+                  name: r.name,
+                  roundDurationMinutes: r.durationMinutes,
+                })),
+              }),
+            })
+            console.log('[DEBUG] Rounds synced to /api/rounds')
+          } catch (roundsError) {
+            console.warn('[DEBUG] Failed to sync rounds:', roundsError)
+            // Don't fail the whole creation, rounds can be set up later
+          }
+        }
+        
         toast.success(`Event "${data.event.name}" created successfully!`)
         onSuccess()
         onClose()
@@ -634,13 +688,25 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                             className="w-12 px-1 py-0.5 bg-transparent text-charcoal dark:text-white text-sm text-center focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             placeholder="--"
                           />
-                          <span className="text-xs text-charcoal/50 dark:text-white/50">min</span>
+                          <select
+                            value={round.durationUnit || 'min'}
+                            onChange={(e) => {
+                              const next = [...rounds]
+                              next[idx] = { ...next[idx], durationUnit: e.target.value as 'min' | 'sec' | 'hr' }
+                              setRounds(next)
+                            }}
+                            className="bg-transparent text-xs text-charcoal/70 dark:text-white/70 focus:outline-none cursor-pointer border-none"
+                          >
+                            <option value="sec">sec</option>
+                            <option value="min">min</option>
+                            <option value="hr">hr</option>
+                          </select>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-charcoal/50 dark:text-white/50 mt-2">Add a timer to each round. Leave empty for no timer.</p>
+                <p className="text-xs text-charcoal/50 dark:text-white/50 mt-2">Add a timer to each round. Choose seconds, minutes, or hours.</p>
               </div>
             </div>
           )}
