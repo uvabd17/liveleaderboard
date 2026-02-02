@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { EventNavigation } from '@/components/event-navigation';
 import { CircularTimerControl } from '@/components/circular-timer-control';
 import { Button } from '@/components/ui/button';
-import { Rocket } from 'lucide-react';
+import { Rocket, BarChart3, Target, TrendingUp, Anchor, Settings } from 'lucide-react';
 
 interface Round {
   name: string;
@@ -260,10 +260,10 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
   const brandPrimary = eventData?.brandColors?.primary || '#3b82f6'
 
   const systemStatus = useMemo(() => {
-    if (!activeRound) return { label: 'STANDBY', color: 'text-slate-500' }
-    if (activeRound.timerRunning) return { label: 'LIVE / TIMER RUNNING', color: 'text-blue-400' }
-    if (activeRound.judgingOpen) return { label: 'JUDGING PHASE', color: 'text-emerald-400' }
-    return { label: 'ROUND READY', color: 'text-white/60' }
+    if (!activeRound) return { label: 'STANDBY', color: 'text-charcoal/50 dark:text-white/50' }
+    if (activeRound.timerRunning) return { label: 'LIVE / TIMER RUNNING', color: 'text-charcoal dark:text-white' }
+    if (activeRound.judgingOpen) return { label: 'JUDGING PHASE', color: 'text-emerald-600 dark:text-emerald-400' }
+    return { label: 'ROUND READY', color: 'text-charcoal/60 dark:text-white/60' }
   }, [activeRound])
 
   return (
@@ -290,7 +290,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
             <div className="flex gap-3">
               <Button
                 onClick={() => setShowCreate(true)}
-                className="bg-white text-black hover:bg-slate-200 font-bold px-6 h-12 rounded-2xl"
+                className="bg-charcoal dark:bg-white text-cream dark:text-charcoal hover:bg-charcoal/90 dark:hover:bg-white/90 font-bold px-6 h-12 rounded-2xl"
               >
                 + ADD ROUND
               </Button>
@@ -352,7 +352,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
               <p className="text-[#1A1A1A]/50 dark:text-slate-500 max-w-md mx-auto mb-8 font-mono text-sm">You haven't created any rounds yet. Rounds define the timeline of your event and manage when judging is open.</p>
               <Button
                 onClick={() => setShowCreate(true)}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-black px-10 py-6 h-auto text-lg rounded-2xl shadow-xl shadow-blue-500/20"
+                className="bg-charcoal dark:bg-white text-cream dark:text-charcoal hover:bg-charcoal/90 dark:hover:bg-white/90 font-black px-10 py-6 h-auto text-lg rounded-2xl shadow-xl"
               >
                 CREATE YOUR FIRST ROUND
               </Button>
@@ -396,7 +396,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                       <div className="flex-grow space-y-6 text-center md:text-left pt-6">
                         <div>
                           <div className="flex items-center justify-center md:justify-start gap-4 mb-2">
-                            <span className="text-blue-600 dark:text-blue-400 font-mono text-xs tracking-[0.3em] font-black uppercase">Live Round Engine</span>
+                            <span className="text-charcoal dark:text-white font-mono text-xs tracking-[0.3em] font-black uppercase">Live Round Engine</span>
                             {activeRound.judgingOpen && (
                               <span className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-black animate-pulse">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -464,7 +464,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                               timer: activeRound.roundDurationMinutes,
                               judgingWindowMinutes: activeRound.judgingWindowMinutes ?? null
                             })}
-                            className="bg-white/5 border-white/10 hover:bg-white/10 text-white font-black px-8 py-6 rounded-2xl transition-all h-auto"
+                            className="bg-charcoal/5 dark:bg-white/5 border-charcoal/10 dark:border-white/10 hover:bg-charcoal/10 dark:hover:bg-white/10 text-charcoal dark:text-white font-black px-8 py-6 rounded-2xl transition-all h-auto"
                           >
                             EDIT SETTINGS
                           </Button>
@@ -473,9 +473,9 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                     </>
                   ) : (
                     <div className="w-full text-center py-20">
-                      <div className="text-4xl opacity-20 mb-4">⚓</div>
-                      <h2 className="text-2xl font-black text-white/40 uppercase tracking-widest italic">Engine Standby</h2>
-                      <p className="text-slate-600 font-mono text-sm mt-2">SELECT A ROUND MODULE FROM THE RAIL ABOVE</p>
+                      <Anchor className="w-12 h-12 mx-auto mb-4 text-charcoal/20 dark:text-white/20" />
+                      <h2 className="text-2xl font-black text-charcoal/40 dark:text-white/40 uppercase tracking-widest italic">Engine Standby</h2>
+                      <p className="text-charcoal/40 dark:text-white/40 font-mono text-sm mt-2">SELECT A ROUND MODULE FROM THE RAIL ABOVE</p>
                     </div>
                   )}
                 </div>
@@ -497,7 +497,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                         <div className="font-bold text-sm text-[#1A1A1A] dark:text-white">Full Event Results</div>
                         <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono uppercase">All scoring modules (.CSV)</div>
                       </div>
-                      <div className="text-xl group-hover:translate-x-1 transition-transform">📊</div>
+                      <BarChart3 className="w-5 h-5 text-charcoal/40 dark:text-white/40 group-hover:translate-x-1 transition-transform" />
                     </Link>
 
                     {activeRound && (
@@ -510,19 +510,19 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                           <div className="font-bold text-sm text-[#1A1A1A] dark:text-white">Active Round Scores</div>
                           <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 font-mono uppercase">Single module only (.CSV)</div>
                         </div>
-                        <div className="text-xl group-hover:translate-x-1 transition-transform">🎯</div>
+                        <Target className="w-5 h-5 text-charcoal/40 dark:text-white/40 group-hover:translate-x-1 transition-transform" />
                       </Link>
                     )}
 
                     <Link
                       href={`/e/${eventSlug}/admin/analytics`}
-                      className="flex items-center justify-between p-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-blue-600 border border-[#1A1A1A]/5 dark:border-white/5 rounded-2xl transition-all group"
+                      className="flex items-center justify-between p-4 bg-[#1A1A1A]/5 dark:bg-white/5 hover:bg-charcoal dark:hover:bg-white border border-[#1A1A1A]/5 dark:border-white/5 rounded-2xl transition-all group"
                     >
                       <div>
-                        <div className="font-bold text-sm text-[#1A1A1A] dark:text-white group-hover:text-white">Live Observer Insights</div>
-                        <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 group-hover:text-white/60 font-mono uppercase">Judge bias & tracking</div>
+                        <div className="font-bold text-sm text-[#1A1A1A] dark:text-white group-hover:text-cream dark:group-hover:text-charcoal">Live Observer Insights</div>
+                        <div className="text-[10px] text-[#1A1A1A]/50 dark:text-slate-500 group-hover:text-cream/60 dark:group-hover:text-charcoal/60 font-mono uppercase">Judge bias & tracking</div>
                       </div>
-                      <div className="text-xl group-hover:translate-x-1 transition-transform">📈</div>
+                      <TrendingUp className="w-5 h-5 text-charcoal/40 dark:text-white/40 group-hover:text-cream dark:group-hover:text-charcoal group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </div>
                 </div>
@@ -555,7 +555,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                     <Button
                       onClick={handleSendBroadcast}
                       disabled={sendingBroadcast || !broadcastMessage.trim()}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl shadow-lg shadow-blue-500/10 h-auto"
+                      className="w-full bg-charcoal dark:bg-white text-cream dark:text-charcoal hover:bg-charcoal/90 dark:hover:bg-white/90 font-black py-3 rounded-xl shadow-lg h-auto"
                     >
                       {sendingBroadcast ? 'TRANSMITTING...' : 'SEND ANNOUNCEMENT'}
                     </Button>
@@ -563,23 +563,23 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                 </div>
 
                 <div className="card rounded-3xl p-6 border-[#1A1A1A]/10 dark:border-white/10">
-                  <h3 className="text-xs font-black font-mono text-[#1A1A1A]/50 dark:text-slate-500 tracking-[0.2em] uppercase mb-4">Command History</h3>
+                  <h3 className="text-xs font-black font-mono text-charcoal/50 dark:text-white/50 tracking-[0.2em] uppercase mb-4">Command History</h3>
                   <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 no-scrollbar font-mono text-[10px]">
                     <div className="flex gap-3 text-emerald-600/60 dark:text-emerald-400/60">
                       <span>[SYS]</span>
                       <span>EVENT CONTROL ONLINE - AUTHENTICATED</span>
                     </div>
                     {rounds.length > 0 && (
-                      <div className="flex gap-3 text-[#1A1A1A]/50 dark:text-slate-500 border-l border-[#1A1A1A]/5 dark:border-white/5 pl-3">
+                      <div className="flex gap-3 text-charcoal/50 dark:text-white/50 border-l border-charcoal/5 dark:border-white/5 pl-3">
                         <span>[RND]</span>
                         <span>LOADED {rounds.length} MODULES INTO MEMORY</span>
                       </div>
                     )}
-                    <div className="flex gap-3 text-blue-600/60 dark:text-blue-400/60 border-l border-[#1A1A1A]/5 dark:border-white/5 pl-3">
+                    <div className="flex gap-3 text-charcoal/60 dark:text-white/60 border-l border-charcoal/5 dark:border-white/5 pl-3">
                       <span>[SSE]</span>
                       <span>STAGE BROADCAST SYNC: ACTIVE</span>
                     </div>
-                    <div className="flex gap-3 text-[#1A1A1A]/40 dark:text-slate-600 border-l border-[#1A1A1A]/5 dark:border-white/5 pl-3">
+                    <div className="flex gap-3 text-charcoal/40 dark:text-white/40 border-l border-charcoal/5 dark:border-white/5 pl-3">
                       <span>[CMD]</span>
                       <span>WAITING FOR OPERATOR INPUT...</span>
                     </div>
@@ -591,8 +591,8 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
             {/* SECTION: ALL ROUNDS */}
             <section className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black font-mono text-slate-500 tracking-[0.3em] uppercase">All Rounds</h3>
-                <div className="text-[10px] text-slate-600 font-mono">ALL DEFINED ROUND CONFIGS</div>
+                <h3 className="text-xs font-black font-mono text-charcoal/50 dark:text-white/50 tracking-[0.3em] uppercase">All Rounds</h3>
+                <div className="text-[10px] text-charcoal/40 dark:text-white/40 font-mono">ALL DEFINED ROUND CONFIGS</div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {rounds.map((r, idx) => (
@@ -603,34 +603,34 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <div className="text-[10px] text-slate-500 font-mono uppercase mb-1">Round {idx + 1}</div>
-                        <h4 className="font-black text-xl italic uppercase tracking-tight text-white">{r.name}</h4>
+                        <div className="text-[10px] text-charcoal/50 dark:text-white/50 font-mono uppercase mb-1">Round {idx + 1}</div>
+                        <h4 className="font-black text-xl italic uppercase tracking-tight text-charcoal dark:text-white">{r.name}</h4>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={(e) => { e.stopPropagation(); setEdit({ idx, name: r.name, timer: r.roundDurationMinutes, judgingWindowMinutes: r.judgingWindowMinutes ?? null }) }}
                           title="Edit Round Settings"
-                          className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/5"
+                          className="p-2 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/5 dark:border-white/5"
                         >
-                          ⚙️
+                          <Settings className="w-4 h-4 text-charcoal/60 dark:text-white/60" />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteRound(idx) }}
                           title="Delete Round"
-                          className="p-2 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg transition-colors border border-rose-500/20 text-rose-500 text-xs"
+                          className="p-2 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg transition-colors border border-rose-500/20 text-rose-600 dark:text-rose-500 text-xs"
                         >
                           DEL
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 text-[10px] font-mono text-slate-400">
+                    <div className="flex items-center gap-4 text-[10px] font-mono text-charcoal/50 dark:text-white/50">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-charcoal/40 dark:bg-white/40" />
                         {r.roundDurationMinutes}m DURATION
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${r.judgingOpen ? 'bg-emerald-500 ring-2 ring-emerald-500/20' : 'bg-slate-600'}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${r.judgingOpen ? 'bg-emerald-500 ring-2 ring-emerald-500/20' : 'bg-charcoal/40 dark:bg-white/40'}`} />
                         JUDGING {r.judgingOpen ? 'OPEN' : 'LOCKED'}
                       </div>
                     </div>
@@ -640,8 +640,8 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                       disabled={idx === currentRoundIdx}
                       variant="outline"
                       className={`w-full mt-6 font-bold py-3 h-auto rounded-xl transition-all ${idx === currentRoundIdx
-                        ? 'bg-blue-600/20 border-blue-500/30 text-blue-400'
-                        : 'bg-white/5 border-white/5 hover:bg-white/10 text-white'
+                        ? 'bg-charcoal/10 dark:bg-white/10 border-charcoal/20 dark:border-white/20 text-charcoal dark:text-white'
+                        : 'bg-charcoal/5 dark:bg-white/5 border-charcoal/5 dark:border-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 text-charcoal dark:text-white'
                         }`}
                     >
                       {idx === currentRoundIdx ? 'SIMULATION ACTIVE' : 'ACTIVATE MODULE'}
@@ -700,10 +700,10 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-grow bg-blue-600 hover:bg-blue-500 text-white font-black py-4 h-auto rounded-2xl transition-all text-lg shadow-xl shadow-blue-500/10">
+                <Button type="submit" className="flex-grow bg-charcoal dark:bg-white text-cream dark:text-charcoal hover:bg-charcoal/90 dark:hover:bg-white/90 font-black py-4 h-auto rounded-2xl transition-all text-lg shadow-xl">
                   SAVE CHANGES
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setEdit(null)} className="px-8 bg-white/5 border-white/5 text-white font-black py-4 h-auto rounded-2xl">
+                <Button type="button" variant="secondary" onClick={() => setEdit(null)} className="px-8 bg-charcoal/5 dark:bg-white/5 border-charcoal/5 dark:border-white/5 text-charcoal dark:text-white font-black py-4 h-auto rounded-2xl">
                   CANCEL
                 </Button>
               </div>
