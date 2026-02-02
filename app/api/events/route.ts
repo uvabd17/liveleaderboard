@@ -57,6 +57,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check event limit (5 active events for free tier)
+    const eventCount = await db.event.count({ 
+      where: { 
+        orgId: session.user.orgId,
+        archived: false
+      } 
+    })
+    if (eventCount >= 5) {
+      return NextResponse.json({ 
+        error: 'event_limit_reached', 
+        message: 'You have reached the maximum of 5 active events on the free tier. Please archive an event or upgrade your plan.' 
+      }, { status: 429 })
+    }
+
     console.log('[API] Parsing request body...')
     let body
     try {

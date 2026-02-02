@@ -10,7 +10,7 @@ import { BrandingUpload } from '@/components/branding-upload'
 import { cn } from '@/lib/utils'
 import { AdminNavbar } from '@/components/ui/admin-navbar'
 import { PageLoading } from '@/components/loading-spinner'
-import { RefreshCw, CheckCircle2, Radio, Send, BarChart3, Users, Scale, Radio as Broadcast, Settings as SettingsIcon, CheckCircle, Smartphone } from 'lucide-react'
+import { RefreshCw, CheckCircle2, Radio, Send, BarChart3, Users, Scale, Radio as Broadcast, Settings as SettingsIcon, CheckCircle, Smartphone, Lock, Unlock, ClipboardList, Megaphone, AlertTriangle, AlertCircle, Tv, FileText, CircleDot } from 'lucide-react'
 
 interface Event {
   id: string
@@ -53,6 +53,7 @@ export default function EventAdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview')
   const [showQR, setShowQR] = useState(false)
   const [showManualRegister, setShowManualRegister] = useState(false)
+  const [newParticipantCode, setNewParticipantCode] = useState<{ name: string; code: string } | null>(null)
   const [judgeInvite, setJudgeInvite] = useState<{ inviteUrl: string; token: string } | null>(null)
   const [registrationToken, setRegistrationToken] = useState<{ url: string; token: string } | null>(null)
   const [tokens, setTokens] = useState<Array<any>>([])
@@ -337,7 +338,7 @@ export default function EventAdminPage() {
       <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-charcoal/5 flex items-center justify-center mx-auto mb-6">
-            <span className="text-3xl">🔒</span>
+            <Lock className="w-8 h-8 text-charcoal/40 dark:text-cream/40" />
           </div>
           <h1 className="font-display text-2xl font-semibold text-charcoal mb-2">Access Denied</h1>
           <p className="text-charcoal/50 mb-8">You don't have permission to manage this event.</p>
@@ -506,7 +507,7 @@ export default function EventAdminPage() {
                     href={`/e/${eventSlug}/admin/rubric`}
                     className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="text-4xl">📋</div>
+                    <ClipboardList className="w-10 h-10 text-charcoal/40 dark:text-cream/40" />
                     <div className="text-charcoal dark:text-white font-medium">Rubric</div>
                   </Link>
                   <button
@@ -527,7 +528,7 @@ export default function EventAdminPage() {
                     href={`/e/${eventSlug}/admin/rounds`}
                     className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="text-4xl">🔄</div>
+                    <RefreshCw className="w-10 h-10 text-charcoal/40 dark:text-cream/40" />
                     <div className="text-charcoal dark:text-white font-medium">Rounds & Timers</div>
                   </Link>
                 </div>
@@ -543,7 +544,7 @@ export default function EventAdminPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`text-3xl ${rules?.registrationClosed ? 'animate-pulse' : ''}`}>
-                        {rules?.registrationClosed ? '🔒' : '✅'}
+                        {rules?.registrationClosed ? <Lock className="w-5 h-5 text-red-500" /> : <CheckCircle className="w-5 h-5 text-green-500" />}
                       </div>
                       <div>
                         <h3 className={`text-lg font-semibold mb-1 ${rules?.registrationClosed ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
@@ -568,7 +569,7 @@ export default function EventAdminPage() {
                         : 'bg-rose-500 hover:bg-rose-600 text-white'
                         }`}
                     >
-                      {rules?.registrationClosed ? '🔓 Open' : '🔒 Close'}
+                      {rules?.registrationClosed ? <><Unlock className="w-4 h-4" /> Open</> : <><Lock className="w-4 h-4" /> Close</>}
                     </button>
                   </div>
                 </div>
@@ -622,7 +623,9 @@ export default function EventAdminPage() {
 
               {participants.length === 0 ? (
                 <div className="p-12 text-center">
-                  <div className="text-6xl mb-4">👥</div>
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-charcoal/5 dark:bg-white/5 flex items-center justify-center">
+                    <Users className="w-8 h-8 text-charcoal/30 dark:text-cream/30" />
+                  </div>
                   <p className="text-slate-400 mb-4">No participants yet</p>
                   <button
                     onClick={() => { setShowQR(true); setQrTab('registration') }}
@@ -801,7 +804,7 @@ export default function EventAdminPage() {
                     href={`/e/${eventSlug}/stage`}
                     className="block p-4 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="font-medium text-charcoal dark:text-white mb-1">📺 Live Display</div>
+                    <div className="font-medium text-charcoal dark:text-white mb-1 flex items-center gap-2"><Tv className="w-5 h-5" /> Live Display</div>
                     <div className="text-sm text-charcoal/50 dark:text-slate-400">View the public live display for this event</div>
                   </Link>
                   <Link
@@ -815,7 +818,7 @@ export default function EventAdminPage() {
                     href={`/e/${eventSlug}/admin/rubric`}
                     className="block p-4 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="font-medium text-charcoal dark:text-white mb-1">📋 Scoring Rubric</div>
+                    <div className="font-medium text-charcoal dark:text-white mb-1 flex items-center gap-2"><FileText className="w-5 h-5" /> Scoring Rubric</div>
                     <div className="text-sm text-charcoal/50 dark:text-slate-400">Edit scoring criteria and weights</div>
                   </Link>
                   <button
@@ -842,7 +845,7 @@ export default function EventAdminPage() {
                     }`}
                   >
                     <div className={`font-semibold mb-1 ${features?.isEnded ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {features?.isEnded ? '🟢 Reopen Event' : '🛑 End Event'}
+                      {features?.isEnded ? <><CheckCircle className="w-4 h-4" /> Reopen Event</> : <><CircleDot className="w-4 h-4" /> End Event</>}
                     </div>
                     <div className={`text-sm ${features?.isEnded ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
                       {features?.isEnded ? 'Resume the event and hide final results' : 'Close the event and display final results'}
@@ -888,9 +891,9 @@ export default function EventAdminPage() {
                     <label className="block text-xs font-medium text-charcoal/50 dark:text-slate-500 uppercase tracking-wider mb-3">Message Type</label>
                     <div className="flex gap-3">
                       {[
-                        { type: 'info' as const, label: 'Info', icon: '📢', color: 'blue' },
-                        { type: 'warning' as const, label: 'Warning', icon: '⚠️', color: 'amber' },
-                        { type: 'urgent' as const, label: 'Urgent', icon: '🚨', color: 'rose' }
+                        { type: 'info' as const, label: 'Info', icon: <Megaphone className="w-4 h-4" />, color: 'blue' },
+                        { type: 'warning' as const, label: 'Warning', icon: <AlertTriangle className="w-4 h-4" />, color: 'amber' },
+                        { type: 'urgent' as const, label: 'Urgent', icon: <AlertCircle className="w-4 h-4" />, color: 'rose' }
                       ].map((opt) => (
                         <button
                           key={opt.type}
@@ -959,7 +962,7 @@ export default function EventAdminPage() {
                         )}
                       >
                         <span className="text-lg">
-                          {item.type === 'info' ? '📢' : item.type === 'warning' ? '⚠️' : '🚨'}
+                          {item.type === 'info' ? <Megaphone className="w-5 h-5" /> : item.type === 'warning' ? <AlertTriangle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-[#1A1A1A] dark:text-white font-medium">{item.message}</p>
@@ -1020,7 +1023,9 @@ export default function EventAdminPage() {
 
             {qrTab === 'leaderboard' && (
               <div className="bg-[#1A1A1A]/5 dark:bg-slate-700 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-[#1A1A1A] dark:text-white mb-2">📊 Public Leaderboard</h4>
+                <h4 className="text-lg font-semibold text-[#1A1A1A] dark:text-white mb-2 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" /> Public Leaderboard
+                </h4>
                 <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-4">Scan this QR to view the live leaderboard.</p>
                 <div className="flex items-center gap-6">
                   <div className="bg-white p-4 rounded-lg">
@@ -1039,7 +1044,7 @@ export default function EventAdminPage() {
 
             {qrTab === 'stage' && (
               <div className="bg-[#1A1A1A]/5 dark:bg-slate-700 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-[#1A1A1A] dark:text-white mb-2">📺 Stage Display</h4>
+                <h4 className="text-lg font-semibold text-[#1A1A1A] dark:text-white mb-2 flex items-center gap-2"><Tv className="w-5 h-5" /> Stage Display</h4>
                 <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400 mb-4">Use this on the projector or stage display device.</p>
                 <div className="flex items-center gap-6">
                   <div className="bg-white p-4 rounded-lg">
@@ -1147,7 +1152,18 @@ export default function EventAdminPage() {
               try {
                 const res = await fetch(`/api/events/${eventSlug}/participants`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, kind }) })
                 const data = await res.json()
-                if (!res.ok) { toast.error(data?.error || 'Failed'); return }
+                if (!res.ok) { 
+                  if (res.status === 429) {
+                    toast.error('Participant limit reached. Please upgrade your plan.')
+                  } else {
+                    toast.error(data?.error || 'Failed')
+                  }
+                  return 
+                }
+                const accessCode = data.participant?.accessCode
+                if (accessCode) {
+                  setNewParticipantCode({ name, code: accessCode })
+                }
                 toast.success('Participant added')
                 setShowManualRegister(false)
                 fetchEventData()
@@ -1171,6 +1187,57 @@ export default function EventAdminPage() {
                 <button type="button" onClick={() => setShowManualRegister(false)} className="px-4 py-2 bg-[#1A1A1A]/10 dark:bg-slate-600 text-[#1A1A1A] dark:text-white rounded hover:bg-[#1A1A1A]/20 dark:hover:bg-slate-500 transition-colors">Cancel</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Access Code Display Modal */}
+      {newParticipantCode && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-[#1A1A1A] dark:text-white">Access Code Generated</h3>
+              <button onClick={() => setNewParticipantCode(null)} className="text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-[#1A1A1A]/70 dark:text-slate-300">
+                Share this access code with <strong>{newParticipantCode.name}</strong>:
+              </p>
+              <div className="bg-[#FAF9F6] dark:bg-slate-700 rounded-lg p-4 text-center">
+                <div className="text-3xl font-mono font-bold tracking-wider text-[#1A1A1A] dark:text-white mb-2">
+                  {newParticipantCode.code}
+                </div>
+                <p className="text-sm text-[#1A1A1A]/60 dark:text-slate-400">
+                  They can use this at <strong>{typeof window !== 'undefined' ? window.location.origin : ''}/e/{eventSlug}</strong>
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(newParticipantCode.code)
+                    toast.success('Code copied!')
+                  }}
+                  className="flex-1 px-4 py-2 bg-[#1A1A1A] dark:bg-blue-600 text-white rounded hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-700 transition-colors"
+                >
+                  Copy Code
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/e/${eventSlug}`)
+                    toast.success('Link copied!')
+                  }}
+                  className="flex-1 px-4 py-2 bg-[#1A1A1A]/10 dark:bg-slate-600 text-[#1A1A1A] dark:text-white rounded hover:bg-[#1A1A1A]/20 dark:hover:bg-slate-500 transition-colors"
+                >
+                  Copy Link
+                </button>
+              </div>
+              <button
+                onClick={() => setNewParticipantCode(null)}
+                className="w-full px-4 py-2 bg-[#1A1A1A]/10 dark:bg-slate-600 text-[#1A1A1A] dark:text-white rounded hover:bg-[#1A1A1A]/20 dark:hover:bg-slate-500 transition-colors"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

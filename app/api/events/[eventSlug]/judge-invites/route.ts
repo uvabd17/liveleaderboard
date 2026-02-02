@@ -36,6 +36,15 @@ export async function POST(
       return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 })
     }
 
+    // Check judge limit (20 judges per event for free tier)
+    const judgeCount = await db.judge.count({ where: { eventId: event.id } })
+    if (judgeCount >= 20) {
+      return new Response(JSON.stringify({ 
+        error: 'judge_limit_reached', 
+        message: 'You have reached the maximum of 20 judges per event on the free tier. Please upgrade your plan.' 
+      }), { status: 429 })
+    }
+
     const token = crypto.randomBytes(16).toString('hex')
     const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000)
 

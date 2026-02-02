@@ -10,7 +10,7 @@ import { EventCache } from '@/lib/cache'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { PageLoading } from '@/components/loading-spinner'
-import { Info, ShieldAlert, CheckCircle2, Search, Trophy, Timer, LayoutDashboard, ChevronRight } from 'lucide-react'
+import { Info, ShieldAlert, CheckCircle2, Search, Trophy, Timer, LayoutDashboard, ChevronRight, Users, User, Target, Radio } from 'lucide-react'
 import { BroadcastTicker } from '@/components/broadcast-ticker'
 
 interface Participant {
@@ -416,7 +416,7 @@ export default function JudgeConsolePage() {
               <div className="card p-8 group">
                 <div className="flex flex-col md:flex-row items-center gap-8">
                   <div className="w-20 h-20 rounded-2xl bg-charcoal/5 flex items-center justify-center text-3xl">
-                    {participants.find(p => p.id === selectedParticipant)?.kind === 'team' ? '👥' : '👤'}
+                    {participants.find(p => p.id === selectedParticipant)?.kind === 'team' ? <Users className="w-5 h-5" /> : <User className="w-5 h-5" />}
                   </div>
                   <div className="flex-grow text-center md:text-left space-y-1">
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
@@ -561,7 +561,7 @@ export default function JudgeConsolePage() {
         <div className="card p-4 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-charcoal/5 flex items-center justify-center text-lg">
-              {selectedParticipant ? '🎯' : '📡'}
+              {selectedParticipant ? <Target className="w-6 h-6" /> : <Radio className="w-6 h-6" />}
             </div>
             <div>
               <div className="text-[10px] text-charcoal/40">Participant</div>

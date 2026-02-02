@@ -68,6 +68,12 @@ export async function POST(
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
+    // Check participant limit (100 for free tier)
+    const participantCount = await db.participant.count({ where: { eventId: event.id } })
+    if (participantCount >= 100) {
+      return NextResponse.json({ error: 'participant_limit_reached', message: 'You have reached the maximum of 100 participants per event on the free tier. Please upgrade your plan.' }, { status: 429 })
+    }
+
     const normalizedName = name.trim().toLowerCase().replace(/\s+/g, ' ')
 
     // Check duplicates
