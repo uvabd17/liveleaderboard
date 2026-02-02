@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
-import { Copy, RefreshCw, ExternalLink } from 'lucide-react'
+import { Copy, RefreshCw, ExternalLink, BarChart3, Tv, FileText, Scale } from 'lucide-react'
 
 interface AdminConnectTabProps {
   eventSlug: string
@@ -109,10 +109,10 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
         {/* Sidebar Navigation */}
         <div className="lg:col-span-3 space-y-2">
           {[
-            { id: 'leaderboard', label: 'Public Standings', icon: '📊' },
-            { id: 'stage', label: 'Stage Display', icon: '📺' },
-            { id: 'registration', label: 'Registration Kiosk', icon: '📝' },
-            { id: 'judge', label: 'Judge Invite', icon: '⚖️' },
+            { id: 'leaderboard', label: 'Public Standings', Icon: BarChart3 },
+            { id: 'stage', label: 'Stage Display', Icon: Tv },
+            { id: 'registration', label: 'Registration Kiosk', Icon: FileText },
+            { id: 'judge', label: 'Judge Invite', Icon: Scale },
           ].map((item) => (
             <button
               key={item.id}
@@ -123,7 +123,7 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   : 'bg-[#1A1A1A]/5 dark:bg-white/5 text-[#1A1A1A]/60 dark:text-slate-400 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10 hover:text-[#1A1A1A] dark:hover:text-white'
               }`}
             >
-              <span className="text-xl">{item.icon}</span>
+              <item.Icon className="w-5 h-5" />
               <span>{item.label}</span>
             </button>
           ))}
@@ -144,7 +144,7 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   </p>
                 </div>
                 <div className="flex flex-col md:flex-row items-start gap-10">
-                  <div className="p-6 bg-white rounded-3xl shadow-2xl">
+                  <div className="p-6 bg-white rounded-3xl shadow-2xl ring-1 ring-black/5 dark:ring-white/20">
                     <QRCodeSVG value={publicURL} size={200} />
                   </div>
                   <div className="flex-1 space-y-6 w-full max-w-md">
@@ -186,7 +186,7 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   </p>
                 </div>
                 <div className="flex flex-col md:flex-row items-start gap-10">
-                  <div className="p-6 bg-white rounded-3xl shadow-2xl">
+                  <div className="p-6 bg-white rounded-3xl shadow-2xl ring-1 ring-black/5 dark:ring-white/20">
                     <QRCodeSVG value={`${publicURL}/stage`} size={200} />
                   </div>
                   <div className="flex-1 space-y-6 w-full max-w-md">
@@ -228,11 +228,11 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   </p>
                 </div>
                 <div className="flex flex-col md:flex-row items-start gap-10">
-                  <div className="p-6 bg-white rounded-3xl shadow-2xl relative">
+                  <div className="p-6 bg-white rounded-3xl shadow-2xl ring-1 ring-black/5 dark:ring-white/20 relative">
                     {registrationLink ? (
                       <QRCodeSVG value={registrationLink} size={200} />
                     ) : (
-                      <div className="w-[200px] h-[200px] flex items-center justify-center text-slate-400 bg-slate-100 rounded-xl animate-pulse">
+                      <div className="w-[200px] h-[200px] flex items-center justify-center text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse">
                         Loading...
                       </div>
                     )}
@@ -277,11 +277,11 @@ export function AdminConnectTab({ eventSlug, publicURL }: AdminConnectTabProps) 
                   </p>
                 </div>
                 <div className="flex flex-col md:flex-row items-start gap-10">
-                  <div className="p-6 bg-white rounded-3xl shadow-2xl">
+                  <div className="p-6 bg-white rounded-3xl shadow-2xl ring-1 ring-black/5 dark:ring-white/20">
                     {judgeInvite ? (
                       <QRCodeSVG value={judgeInvite.inviteUrl} size={200} />
                     ) : (
-                      <div className="w-[200px] h-[200px] flex items-center justify-center text-slate-400 bg-slate-100 rounded-xl animate-pulse">
+                      <div className="w-[200px] h-[200px] flex items-center justify-center text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse">
                         Loading...
                       </div>
                     )}

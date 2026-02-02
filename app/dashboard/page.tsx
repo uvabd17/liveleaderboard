@@ -239,7 +239,7 @@ export default function DashboardPage() {
 {/* Manual Access Section Removed */}
 
 
-        <div className="grid lg:grid-cols-12 gap-12">
+        <div className="grid lg:grid-cols-12 gap-6 lg:gap-12">
 
           {/* EVENTS LIST */}
           <section className="lg:col-span-8 space-y-6">

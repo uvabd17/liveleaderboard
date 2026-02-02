@@ -991,7 +991,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
               style={{ minHeight: '48px' }}
               aria-label="Create event"
             >
-              {loading ? 'Creating...' : '🚀 Create Event'}
+              {loading ? 'Creating...' : 'Create Event'}
             </button>
           )}
         </div>

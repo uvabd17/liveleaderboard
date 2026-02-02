@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { EventNavigation } from '@/components/event-navigation';
 import { CircularTimerControl } from '@/components/circular-timer-control';
 import { Button } from '@/components/ui/button';
+import { Rocket } from 'lucide-react';
 
 interface Round {
   name: string;
@@ -346,7 +347,7 @@ const AdminRoundsPage = ({ params }: { params: { eventSlug: string } }) => {
             </div>
           ) : (
             <div className="card rounded-3xl p-12 text-center border-dashed border-2 border-[#1A1A1A]/10 dark:border-white/10">
-              <div className="text-4xl mb-4">🚀</div>
+              <Rocket className="w-12 h-12 mx-auto mb-4 text-charcoal/30 dark:text-white/30" />
               <h3 className="text-xl font-bold text-[#1A1A1A] dark:text-white mb-2">Ready for Lift-off</h3>
               <p className="text-[#1A1A1A]/50 dark:text-slate-500 max-w-md mx-auto mb-8 font-mono text-sm">You haven't created any rounds yet. Rounds define the timeline of your event and manage when judging is open.</p>
               <Button

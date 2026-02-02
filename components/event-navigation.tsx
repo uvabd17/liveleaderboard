@@ -66,17 +66,17 @@ export function EventNavigation() {
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="p-2 hover:bg-charcoal/5 rounded-lg text-charcoal/40 hover:text-charcoal transition-all group lg:flex items-center gap-2 hidden"
+              className="p-2 hover:bg-charcoal/5 dark:hover:bg-white/5 rounded-lg text-charcoal/40 dark:text-white/40 hover:text-charcoal dark:hover:text-white transition-all group lg:flex items-center gap-2 hidden"
             >
               <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span className="text-xs font-medium">Back</span>
             </Link>
 
-            <div className="h-5 w-px bg-charcoal/10 hidden lg:block" />
+            <div className="h-5 w-px bg-charcoal/10 dark:bg-white/10 hidden lg:block" />
 
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm md:text-base font-display font-semibold text-charcoal truncate max-w-[120px] md:max-w-xs">
+                <h2 className="text-sm md:text-base font-display font-semibold text-charcoal dark:text-white truncate max-w-[120px] md:max-w-xs">
                   {eventName || 'Loading...'}
                 </h2>
                 {role === 'admin' ? (
@@ -85,7 +85,7 @@ export function EventNavigation() {
                   <span className="badge-minimal">Judge</span>
                 ) : null}
               </div>
-              <span className="text-[10px] text-charcoal/40">/{eventSlug}</span>
+              <span className="text-[10px] text-charcoal/40 dark:text-white/40">/{eventSlug}</span>
             </div>
           </div>
 
@@ -98,11 +98,11 @@ export function EventNavigation() {
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
                   link.active
-                    ? "bg-charcoal text-cream"
-                    : "text-charcoal/50 hover:text-charcoal hover:bg-charcoal/5"
+                    ? "bg-charcoal dark:bg-white text-cream dark:text-charcoal"
+                    : "text-charcoal/50 dark:text-white/50 hover:text-charcoal dark:hover:text-white hover:bg-charcoal/5 dark:hover:bg-white/5"
                 )}
               >
-                <link.icon className={cn("w-4 h-4", link.active ? "text-cream" : "text-charcoal/40")} />
+                <link.icon className={cn("w-4 h-4", link.active ? "text-cream dark:text-charcoal" : "text-charcoal/40 dark:text-white/40")} />
                 <span className="hidden sm:inline">{link.label}</span>
               </Link>
             ))}

@@ -155,12 +155,24 @@
     transition: box-shadow var(--transition-base), border-color var(--transition-base);
   }
   
+  .dark .card {
+    @apply bg-slate-900 border-white/10;
+  }
+  
   .card:hover {
     @apply shadow-md border-neutral-300;
   }
   
+  .dark .card:hover {
+    @apply border-white/20;
+  }
+  
   .card-elevated {
     @apply bg-white rounded-lg shadow-lg border-0;
+  }
+  
+  .dark .card-elevated {
+    @apply bg-slate-900;
   }
 
   /* Glass Panel - For overlays and dark mode contexts */
@@ -190,8 +202,17 @@
     @apply focus-visible:ring-charcoal;
   }
   
+  .dark .btn-secondary {
+    @apply text-white border-white/20 hover:bg-white/5;
+    @apply focus-visible:ring-white;
+  }
+  
   .btn-ghost {
     @apply btn bg-transparent text-charcoal hover:bg-charcoal/5;
+  }
+  
+  .dark .btn-ghost {
+    @apply text-white hover:bg-white/5;
   }
   
   .btn-lg {
@@ -210,6 +231,11 @@
     @apply transition-colors duration-200;
   }
   
+  .dark .input {
+    @apply bg-slate-800 border-white/20 text-white placeholder:text-white/40;
+    @apply focus:ring-white/20 focus:border-white/40;
+  }
+  
   .input-lg {
     @apply px-4 py-3 text-base;
   }
@@ -217,6 +243,10 @@
   /* Label */
   .label {
     @apply block text-sm font-medium text-charcoal mb-1.5;
+  }
+  
+  .dark .label {
+    @apply text-white;
   }
   
   .label-sm {

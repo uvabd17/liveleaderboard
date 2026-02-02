@@ -35,21 +35,21 @@ export function AdminNavbar({ eventSlug }: AdminNavbarProps) {
   ]
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-charcoal/5 bg-cream/80 backdrop-blur-md">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-charcoal/5 dark:border-white/5 bg-cream/80 dark:bg-gray-950/80 backdrop-blur-md">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm font-medium text-charcoal/60 hover:text-charcoal transition-colors flex items-center gap-2">
+          <Link href="/dashboard" className="text-sm font-medium text-charcoal/60 dark:text-white/60 hover:text-charcoal dark:hover:text-white transition-colors flex items-center gap-2">
             ← Events
           </Link>
-          <div className="h-4 w-px bg-charcoal/10" />
-          <span className="font-display font-semibold text-charcoal">
+          <div className="h-4 w-px bg-charcoal/10 dark:bg-white/10" />
+          <span className="font-display font-semibold text-charcoal dark:text-white">
             Event Dashboard
           </span>
         </div>
         
         {eventSlug && (
             <div className="flex items-center gap-4">
-                <span className="text-xs text-charcoal/40">/{eventSlug}</span>
+                <span className="text-xs text-charcoal/40 dark:text-white/40">/{eventSlug}</span>
             </div>
         )}
       </div>

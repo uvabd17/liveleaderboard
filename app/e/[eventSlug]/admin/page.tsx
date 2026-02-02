@@ -10,7 +10,7 @@ import { BrandingUpload } from '@/components/branding-upload'
 import { cn } from '@/lib/utils'
 import { AdminNavbar } from '@/components/ui/admin-navbar'
 import { PageLoading } from '@/components/loading-spinner'
-import { RefreshCw, CheckCircle2, Radio, Send, BarChart3, Users, Scale, Radio as Broadcast, Settings as SettingsIcon, CheckCircle, Smartphone, Lock, Unlock, ClipboardList, Megaphone, AlertTriangle, AlertCircle, Tv, FileText, CircleDot } from 'lucide-react'
+import { RefreshCw, CheckCircle2, Radio, Send, BarChart3, Users, Scale, Radio as Broadcast, Settings as SettingsIcon, CheckCircle, Smartphone, Lock, Unlock, ClipboardList, Megaphone, AlertTriangle, AlertCircle, Tv, FileText, CircleDot, Mail, UserPlus, Sliders } from 'lucide-react'
 
 interface Event {
   id: string
@@ -500,7 +500,7 @@ export default function EventAdminPage() {
                     }}
                     className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="text-4xl">✉️</div>
+                    <Mail className="w-10 h-10 text-charcoal/40 dark:text-cream/40" />
                     <div className="text-charcoal dark:text-white font-medium">Invite Judge</div>
                   </button>
                   <Link
@@ -514,14 +514,14 @@ export default function EventAdminPage() {
                     onClick={() => setShowManualRegister(true)}
                     className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="text-4xl">✍️</div>
+                    <UserPlus className="w-10 h-10 text-charcoal/40 dark:text-cream/40" />
                     <div className="text-charcoal dark:text-white font-medium">Manual Register</div>
                   </button>
                   <Link
                     href={`/e/${eventSlug}/admin/score-adjust`}
                     className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="text-4xl">✏️</div>
+                    <Sliders className="w-10 h-10 text-charcoal/40 dark:text-cream/40" />
                     <div className="text-charcoal dark:text-white font-medium">Adjust Scores</div>
                   </Link>
                   <Link
@@ -1063,7 +1063,7 @@ export default function EventAdminPage() {
 
             {qrTab === 'registration' && (
               <div className="bg-slate-700 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-white mb-2">📝 Registration (Direct)</h4>
+                <h4 className="text-lg font-semibold text-white mb-2 flex items-center gap-2"><FileText className="w-5 h-5" /> Registration (Direct)</h4>
                 <p className="text-sm text-slate-400 mb-4">This QR opens the registration form with a pre-issued token for this event—no extra kiosk step.</p>
                 <div className="flex items-center gap-6">
                   <div className="bg-white p-4 rounded-lg">

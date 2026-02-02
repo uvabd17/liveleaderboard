@@ -44,7 +44,7 @@ interface PageLoadingProps {
 
 export function PageLoading({ message = "Loading...", submessage }: PageLoadingProps) {
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center">
+    <div className="min-h-screen bg-cream dark:bg-gray-950 flex items-center justify-center">
       {/* Subtle Background */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-charcoal/5 rounded-full blur-[120px]" />
@@ -54,21 +54,21 @@ export function PageLoading({ message = "Loading...", submessage }: PageLoadingP
       <div className="text-center space-y-6 max-w-md px-6">
         {/* Animated Logo */}
         <div className="relative mx-auto w-16 h-16">
-          <div className="relative w-16 h-16 rounded-2xl bg-white border border-charcoal/10 flex items-center justify-center shadow-sm">
-            <div className="w-8 h-8 border-3 border-charcoal/20 border-t-charcoal rounded-full animate-spin" />
+          <div className="relative w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 border border-charcoal/10 dark:border-white/10 flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 border-3 border-charcoal/20 dark:border-white/20 border-t-charcoal dark:border-t-white rounded-full animate-spin" />
           </div>
         </div>
         
         <div className="space-y-2">
-          <h2 className="text-xl font-display font-semibold text-charcoal">{message}</h2>
-          <p className="text-charcoal/50 text-sm">{submessage || "Please wait..."}</p>
+          <h2 className="text-xl font-display font-semibold text-charcoal dark:text-white">{message}</h2>
+          <p className="text-charcoal/50 dark:text-white/50 text-sm">{submessage || "Please wait..."}</p>
         </div>
         
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-charcoal/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-1.5 h-1.5 rounded-full bg-charcoal/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-1.5 h-1.5 rounded-full bg-charcoal/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-charcoal/40 dark:bg-white/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-charcoal/40 dark:bg-white/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-charcoal/40 dark:bg-white/40 animate-bounce" style={{ animationDelay: '300ms' }} />
         </div>
       </div>
     </div>

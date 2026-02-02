@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Card from '@/components/ui/card'
 import toast from 'react-hot-toast'
+import { ClipboardList, RefreshCw, Save, Target, FileText, Lightbulb, Trash2, Sparkles, BookOpen } from 'lucide-react'
 
 type Criterion = {
   key: string
@@ -258,8 +259,8 @@ export default function EventRubricPage() {
           </button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] dark:text-white mb-2">
-                📋 Scoring Rubric & Rounds
+              <h1 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] dark:text-white mb-2 flex items-center gap-3">
+                <ClipboardList className="w-8 h-8" /> Scoring Rubric & Rounds
               </h1>
               <p className="text-[#1A1A1A]/60 dark:text-slate-400">
                 Event: <span className="font-mono text-blue-600 dark:text-blue-400">{eventSlug}</span>
@@ -271,14 +272,14 @@ export default function EventRubricPage() {
                 onClick={loadRubricAndRounds}
                 className="whitespace-nowrap"
               >
-                🔄 Refresh
+                <RefreshCw className="w-4 h-4 mr-1" /> Refresh
               </Button>
               <Button 
                 onClick={saveAll} 
                 disabled={saving || criteria.length === 0}
                 className="whitespace-nowrap min-w-[120px]"
               >
-                {saving ? '💾 Saving...' : '💾 Save All'}
+                <Save className="w-4 h-4 mr-1" /> {saving ? 'Saving...' : 'Save All'}
               </Button>
             </div>
           </div>
@@ -309,7 +310,7 @@ export default function EventRubricPage() {
           <div className="lg:col-span-1">
             <Card>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-[#1A1A1A] dark:text-white">🎯 Judging Rounds</h2>
+                <h2 className="text-xl font-bold text-[#1A1A1A] dark:text-white flex items-center gap-2"><Target className="w-5 h-5" /> Judging Rounds</h2>
                 <Button onClick={addRound} size="sm">
                   + Add
                 </Button>
@@ -361,8 +362,8 @@ export default function EventRubricPage() {
 
               {roundsConfig.length > 1 && (
                 <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    💡 <strong>Tip:</strong> Assign criteria to specific rounds in the rubric editor
+                  <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-1">
+                    <Lightbulb className="w-3 h-3 mt-0.5 flex-shrink-0" /> <strong>Tip:</strong> Assign criteria to specific rounds in the rubric editor
                   </p>
                 </div>
               )}
@@ -373,17 +374,17 @@ export default function EventRubricPage() {
           <div className="lg:col-span-2">
             {criteria.length === 0 ? (
               <Card className="text-center py-16">
-                <div className="text-7xl mb-6">📝</div>
+                <FileText className="w-16 h-16 mx-auto mb-6 text-charcoal/20 dark:text-white/20" />
                 <h3 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-3">No Criteria Yet</h3>
                 <p className="text-[#1A1A1A]/60 dark:text-slate-400 mb-8 max-w-md mx-auto">
                   Create scoring criteria that judges will use to evaluate participants
                 </p>
                 <div className="flex gap-4 justify-center flex-wrap">
                   <Button onClick={() => addCriterion()} size="lg">
-                    ✨ Create Custom Criterion
+                    <Sparkles className="w-4 h-4 mr-1" /> Create Custom Criterion
                   </Button>
                   <Button variant="secondary" onClick={() => setShowTemplates(!showTemplates)} size="lg">
-                    📚 Use Templates
+                    <BookOpen className="w-4 h-4 mr-1" /> Use Templates
                   </Button>
                 </div>
 
