@@ -23,8 +23,11 @@ import {
   Layout,
   Layers,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Sun,
+  Moon
 } from 'lucide-react'
+import { useTheme } from '@/components/theme-provider'
 
 interface Event {
   id: string
@@ -55,6 +58,7 @@ interface DashboardStats {
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { theme, setTheme, resolvedTheme } = useTheme()
   const [events, setEvents] = useState<Event[]>([])
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -151,46 +155,53 @@ export default function DashboardPage() {
   if (!session) return null
 
   return (
-    <div className="min-h-screen bg-cream text-charcoal">
+    <div className="min-h-screen bg-cream dark:bg-gray-950 text-charcoal dark:text-cream">
 
       {/* Subtle Background */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-charcoal/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-charcoal/5 rounded-full blur-[120px]" />
+        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-charcoal/5 dark:bg-white/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-charcoal/5 dark:bg-white/5 rounded-full blur-[120px]" />
       </div>
 
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-cream/80 backdrop-blur-md border-b border-charcoal/5">
+      <nav className="sticky top-0 z-50 bg-cream/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-charcoal/5 dark:border-white/5">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <Logo className="w-5 h-5" />
               <div>
-                <span className="font-display text-lg font-semibold text-charcoal block leading-none">Dashboard</span>
-                <span className="text-xs text-charcoal/40">Event Management</span>
+                <span className="font-display text-lg font-semibold text-charcoal dark:text-cream block leading-none">Dashboard</span>
+                <span className="text-xs text-charcoal/40 dark:text-cream/40">Event Management</span>
               </div>
             </div>
 
-            <div className="h-4 w-px bg-charcoal/10 hidden sm:block" />
+            <div className="h-4 w-px bg-charcoal/10 dark:bg-white/10 hidden sm:block" />
 
             <div className="hidden lg:flex items-center gap-2">
               {stats && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-charcoal/5 rounded-full">
+                <div className="flex items-center gap-2 px-3 py-1 bg-charcoal/5 dark:bg-white/5 rounded-full">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs text-charcoal/60">{stats.activeEvents} Active Events</span>
+                  <span className="text-xs text-charcoal/60 dark:text-cream/60">{stats.activeEvents} Active Events</span>
                 </div>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-charcoal/60 dark:text-cream/60 hover:text-charcoal dark:hover:text-cream hover:bg-charcoal/5 dark:hover:bg-white/5 transition-all"
+              title="Toggle theme"
+            >
+              {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             <div className="hidden md:flex flex-col items-end">
-              <span className="text-sm font-medium text-charcoal">{session.user?.name || 'Administrator'}</span>
-              <span className="text-xs text-charcoal/40">{session.user?.email}</span>
+              <span className="text-sm font-medium text-charcoal dark:text-cream">{session.user?.name || 'Administrator'}</span>
+              <span className="text-xs text-charcoal/40 dark:text-cream/40">{session.user?.email}</span>
             </div>
             <button
               onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              className="p-2 text-charcoal/40 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+              className="p-2 text-charcoal/40 dark:text-cream/40 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-all"
               title="Sign Out"
             >
               <LogOut className="w-5 h-5" />
