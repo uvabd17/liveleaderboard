@@ -556,20 +556,91 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-charcoal/70 dark:text-white/70 mb-2">
-                  Number of Rounds
+                <label className="block text-sm font-medium text-charcoal/70 dark:text-white/70 mb-3">
+                  Competition Rounds
                 </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={basicInfo.numberOfRounds}
-                  onChange={(e) => setBasicInfo({ ...basicInfo, numberOfRounds: parseInt(e.target.value) || 1 })}
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20 transition-all"
-                  placeholder="1"
-                  aria-label="Number of rounds"
-                />
-                <p className="text-xs text-charcoal/50 dark:text-white/50 mt-1">Specify how many rounds this competition will have</p>
+                
+                {/* Round Stepper */}
+                <div className="flex items-center gap-4 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (basicInfo.numberOfRounds > 1) {
+                        setBasicInfo({ ...basicInfo, numberOfRounds: basicInfo.numberOfRounds - 1 })
+                      }
+                    }}
+                    disabled={basicInfo.numberOfRounds <= 1}
+                    className="w-12 h-12 rounded-xl bg-charcoal/10 dark:bg-white/10 hover:bg-charcoal/20 dark:hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-bold text-charcoal dark:text-white transition-all"
+                    aria-label="Remove round"
+                  >
+                    −
+                  </button>
+                  <div className="flex-1 text-center">
+                    <div className="text-4xl font-black text-charcoal dark:text-white">{basicInfo.numberOfRounds}</div>
+                    <div className="text-xs text-charcoal/50 dark:text-white/50 uppercase tracking-wider">Round{basicInfo.numberOfRounds !== 1 ? 's' : ''}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (basicInfo.numberOfRounds < 20) {
+                        setBasicInfo({ ...basicInfo, numberOfRounds: basicInfo.numberOfRounds + 1 })
+                      }
+                    }}
+                    disabled={basicInfo.numberOfRounds >= 20}
+                    className="w-12 h-12 rounded-xl bg-charcoal dark:bg-white hover:bg-charcoal/90 dark:hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-2xl font-bold text-cream dark:text-charcoal transition-all"
+                    aria-label="Add round"
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Round Cards with Timer Settings */}
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {rounds.map((round, idx) => (
+                    <div 
+                      key={round.number} 
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 border border-charcoal/10 dark:border-white/10 rounded-xl"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-charcoal/10 dark:bg-white/10 flex items-center justify-center font-bold text-charcoal dark:text-white flex-shrink-0">
+                        {round.number}
+                      </div>
+                      <input
+                        type="text"
+                        value={round.name}
+                        onChange={(e) => {
+                          const next = [...rounds]
+                          next[idx] = { ...next[idx], name: e.target.value }
+                          setRounds(next)
+                        }}
+                        className="flex-1 px-3 py-2 bg-transparent border-none text-charcoal dark:text-white font-medium focus:outline-none focus:ring-0"
+                        placeholder={`Round ${round.number}`}
+                      />
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-charcoal/5 dark:bg-white/5 rounded-lg">
+                          <svg className="w-4 h-4 text-charcoal/50 dark:text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <input
+                            type="number"
+                            min={0}
+                            max={999}
+                            value={round.durationMinutes ?? ''}
+                            onChange={(e) => {
+                              const next = [...rounds]
+                              const val = e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0)
+                              next[idx] = { ...next[idx], durationMinutes: val }
+                              setRounds(next)
+                            }}
+                            className="w-12 px-1 py-0.5 bg-transparent text-charcoal dark:text-white text-sm text-center focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="--"
+                          />
+                          <span className="text-xs text-charcoal/50 dark:text-white/50">min</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-charcoal/50 dark:text-white/50 mt-2">Add a timer to each round. Leave empty for no timer.</p>
               </div>
             </div>
           )}
@@ -724,161 +795,239 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
 
           {/* Step 3: Rubric */}
           {step === 3 && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-charcoal dark:text-white mb-4">Rounds & Scoring</h3>
+            <div className="space-y-6">
+              {/* Round Summary Cards */}
+              <div>
+                <h3 className="text-xl font-semibold text-charcoal dark:text-white mb-2">Round Configuration</h3>
+                <p className="text-sm text-charcoal/60 dark:text-white/60 mb-4">Fine-tune each round with eliminations and advanced settings</p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {rounds.map((r, idx) => {
+                    const hasTimer = r.durationMinutes !== null && r.durationMinutes > 0
+                    const hasElimination = r.eliminationCount !== null && r.eliminationCount > 0
+                    
+                    return (
+                      <div 
+                        key={r.number} 
+                        className="relative p-4 bg-white dark:bg-gray-900 border border-charcoal/10 dark:border-white/10 rounded-2xl hover:border-charcoal/30 dark:hover:border-white/30 transition-all"
+                      >
+                        {/* Round Header */}
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-charcoal dark:bg-white flex items-center justify-center font-bold text-cream dark:text-charcoal text-lg">
+                            {r.number}
+                          </div>
+                          <input
+                            type="text"
+                            value={r.name}
+                            onChange={(e) => {
+                              const next = [...rounds]
+                              next[idx] = { ...next[idx], name: e.target.value }
+                              setRounds(next)
+                            }}
+                            className="flex-1 px-2 py-1 bg-transparent text-charcoal dark:text-white font-semibold text-lg focus:outline-none focus:bg-charcoal/5 dark:focus:bg-white/5 rounded-lg transition-colors"
+                            placeholder={`Round ${r.number}`}
+                          />
+                        </div>
 
-              <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-charcoal/10 dark:border-white/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-charcoal dark:text-white font-semibold">Round Configuration</div>
-                    <div className="text-sm text-charcoal/60 dark:text-white/60">Name each round and set timers or eliminations now.</div>
-                  </div>
+                        {/* Timer Control */}
+                        <div className="flex items-center justify-between p-3 bg-charcoal/5 dark:bg-white/5 rounded-xl mb-2">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-5 h-5 text-charcoal/60 dark:text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm text-charcoal/70 dark:text-white/70">Timer</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              value={r.durationMinutes ?? ''}
+                              onChange={(e) => {
+                                const next = [...rounds]
+                                const val = e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0)
+                                next[idx] = { ...next[idx], durationMinutes: val }
+                                setRounds(next)
+                              }}
+                              className="w-16 px-2 py-1 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-lg text-charcoal dark:text-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20"
+                              placeholder="--"
+                            />
+                            <span className="text-xs text-charcoal/50 dark:text-white/50">min</span>
+                          </div>
+                        </div>
+
+                        {/* Elimination Control */}
+                        <div className="flex items-center justify-between p-3 bg-charcoal/5 dark:bg-white/5 rounded-xl">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-5 h-5 text-charcoal/60 dark:text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                            </svg>
+                            <span className="text-sm text-charcoal/70 dark:text-white/70">Eliminate</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              value={r.eliminationCount ?? ''}
+                              onChange={(e) => {
+                                const next = [...rounds]
+                                const val = e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0)
+                                next[idx] = { ...next[idx], eliminationCount: val }
+                                setRounds(next)
+                              }}
+                              className="w-16 px-2 py-1 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-lg text-charcoal dark:text-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20"
+                              placeholder="0"
+                            />
+                            <span className="text-xs text-charcoal/50 dark:text-white/50">teams</span>
+                          </div>
+                        </div>
+
+                        {/* Status Badges */}
+                        {(hasTimer || hasElimination) && (
+                          <div className="flex gap-2 mt-3">
+                            {hasTimer && (
+                              <span className="px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-lg">
+                                {r.durationMinutes}min timer
+                              </span>
+                            )}
+                            {hasElimination && (
+                              <span className="px-2 py-1 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium rounded-lg">
+                                -{r.eliminationCount} teams
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
+              </div>
+
+              {/* Scoring Criteria Section */}
+              <div className="border-t border-charcoal/10 dark:border-white/10 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="text-lg font-semibold text-charcoal dark:text-white">Scoring Criteria</h4>
+                    <p className="text-sm text-charcoal/60 dark:text-white/60">Define what judges will score</p>
+                  </div>
+                  <button
+                    onClick={() => setCriteria([...criteria, { name: '', maxPoints: 100, weight: 1, description: '', rounds: rounds.map(r => r.number) }])}
+                    className="px-4 py-2 bg-charcoal dark:bg-white text-cream dark:text-charcoal rounded-xl font-medium hover:bg-charcoal/90 dark:hover:bg-white/90 transition-colors"
+                  >
+                    + Add Criterion
+                  </button>
+                </div>
+              
                 <div className="space-y-3">
-                  {rounds.map((r, idx) => (
-                    <div key={r.number} className="grid grid-cols-1 md:grid-cols-4 gap-2 bg-cream/50 dark:bg-gray-800/50 p-3 rounded-xl border border-charcoal/10 dark:border-white/10">
-                      <div className="md:col-span-2">
-                        <label className="text-xs text-charcoal/60 dark:text-white/60 mb-1 block">Round Name</label>
-                        <input
-                          value={r.name}
-                          onChange={(e) => {
-                            const next = [...rounds]
-                            next[idx] = { ...next[idx], name: e.target.value }
-                            setRounds(next)
-                          }}
-                          className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-charcoal/60 dark:text-white/60 mb-1 block">Timer (minutes)</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={r.durationMinutes ?? ''}
-                          onChange={(e) => {
-                            const next = [...rounds]
-                            const val = e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0)
-                            next[idx] = { ...next[idx], durationMinutes: val }
-                            setRounds(next)
-                          }}
-                          className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white"
-                          placeholder="e.g. 10"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-charcoal/60 dark:text-white/60 mb-1 block">Eliminate (count)</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={r.eliminationCount ?? ''}
-                          onChange={(e) => {
-                            const next = [...rounds]
-                            const val = e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0)
-                            next[idx] = { ...next[idx], eliminationCount: val }
-                            setRounds(next)
-                          }}
-                          className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white"
-                          placeholder="0 = none"
-                        />
+                  {criteria.map((criterion, index) => (
+                    <div key={index} className="p-4 bg-white dark:bg-gray-900 border border-charcoal/10 dark:border-white/10 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        {/* Criterion Number */}
+                        <div className="w-8 h-8 rounded-lg bg-charcoal/10 dark:bg-white/10 flex items-center justify-center font-bold text-charcoal dark:text-white text-sm flex-shrink-0 mt-1">
+                          {index + 1}
+                        </div>
+                        
+                        {/* Main Content */}
+                        <div className="flex-1 space-y-3">
+                          <div className="flex gap-3">
+                            <input
+                              type="text"
+                              value={criterion.name}
+                              onChange={(e) => {
+                                const newCriteria = [...criteria]
+                                newCriteria[index].name = e.target.value
+                                setCriteria(newCriteria)
+                              }}
+                              className="flex-1 px-3 py-2 bg-charcoal/5 dark:bg-white/5 border-none rounded-xl text-charcoal dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20"
+                              placeholder="Criterion name (e.g., Innovation)"
+                            />
+                            <div className="flex items-center gap-1 px-3 py-2 bg-charcoal/5 dark:bg-white/5 rounded-xl">
+                              <input
+                                type="number"
+                                value={criterion.maxPoints}
+                                onChange={(e) => {
+                                  const newCriteria = [...criteria]
+                                  newCriteria[index].maxPoints = parseInt(e.target.value) || 0
+                                  setCriteria(newCriteria)
+                                }}
+                                className="w-16 bg-transparent text-charcoal dark:text-white text-center font-bold focus:outline-none"
+                                min="0"
+                              />
+                              <span className="text-charcoal/50 dark:text-white/50 text-sm">pts</span>
+                            </div>
+                            {criteria.length > 1 && (
+                              <button
+                                onClick={() => setCriteria(criteria.filter((_, i) => i !== index))}
+                                className="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                          
+                          <input
+                            type="text"
+                            value={criterion.description}
+                            onChange={(e) => {
+                              const newCriteria = [...criteria]
+                              newCriteria[index].description = e.target.value
+                              setCriteria(newCriteria)
+                            }}
+                            className="w-full px-3 py-2 bg-transparent border border-charcoal/10 dark:border-white/10 rounded-xl text-charcoal dark:text-white text-sm focus:outline-none focus:border-charcoal/30 dark:focus:border-white/30"
+                            placeholder="Brief description for judges (optional)"
+                          />
+
+                          {/* Round Assignment - Compact Chips */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-charcoal/50 dark:text-white/50">Applies to:</span>
+                            {rounds.map((r) => {
+                              const checked = criterion.rounds?.includes(r.number)
+                              return (
+                                <button
+                                  key={r.number}
+                                  onClick={() => {
+                                    const next = [...criteria]
+                                    const currentRounds = Array.isArray(criterion.rounds) ? [...criterion.rounds] : []
+                                    if (checked) {
+                                      next[index].rounds = currentRounds.filter((n) => n !== r.number)
+                                    } else {
+                                      next[index].rounds = [...currentRounds, r.number]
+                                    }
+                                    if (!next[index].rounds || next[index].rounds.length === 0) {
+                                      next[index].rounds = [r.number]
+                                    }
+                                    setCriteria(next)
+                                  }}
+                                  className={`px-3 py-1 text-xs font-medium rounded-full transition-all ${
+                                    checked 
+                                      ? 'bg-charcoal dark:bg-white text-cream dark:text-charcoal' 
+                                      : 'bg-charcoal/10 dark:bg-white/10 text-charcoal/60 dark:text-white/60 hover:bg-charcoal/20 dark:hover:bg-white/20'
+                                  }`}
+                                >
+                                  R{r.number}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {criteria.length === 0 && (
+                  <div className="text-center py-12 bg-charcoal/5 dark:bg-white/5 rounded-2xl">
+                    <p className="text-charcoal/50 dark:text-white/50 mb-4">No scoring criteria yet</p>
+                    <button
+                      onClick={() => setCriteria([{ name: '', maxPoints: 100, weight: 1, description: '', rounds: rounds.map(r => r.number) }])}
+                      className="px-6 py-3 bg-charcoal dark:bg-white text-cream dark:text-charcoal rounded-xl font-medium hover:bg-charcoal/90 dark:hover:bg-white/90 transition-colors"
+                    >
+                      + Add First Criterion
+                    </button>
+                  </div>
+                )}
               </div>
-
-              <h4 className="text-lg font-semibold text-charcoal dark:text-white mt-6">Scoring Rubric</h4>
-              
-              {criteria.map((criterion, index) => (
-                <div key={index} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-charcoal/10 dark:border-white/10 space-y-3">
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={criterion.name}
-                      onChange={(e) => {
-                        const newCriteria = [...criteria]
-                        newCriteria[index].name = e.target.value
-                        setCriteria(newCriteria)
-                      }}
-                      className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
-                      placeholder="Criterion name"
-                      aria-label={`Criterion ${index + 1} name`}
-                    />
-                    <input
-                      type="number"
-                      value={criterion.maxPoints}
-                      onChange={(e) => {
-                        const newCriteria = [...criteria]
-                        newCriteria[index].maxPoints = parseInt(e.target.value) || 0
-                        setCriteria(newCriteria)
-                      }}
-                      className="w-24 px-3 py-2 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
-                      placeholder="100"
-                      min="0"
-                      aria-label={`Criterion ${index + 1} max points`}
-                    />
-                    {criteria.length > 1 && (
-                      <button
-                        onClick={() => setCriteria(criteria.filter((_, i) => i !== index))}
-                        className="px-3 py-2 bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-500/20 dark:hover:bg-red-500/30"
-                        aria-label={`Remove criterion ${index + 1}`}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={criterion.description}
-                    onChange={(e) => {
-                      const newCriteria = [...criteria]
-                      newCriteria[index].description = e.target.value
-                      setCriteria(newCriteria)
-                    }}
-                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
-                    placeholder="Description (optional)"
-                    aria-label={`Criterion ${index + 1} description`}
-                  />
-                  <div>
-                    <div className="text-xs text-charcoal/60 dark:text-white/60 mb-2">Rounds where this applies</div>
-                    <div className="flex flex-wrap gap-2">
-                      {rounds.map((r) => {
-                        const checked = criterion.rounds?.includes(r.number)
-                        return (
-                          <label key={r.number} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-cream dark:bg-gray-800 border border-charcoal/10 dark:border-white/10 text-sm text-charcoal dark:text-white cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={!!checked}
-                              onChange={() => {
-                                const next = [...criteria]
-                                const currentRounds = Array.isArray(criterion.rounds) ? [...criterion.rounds] : []
-                                if (checked) {
-                                  next[index].rounds = currentRounds.filter((n) => n !== r.number)
-                                } else {
-                                  next[index].rounds = [...currentRounds, r.number]
-                                }
-                                if (!next[index].rounds || next[index].rounds.length === 0) {
-                                  next[index].rounds = [r.number]
-                                }
-                                setCriteria(next)
-                              }}
-                              className="w-4 h-4"
-                            />
-                            <span>Round {r.number}</span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <button
-                onClick={() => setCriteria([...criteria, { name: '', maxPoints: 100, weight: 1, description: '', rounds: rounds.map(r => r.number) }])}
-                className="w-full py-2 border-2 border-dashed border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal/60 dark:text-white/60 hover:border-charcoal/40 dark:hover:border-white/40 hover:text-charcoal dark:hover:text-white transition-colors"
-                aria-label="Add criterion"
-              >
-                + Add Criterion
-              </button>
             </div>
           )}
 

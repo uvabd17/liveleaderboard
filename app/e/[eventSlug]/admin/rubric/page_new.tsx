@@ -3,9 +3,12 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import Card from '@/components/ui/card'
 import toast from 'react-hot-toast'
-import { ClipboardList, RefreshCw, Save, Target, FileText, Lightbulb, Trash2, Sparkles, BookOpen, Copy } from 'lucide-react'
+import { EventNavigation } from '@/components/event-navigation'
+import { 
+  Plus, Save, Trash2, Copy, ChevronUp, ChevronDown, 
+  GripVertical, Clock, Star, Target, Layers
+} from 'lucide-react'
 
 type Criterion = {
   key: string
@@ -41,7 +44,7 @@ export default function EventRubricPage() {
   const [roundsConfig, setRoundsConfig] = useState<RoundConfig[]>([{ number: 1, name: 'Round 1' }])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const [editingCriterionIdx, setEditingCriterionIdx] = useState<number | null>(null)
   const [showTemplates, setShowTemplates] = useState(false)
 
   useEffect(() => {
@@ -87,7 +90,7 @@ export default function EventRubricPage() {
       required: true,
     }
     setCriteria([...criteria, newCrit])
-    setExpandedIndex(criteria.length)
+    setEditingCriterionIdx(criteria.length)
     setShowTemplates(false)
   }
 
@@ -111,7 +114,7 @@ export default function EventRubricPage() {
   function removeCriterion(index: number) {
     if (!confirm('Remove this criterion? This cannot be undone.')) return
     setCriteria(criteria.filter((_, i) => i !== index))
-    if (expandedIndex === index) setExpandedIndex(null)
+    if (editingCriterionIdx === index) setEditingCriterionIdx(null)
     toast.success('Criterion removed')
   }
 
@@ -237,8 +240,8 @@ export default function EventRubricPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] flex items-center justify-center">
-        <div className="text-[#1A1A1A] dark:text-white text-xl animate-pulse">Loading rubric configuration...</div>
+      <div className="min-h-screen bg-cream dark:bg-charcoal flex items-center justify-center">
+        <div className="text-charcoal dark:text-white text-xl animate-pulse">Loading rubric...</div>
       </div>
     )
   }
@@ -247,469 +250,377 @@ export default function EventRubricPage() {
   const maxPossibleScore = criteria.reduce((sum, c) => sum + c.max * c.weight, 0)
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] dark:bg-[#1A1A1A] p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => router.push(`/e/${eventSlug}/admin`)}
-            className="text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white mb-4 flex items-center gap-2 transition-colors"
-          >
-            <span className="text-xl">←</span> Back to Admin
-          </button>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] dark:text-white mb-2 flex items-center gap-3">
-                <ClipboardList className="w-8 h-8" /> Scoring Rubric & Rounds
-              </h1>
-              <p className="text-[#1A1A1A]/60 dark:text-white/60">
-                Event: <span className="font-mono text-charcoal dark:text-white">{eventSlug}</span>
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button 
-                variant="secondary" 
-                onClick={loadRubricAndRounds}
-                className="whitespace-nowrap"
-              >
-                <RefreshCw className="w-4 h-4 mr-1" /> Refresh
-              </Button>
-              <Button 
-                onClick={saveAll} 
-                disabled={saving || criteria.length === 0}
-                className="whitespace-nowrap min-w-[120px]"
-              >
-                <Save className="w-4 h-4 mr-1" /> {saving ? 'Saving...' : 'Save All'}
-              </Button>
-            </div>
+    <div className="min-h-screen bg-cream dark:bg-charcoal pt-20">
+      <EventNavigation />
+
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-charcoal dark:text-white">Scoring Rubric</h1>
+            <p className="text-charcoal/60 dark:text-white/60 mt-1">Define criteria for judges to evaluate participants</p>
           </div>
+          <Button
+            onClick={saveAll}
+            disabled={saving || criteria.length === 0}
+            className="bg-charcoal dark:bg-white text-cream dark:text-charcoal hover:bg-charcoal/90 dark:hover:bg-white/90"
+          >
+            <Save className="w-4 h-4 mr-2" /> {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-gradient-to-br from-charcoal/5 to-charcoal/10 dark:from-white/5 dark:to-white/10 border-charcoal/10 dark:border-white/10">
-            <div className="text-3xl font-bold text-charcoal dark:text-white">{criteria.length}</div>
-            <div className="text-sm text-charcoal/60 dark:text-white/60 mt-1">Criteria</div>
-          </Card>
-          <Card className="bg-gradient-to-br from-charcoal/5 to-charcoal/10 dark:from-white/5 dark:to-white/10 border-charcoal/10 dark:border-white/10">
-            <div className="text-3xl font-bold text-charcoal dark:text-white">{roundsConfig.length}</div>
-            <div className="text-sm text-charcoal/60 dark:text-white/60 mt-1">Rounds</div>
-          </Card>
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-            <div className="text-3xl font-bold text-green-700 dark:text-green-400">{totalWeight.toFixed(1)}</div>
-            <div className="text-sm text-charcoal/60 dark:text-white/60 mt-1">Total Weight</div>
-          </Card>
-          <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">{maxPossibleScore}</div>
-            <div className="text-sm text-charcoal/60 dark:text-white/60 mt-1">Max Score</div>
-          </Card>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-charcoal/10 dark:border-white/10 p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-charcoal/10 dark:bg-white/10 flex items-center justify-center">
+                <Layers className="w-5 h-5 text-charcoal/60 dark:text-white/60" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-charcoal dark:text-white">{criteria.length}</div>
+                <div className="text-xs text-charcoal/50 dark:text-white/50">Criteria</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-charcoal/10 dark:border-white/10 p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-charcoal/10 dark:bg-white/10 flex items-center justify-center">
+                <Target className="w-5 h-5 text-charcoal/60 dark:text-white/60" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-charcoal dark:text-white">{roundsConfig.length}</div>
+                <div className="text-xs text-charcoal/50 dark:text-white/50">Rounds</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-charcoal/10 dark:border-white/10 p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <Star className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-charcoal dark:text-white">{totalWeight.toFixed(1)}</div>
+                <div className="text-xs text-charcoal/50 dark:text-white/50">Total Weight</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-charcoal/10 dark:border-white/10 p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                <Star className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-charcoal dark:text-white">{maxPossibleScore}</div>
+                <div className="text-xs text-charcoal/50 dark:text-white/50">Max Score</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Rounds */}
           <div className="lg:col-span-1">
-            <Card>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-charcoal/10 dark:border-white/10 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-[#1A1A1A] dark:text-white flex items-center gap-2"><Target className="w-5 h-5" /> Judging Rounds</h2>
-                <Button onClick={addRound} size="sm">
-                  + Add
-                </Button>
+                <h2 className="text-lg font-semibold text-charcoal dark:text-white">Rounds</h2>
+                <button
+                  onClick={addRound}
+                  className="w-8 h-8 rounded-lg bg-charcoal/10 dark:bg-white/10 flex items-center justify-center text-charcoal dark:text-white hover:bg-charcoal/20 dark:hover:bg-white/20 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="space-y-3">
                 {roundsConfig.map((round, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-charcoal/5 dark:bg-white/5 rounded-xl border border-charcoal/10 dark:border-white/10 hover:border-charcoal/20 dark:hover:border-white/20 transition-all"
+                    className="p-3 bg-charcoal/5 dark:bg-white/5 rounded-xl border border-charcoal/10 dark:border-white/10"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-charcoal/10 dark:bg-white/10 text-charcoal dark:text-white flex items-center justify-center font-bold text-sm">
-                          {round.number}
-                        </div>
-                        <input
-                          type="text"
-                          value={round.name}
-                          onChange={e => updateRound(index, { name: e.target.value })}
-                          className="bg-transparent border-none text-charcoal dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white rounded px-2 py-1"
-                          placeholder="Round name"
-                        />
-                      </div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="w-7 h-7 rounded-lg bg-charcoal dark:bg-white text-cream dark:text-charcoal flex items-center justify-center text-sm font-bold">
+                        {round.number}
+                      </span>
+                      <input
+                        type="text"
+                        value={round.name}
+                        onChange={e => updateRound(index, { name: e.target.value })}
+                        className="flex-1 bg-transparent border-none text-charcoal dark:text-white font-medium focus:outline-none"
+                        placeholder="Round name"
+                      />
                       {roundsConfig.length > 1 && (
                         <button
                           onClick={() => removeRound(index)}
-                          className="text-red-500 hover:text-red-400 text-sm px-2 py-1"
-                          title="Remove round"
+                          className="p-1 text-red-500 hover:text-red-400 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>
-                    <div>
-                      <label className="text-xs text-charcoal/50 dark:text-white/50 block mb-1">Duration (optional)</label>
+                    <div className="flex items-center gap-2 ml-10">
+                      <Clock className="w-3 h-3 text-charcoal/40 dark:text-white/40" />
                       <input
                         type="number"
                         min="1"
                         value={round.durationMinutes || ''}
                         onChange={e => updateRound(index, { durationMinutes: e.target.value ? Number(e.target.value) : undefined })}
-                        placeholder="Minutes"
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-charcoal/10 dark:border-white/10 rounded-xl text-charcoal dark:text-white text-sm focus:ring-2 focus:ring-charcoal dark:focus:ring-white focus:border-transparent"
+                        placeholder="Duration (min)"
+                        className="w-24 px-2 py-1 bg-white dark:bg-gray-800 border border-charcoal/10 dark:border-white/10 rounded-lg text-sm text-charcoal dark:text-white focus:outline-none focus:ring-1 focus:ring-charcoal/20 dark:focus:ring-white/20"
                       />
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
 
-              {roundsConfig.length > 1 && (
-                <div className="mt-4 p-3 bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10 rounded-xl">
-                  <p className="text-xs text-charcoal/70 dark:text-white/70 flex items-start gap-1">
-                    <Lightbulb className="w-3 h-3 mt-0.5 flex-shrink-0" /> <strong>Tip:</strong> Assign criteria to specific rounds in the rubric editor
-                  </p>
-                </div>
-              )}
-            </Card>
+            {/* Templates */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-charcoal/10 dark:border-white/10 p-6 mt-6">
+              <h2 className="text-lg font-semibold text-charcoal dark:text-white mb-4">Quick Add</h2>
+              <div className="flex flex-wrap gap-2">
+                {TEMPLATES.map((t, i) => (
+                  <button
+                    key={i}
+                    onClick={() => addCriterion(t)}
+                    className="px-3 py-1.5 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 text-charcoal dark:text-white text-xs rounded-lg transition-colors"
+                  >
+                    + {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Criteria */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-charcoal dark:text-white">Scoring Criteria</h2>
+              <Button onClick={() => addCriterion()} size="sm">
+                <Plus className="w-4 h-4 mr-1" /> Add Criterion
+              </Button>
+            </div>
+
             {criteria.length === 0 ? (
-              <Card className="text-center py-16">
-                <FileText className="w-16 h-16 mx-auto mb-6 text-charcoal/20 dark:text-white/20" />
-                <h3 className="text-2xl font-bold text-charcoal dark:text-white mb-3">No Criteria Yet</h3>
-                <p className="text-charcoal/60 dark:text-white/60 mb-8 max-w-md mx-auto">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-charcoal/10 dark:border-white/10 p-12 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-charcoal/10 dark:bg-white/10 flex items-center justify-center mx-auto mb-4">
+                  <Layers className="w-8 h-8 text-charcoal/40 dark:text-white/40" />
+                </div>
+                <h3 className="text-xl font-bold text-charcoal dark:text-white mb-2">No Criteria Yet</h3>
+                <p className="text-charcoal/60 dark:text-white/60 max-w-md mx-auto mb-6">
                   Create scoring criteria that judges will use to evaluate participants
                 </p>
-                <div className="flex gap-4 justify-center flex-wrap">
-                  <Button onClick={() => addCriterion()} size="lg">
-                    <Sparkles className="w-4 h-4 mr-1" /> Create Custom Criterion
-                  </Button>
-                  <Button variant="secondary" onClick={() => setShowTemplates(!showTemplates)} size="lg">
-                    <BookOpen className="w-4 h-4 mr-1" /> Use Templates
-                  </Button>
-                </div>
-
-                {showTemplates && (
-                  <div className="mt-8 pt-8 border-t border-charcoal/10 dark:border-white/10">
-                    <p className="text-charcoal/60 dark:text-white/60 mb-4">Quick Start Templates:</p>
-                    <div className="flex flex-wrap gap-3 justify-center max-w-2xl mx-auto">
-                      {TEMPLATES.map((t, i) => (
-                        <button
-                          key={i}
-                          onClick={() => addCriterion(t)}
-                          className="px-5 py-3 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 text-charcoal dark:text-white rounded-xl text-sm font-medium transition-all hover:scale-105"
-                        >
-                          + {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </Card>
+                <Button onClick={() => addCriterion()}>
+                  <Plus className="w-4 h-4 mr-2" /> Create First Criterion
+                </Button>
+              </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-xl font-bold text-charcoal dark:text-white">Scoring Criteria</h2>
-                  <div className="flex gap-2">
-                    <Button variant="secondary" onClick={() => setShowTemplates(!showTemplates)} size="sm">
-                      <BookOpen className="w-4 h-4 mr-1" /> Templates
-                    </Button>
-                    <Button onClick={() => addCriterion()} size="sm">
-                      + Add Criterion
-                    </Button>
-                  </div>
-                </div>
-
-                {showTemplates && (
-                  <Card className="bg-charcoal/5 dark:bg-white/5 mb-4">
-                    <p className="text-sm text-charcoal/60 dark:text-white/60 mb-3">Quick Add from Template:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {TEMPLATES.map((t, i) => (
-                        <button
-                          key={i}
-                          onClick={() => addCriterion(t)}
-                          className="px-3 py-2 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 text-charcoal dark:text-white text-xs rounded-lg transition-colors"
-                        >
-                          + {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  </Card>
-                )}
-
+              <div className="space-y-3">
                 {criteria.map((criterion, index) => {
-                  const isExpanded = expandedIndex === index
-                  const roundsApplied = criterion.rounds && criterion.rounds.length > 0
+                  const isEditing = editingCriterionIdx === index
+                  const roundsLabel = criterion.rounds && criterion.rounds.length > 0
                     ? criterion.rounds.map(r => `R${r}`).join(', ')
-                    : 'All rounds'
+                    : 'All'
 
                   return (
-                    <Card
+                    <div
                       key={index}
-                      className={`${isExpanded ? 'ring-2 ring-charcoal dark:ring-white' : ''} transition-all hover:shadow-lg`}
+                      className={`bg-white dark:bg-gray-900 rounded-xl border ${isEditing ? 'border-charcoal dark:border-white ring-2 ring-charcoal/20 dark:ring-white/20' : 'border-charcoal/10 dark:border-white/10'} transition-all`}
                     >
                       {/* Collapsed View */}
-                      <div
-                        className="flex items-start gap-4 cursor-pointer"
-                        onClick={() => setExpandedIndex(isExpanded ? null : index)}
-                      >
-                        {/* Number Badge */}
-                        <div className="flex flex-col items-center gap-2 pt-1">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-charcoal to-charcoal/80 dark:from-white dark:to-white/80 text-cream dark:text-charcoal flex items-center justify-center font-bold text-lg shadow-lg">
-                            {index + 1}
-                          </div>
-                          {!isExpanded && (
-                            <div className="flex flex-col gap-1">
-                              <button
-                                onClick={e => {
-                                  e.stopPropagation()
-                                  moveCriterion(index, 'up')
-                                }}
-                                disabled={index === 0}
-                                className="p-1 text-charcoal/40 dark:text-white/40 hover:text-charcoal dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                                title="Move up"
-                              >
-                                ▲
-                              </button>
-                              <button
-                                onClick={e => {
-                                  e.stopPropagation()
-                                  moveCriterion(index, 'down')
-                                }}
-                                disabled={index === criteria.length - 1}
-                                className="p-1 text-charcoal/40 dark:text-white/40 hover:text-charcoal dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                                title="Move down"
-                              >
-                                ▼
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4 mb-2">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-lg font-bold text-charcoal dark:text-white mb-1 truncate">
-                                {criterion.label || <span className="text-charcoal/40 dark:text-white/40 italic">Untitled Criterion</span>}
-                              </h3>
-                              {criterion.description && (
-                                <p className="text-sm text-charcoal/60 dark:text-white/60 line-clamp-2">{criterion.description}</p>
-                              )}
-                            </div>
-                            {!isExpanded && (
-                              <div className="flex gap-2 flex-shrink-0">
+                      <div className="p-4">
+                        <div className="flex items-start gap-3">
+                          {/* Number & Reorder */}
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="w-8 h-8 rounded-lg bg-charcoal dark:bg-white text-cream dark:text-charcoal flex items-center justify-center text-sm font-bold">
+                              {index + 1}
+                            </span>
+                            {!isEditing && (
+                              <div className="flex flex-col">
                                 <button
-                                  onClick={e => {
-                                    e.stopPropagation()
-                                    duplicateCriterion(index)
-                                  }}
-                                  className="px-3 py-1.5 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 text-charcoal dark:text-white text-sm rounded-lg transition-colors"
-                                  title="Duplicate"
+                                  onClick={() => moveCriterion(index, 'up')}
+                                  disabled={index === 0}
+                                  className="p-0.5 text-charcoal/30 dark:text-white/30 hover:text-charcoal dark:hover:text-white disabled:opacity-30 transition-colors"
                                 >
-                                  <Copy className="w-4 h-4" />
+                                  <ChevronUp className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={e => {
-                                    e.stopPropagation()
-                                    removeCriterion(index)
-                                  }}
-                                  className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-500 text-sm rounded-lg transition-colors"
-                                  title="Delete"
+                                  onClick={() => moveCriterion(index, 'down')}
+                                  disabled={index === criteria.length - 1}
+                                  className="p-0.5 text-charcoal/30 dark:text-white/30 hover:text-charcoal dark:hover:text-white disabled:opacity-30 transition-colors"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <ChevronDown className="w-4 h-4" />
                                 </button>
                               </div>
                             )}
                           </div>
 
-                          <div className="flex flex-wrap gap-3 text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="text-charcoal/40 dark:text-white/40">Max:</span>
-                              <span className="font-semibold text-charcoal dark:text-white">{criterion.max}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-charcoal/40 dark:text-white/40">Weight:</span>
-                              <span className="font-semibold text-charcoal dark:text-white">{criterion.weight}×</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-charcoal/40 dark:text-white/40">Rounds:</span>
-                              <span className="font-semibold text-green-700 dark:text-green-400">{roundsApplied}</span>
-                            </div>
-                            {criterion.required && (
-                              <span className="px-2 py-0.5 bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded text-xs font-medium">
-                                Required
-                              </span>
+                          {/* Main Content */}
+                          <div className="flex-1 min-w-0">
+                            {isEditing ? (
+                              /* Edit Mode */
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-xs font-medium text-charcoal/50 dark:text-white/50 mb-1">Name</label>
+                                  <input
+                                    type="text"
+                                    value={criterion.label}
+                                    onChange={e => updateCriterion(index, { label: e.target.value })}
+                                    className="w-full px-3 py-2 bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10 rounded-lg text-charcoal dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20"
+                                    placeholder="e.g., Innovation"
+                                    autoFocus
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-medium text-charcoal/50 dark:text-white/50 mb-1">Key</label>
+                                    <input
+                                      type="text"
+                                      value={criterion.key}
+                                      onChange={e => updateCriterion(index, { key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
+                                      className="w-full px-3 py-2 bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10 rounded-lg text-charcoal dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-charcoal/50 dark:text-white/50 mb-1">Max Score</label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={criterion.max}
+                                      onChange={e => updateCriterion(index, { max: Math.max(1, Number(e.target.value)) })}
+                                      className="w-full px-3 py-2 bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10 rounded-lg text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-charcoal/50 dark:text-white/50 mb-1">Weight</label>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      value={criterion.weight}
+                                      onChange={e => updateCriterion(index, { weight: Math.max(0, Number(e.target.value)) })}
+                                      className="w-full px-3 py-2 bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10 rounded-lg text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-charcoal/50 dark:text-white/50 mb-1">Description</label>
+                                  <textarea
+                                    value={criterion.description || ''}
+                                    onChange={e => updateCriterion(index, { description: e.target.value })}
+                                    placeholder="Guidance for judges..."
+                                    rows={2}
+                                    className="w-full px-3 py-2 bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10 rounded-lg text-charcoal dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20"
+                                  />
+                                </div>
+
+                                {roundsConfig.length > 1 && (
+                                  <div>
+                                    <label className="block text-xs font-medium text-charcoal/50 dark:text-white/50 mb-2">Apply to Rounds</label>
+                                    <div className="flex flex-wrap gap-2">
+                                      {roundsConfig.map((round) => {
+                                        const isSelected = criterion.rounds?.includes(round.number) || false
+                                        return (
+                                          <button
+                                            key={round.number}
+                                            onClick={() => toggleRoundForCriterion(index, round.number)}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                                              isSelected
+                                                ? 'bg-charcoal dark:bg-white text-cream dark:text-charcoal'
+                                                : 'bg-charcoal/10 dark:bg-white/10 text-charcoal/60 dark:text-white/60'
+                                            }`}
+                                          >
+                                            R{round.number}
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                    <p className="text-xs text-charcoal/40 dark:text-white/40 mt-1">
+                                      {!criterion.rounds || criterion.rounds.length === 0 ? 'Applies to all rounds' : ''}
+                                    </p>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center justify-between pt-2">
+                                  <label className="flex items-center gap-2 text-sm text-charcoal/70 dark:text-white/70">
+                                    <input
+                                      type="checkbox"
+                                      checked={criterion.required !== false}
+                                      onChange={e => updateCriterion(index, { required: e.target.checked })}
+                                      className="w-4 h-4 rounded"
+                                    />
+                                    Required
+                                  </label>
+                                  <button
+                                    onClick={() => setEditingCriterionIdx(null)}
+                                    className="px-4 py-2 bg-charcoal dark:bg-white text-cream dark:text-charcoal rounded-lg text-sm font-medium hover:bg-charcoal/90 dark:hover:bg-white/90 transition-colors"
+                                  >
+                                    Done
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Display Mode */
+                              <div 
+                                className="cursor-pointer"
+                                onClick={() => setEditingCriterionIdx(index)}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-charcoal dark:text-white truncate">
+                                      {criterion.label || <span className="text-charcoal/40 dark:text-white/40 italic">Untitled</span>}
+                                    </h3>
+                                    {criterion.description && (
+                                      <p className="text-sm text-charcoal/60 dark:text-white/60 line-clamp-1 mt-0.5">{criterion.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-4">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); duplicateCriterion(index) }}
+                                      className="p-1.5 text-charcoal/40 dark:text-white/40 hover:text-charcoal dark:hover:text-white transition-colors"
+                                      title="Duplicate"
+                                    >
+                                      <Copy className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); removeCriterion(index) }}
+                                      className="p-1.5 text-red-400 hover:text-red-500 transition-colors"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs">
+                                  <span className="px-2 py-0.5 bg-charcoal/10 dark:bg-white/10 rounded text-charcoal/70 dark:text-white/70">
+                                    Max: {criterion.max}
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-charcoal/10 dark:bg-white/10 rounded text-charcoal/70 dark:text-white/70">
+                                    Weight: {criterion.weight}×
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-emerald-500/20 rounded text-emerald-700 dark:text-emerald-400">
+                                    Rounds: {roundsLabel}
+                                  </span>
+                                  {criterion.required && (
+                                    <span className="px-2 py-0.5 bg-orange-500/20 rounded text-orange-700 dark:text-orange-400">
+                                      Required
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
                       </div>
-
-                      {/* Expanded Edit View */}
-                      {isExpanded && (
-                        <div className="mt-6 pt-6 border-t border-charcoal/10 dark:border-white/10 space-y-6">
-                          {/* Criterion Name */}
-                          <div>
-                            <label className="block text-sm font-semibold text-charcoal/70 dark:text-white/70 mb-2">
-                              Criterion Name *
-                            </label>
-                            <input
-                              type="text"
-                              value={criterion.label}
-                              onChange={e => updateCriterion(index, { label: e.target.value })}
-                              placeholder="e.g., Innovation, Impact, Technical Excellence"
-                              className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-charcoal/10 dark:border-white/10 rounded-xl text-charcoal dark:text-white text-lg font-medium focus:ring-2 focus:ring-charcoal dark:focus:ring-white focus:border-charcoal dark:focus:border-white"
-                            />
-                          </div>
-
-                          {/* Key, Max, Weight */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <label className="block text-sm font-semibold text-charcoal/70 dark:text-white/70 mb-2">
-                                Unique Key *
-                              </label>
-                              <input
-                                type="text"
-                                value={criterion.key}
-                                onChange={e => updateCriterion(index, { key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
-                                placeholder="innovation"
-                                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-charcoal/10 dark:border-white/10 rounded-xl text-charcoal dark:text-white font-mono focus:ring-2 focus:ring-charcoal dark:focus:ring-white focus:border-charcoal dark:focus:border-white"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-semibold text-charcoal/70 dark:text-white/70 mb-2">
-                                Max Score *
-                              </label>
-                              <input
-                                type="number"
-                                min="1"
-                                max="1000"
-                                value={criterion.max}
-                                onChange={e => updateCriterion(index, { max: Math.max(1, Number(e.target.value)) })}
-                                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-charcoal/10 dark:border-white/10 rounded-xl text-charcoal dark:text-white text-lg font-bold focus:ring-2 focus:ring-charcoal dark:focus:ring-white focus:border-charcoal dark:focus:border-white"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-semibold text-charcoal/70 dark:text-white/70 mb-2">
-                                Weight
-                              </label>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value={criterion.weight}
-                                onChange={e => updateCriterion(index, { weight: Math.max(0, Number(e.target.value)) })}
-                                className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-charcoal/10 dark:border-white/10 rounded-xl text-charcoal dark:text-white text-lg font-bold focus:ring-2 focus:ring-charcoal dark:focus:ring-white focus:border-charcoal dark:focus:border-white"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Description */}
-                          <div>
-                            <label className="block text-sm font-semibold text-charcoal/70 dark:text-white/70 mb-2">
-                              Description (shown to judges)
-                            </label>
-                            <textarea
-                              value={criterion.description || ''}
-                              onChange={e => updateCriterion(index, { description: e.target.value })}
-                              placeholder="Provide guidance on what judges should look for..."
-                              rows={3}
-                              className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-charcoal/10 dark:border-white/10 rounded-xl text-charcoal dark:text-white focus:ring-2 focus:ring-charcoal dark:focus:ring-white focus:border-charcoal dark:focus:border-white"
-                            />
-                          </div>
-
-                          {/* Round Assignment */}
-                          {roundsConfig.length > 1 && (
-                            <div>
-                              <label className="block text-sm font-semibold text-charcoal/70 dark:text-white/70 mb-3">
-                                Apply to Rounds (leave empty for all rounds)
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                {roundsConfig.map((round) => {
-                                  const isSelected = criterion.rounds?.includes(round.number) || false
-                                  return (
-                                    <button
-                                      key={round.number}
-                                      onClick={() => toggleRoundForCriterion(index, round.number)}
-                                      className={`px-4 py-2 rounded-xl font-medium transition-all ${
-                                        isSelected
-                                          ? 'bg-charcoal dark:bg-white text-cream dark:text-charcoal shadow-lg scale-105'
-                                          : 'bg-charcoal/5 dark:bg-white/5 text-charcoal/70 dark:text-white/70 hover:bg-charcoal/10 dark:hover:bg-white/10'
-                                      }`}
-                                    >
-                                      Round {round.number}: {round.name}
-                                    </button>
-                                  )
-                                })}
-                              </div>
-                              <p className="text-xs text-charcoal/40 dark:text-white/40 mt-2">
-                                {!criterion.rounds || criterion.rounds.length === 0
-                                  ? '✓ This criterion applies to all rounds'
-                                  : `✓ This criterion applies to ${criterion.rounds.length} selected round(s)`}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Required Toggle */}
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              id={`required-${index}`}
-                              checked={criterion.required !== false}
-                              onChange={e => updateCriterion(index, { required: e.target.checked })}
-                              className="w-5 h-5 rounded"
-                            />
-                            <label htmlFor={`required-${index}`} className="text-charcoal/70 dark:text-white/70 font-medium">
-                              Judges must score this criterion (required)
-                            </label>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex justify-between items-center pt-4 border-t border-charcoal/10 dark:border-white/10">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => duplicateCriterion(index)}
-                                className="px-4 py-2 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 text-charcoal dark:text-white rounded-xl font-medium transition-colors flex items-center gap-2"
-                              >
-                                <Copy className="w-4 h-4" /> Duplicate
-                              </button>
-                              <button
-                                onClick={() => removeCriterion(index)}
-                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 rounded-xl font-medium transition-colors flex items-center gap-2"
-                              >
-                                <Trash2 className="w-4 h-4" /> Delete
-                              </button>
-                            </div>
-                            <button
-                              onClick={() => setExpandedIndex(null)}
-                              className="px-6 py-2 bg-charcoal dark:bg-white hover:bg-charcoal/90 dark:hover:bg-white/90 text-cream dark:text-charcoal rounded-xl font-medium transition-colors"
-                            >
-                              ✓ Done
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </Card>
+                    </div>
                   )
                 })}
               </div>
             )}
           </div>
         </div>
-
-        {/* Sticky Save Button */}
-        {criteria.length > 0 && (
-          <div className="fixed bottom-6 right-6 z-50">
-            <Button
-              onClick={saveAll}
-              disabled={saving}
-              size="lg"
-              className="shadow-2xl min-w-[180px] h-14 text-lg"
-            >
-              <Save className="w-5 h-5 mr-2" /> {saving ? 'Saving...' : 'Save All Changes'}
-            </Button>
-          </div>
-        )}
-      </div>
+      </main>
     </div>
   )
 }
