@@ -6,13 +6,15 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
   ArrowRight, Activity, Users, Lock,
-  Play, ShieldCheck, Globe, Layout, Palette, BarChart3, Clock
+  Play, ShieldCheck, Globe, Layout, Palette, BarChart3, Clock, Sun, Moon
 } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
+import { useTheme } from "@/components/theme-provider"
 
 export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { theme, setTheme, resolvedTheme } = useTheme()
 
   React.useEffect(() => {
     if (status === 'authenticated') {
@@ -72,17 +74,24 @@ export default function Home() {
   ]
 
   return (
-    <div className="min-h-[100dvh] bg-cream text-charcoal selection:bg-charcoal/10 overflow-x-hidden font-sans">
+    <div className="min-h-[100dvh] bg-cream dark:bg-gray-950 text-charcoal dark:text-cream selection:bg-charcoal/10 dark:selection:bg-white/10 overflow-x-hidden font-sans">
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-cream/80 backdrop-blur-md border-b border-charcoal/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-cream/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-charcoal/5 dark:border-white/5">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <Logo size={20} variant="icon" />
-            <span className="font-display text-lg font-semibold tracking-tight">Live Leaderboard</span>
+            <span className="font-display text-lg font-semibold tracking-tight text-charcoal dark:text-cream">Live Leaderboard</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/auth/signin" className="text-sm font-medium text-charcoal/60 hover:text-charcoal transition-colors">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-charcoal/60 dark:text-cream/60 hover:text-charcoal dark:hover:text-cream hover:bg-charcoal/5 dark:hover:bg-white/5 transition-all"
+              title="Toggle theme"
+            >
+              {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <Link href="/auth/signin" className="text-sm font-medium text-charcoal/60 dark:text-cream/60 hover:text-charcoal dark:hover:text-cream transition-colors">
               Sign In
             </Link>
             <Button asChild className="btn-primary rounded-full px-5 h-9 text-sm">
@@ -95,7 +104,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="pt-32 pb-24 md:pt-44 md:pb-32 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-charcoal/5 text-charcoal/60 text-xs font-medium mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-charcoal/5 dark:bg-white/5 text-charcoal/60 dark:text-cream/60 text-xs font-medium mb-8 animate-fade-in">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             Professional Grade Platform
           </div>
@@ -105,7 +114,7 @@ export default function Home() {
             <span className="italic">Live Competitions</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-charcoal/50 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up delay-100">
+          <p className="text-lg md:text-xl text-charcoal/50 dark:text-cream/50 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up delay-100">
             Deploy professional leaderboards in seconds. Built for hackathons,
             tournaments, and evaluative events with real-time architecture.
           </p>
@@ -116,7 +125,7 @@ export default function Home() {
                 Create Organization <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
             </Button>
-            <Button asChild variant="ghost" className="h-12 px-8 rounded-full text-sm font-medium text-charcoal/60 hover:text-charcoal hover:bg-charcoal/5">
+            <Button asChild variant="ghost" className="h-12 px-8 rounded-full text-sm font-medium text-charcoal/60 dark:text-cream/60 hover:text-charcoal dark:hover:text-cream hover:bg-charcoal/5 dark:hover:bg-white/5">
               <Link href="/e/demo-event">
                 View Demo
               </Link>
@@ -126,8 +135,8 @@ export default function Home() {
       </section>
 
       {/* Social Proof Bar */}
-      <section className="border-y border-charcoal/5 py-8">
-        <div className="max-w-6xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 md:gap-16 text-charcoal/30">
+      <section className="border-y border-charcoal/5 dark:border-white/5 py-8">
+        <div className="max-w-6xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 md:gap-16 text-charcoal/30 dark:text-cream/30">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             <span className="text-sm font-medium">10,000+ Events</span>
@@ -147,16 +156,16 @@ export default function Home() {
       <section className="py-24 md:py-32 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/40 mb-3">Process</p>
-            <h2 className="font-display text-3xl md:text-4xl font-semibold tracking-tight">How It Works</h2>
+            <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/40 dark:text-cream/40 mb-3">Process</p>
+            <h2 className="font-display text-3xl md:text-4xl font-semibold tracking-tight text-charcoal dark:text-cream">How It Works</h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-12 md:gap-8">
             {steps.map((step, i) => (
               <div key={i} className="relative text-center md:text-left">
-                <div className="text-6xl font-display font-semibold text-charcoal/5 mb-4">{step.number}</div>
-                <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                <p className="text-charcoal/50 leading-relaxed">{step.desc}</p>
+                <div className="text-6xl font-display font-semibold text-charcoal/5 dark:text-cream/5 mb-4">{step.number}</div>
+                <h3 className="text-xl font-semibold mb-3 text-charcoal dark:text-cream">{step.title}</h3>
+                <p className="text-charcoal/50 dark:text-cream/50 leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -195,50 +204,50 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-24 md:py-32 px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-display text-3xl md:text-5xl font-semibold tracking-tight mb-6">
+          <h2 className="font-display text-3xl md:text-5xl font-semibold tracking-tight mb-6 text-charcoal dark:text-cream">
             Ready to host your<br />best event yet?
           </h2>
-          <p className="text-charcoal/50 mb-10 max-w-lg mx-auto">
+          <p className="text-charcoal/50 dark:text-cream/50 mb-10 max-w-lg mx-auto">
             Join thousands of organizations using Live Leaderboard to deliver professional competition experiences.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button asChild className="btn-primary h-14 px-10 rounded-full text-base font-medium">
               <Link href="/auth/signup">Get Started Free</Link>
             </Button>
-            <span className="text-charcoal/30 text-sm">No credit card required</span>
+            <span className="text-charcoal/30 dark:text-cream/30 text-sm">No credit card required</span>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-charcoal/5 py-16 px-6">
+      <footer className="border-t border-charcoal/5 dark:border-white/5 py-16 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-12">
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
               <Logo size={20} variant="icon" />
-              <span className="font-display text-lg font-semibold tracking-tight">Live Leaderboard</span>
+              <span className="font-display text-lg font-semibold tracking-tight text-charcoal dark:text-cream">Live Leaderboard</span>
             </div>
-            <p className="text-charcoal/40 text-sm max-w-xs leading-relaxed">
+            <p className="text-charcoal/40 dark:text-cream/40 text-sm max-w-xs leading-relaxed">
               Real-time competition platform for organizations who demand excellence.
             </p>
-            <p className="text-charcoal/20 text-xs font-mono">
+            <p className="text-charcoal/20 dark:text-cream/20 text-xs font-mono">
               © 2026 Live Leaderboard
             </p>
           </div>
 
           <div className="flex gap-16">
             <div className="space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/30">Legal</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/30 dark:text-cream/30">Legal</p>
               <div className="flex flex-col gap-2.5">
-                <Link href="/legal/terms" className="text-sm text-charcoal/50 hover:text-charcoal transition-colors">Terms of Service</Link>
-                <Link href="/legal/privacy" className="text-sm text-charcoal/50 hover:text-charcoal transition-colors">Privacy Policy</Link>
+                <Link href="/legal/terms" className="text-sm text-charcoal/50 dark:text-cream/50 hover:text-charcoal dark:hover:text-cream transition-colors">Terms of Service</Link>
+                <Link href="/legal/privacy" className="text-sm text-charcoal/50 dark:text-cream/50 hover:text-charcoal dark:hover:text-cream transition-colors">Privacy Policy</Link>
               </div>
             </div>
             <div className="space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/30">Connect</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-charcoal/30 dark:text-cream/30">Connect</p>
               <div className="flex flex-col gap-2.5">
-                <Link href="/dashboard" className="text-sm text-charcoal/50 hover:text-charcoal transition-colors">Dashboard</Link>
-                <Link href="/auth/signin" className="text-sm text-charcoal/50 hover:text-charcoal transition-colors">Sign In</Link>
+                <Link href="/dashboard" className="text-sm text-charcoal/50 dark:text-cream/50 hover:text-charcoal dark:hover:text-cream transition-colors">Dashboard</Link>
+                <Link href="/auth/signin" className="text-sm text-charcoal/50 dark:text-cream/50 hover:text-charcoal dark:hover:text-cream transition-colors">Sign In</Link>
               </div>
             </div>
           </div>
