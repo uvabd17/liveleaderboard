@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { BroadcastTicker } from "@/components/broadcast-ticker"
-import { CheckCircle2, UploadCloud, ExternalLink, FileText, Command, LogOut, ArrowRight, Trophy, Clock } from "lucide-react"
+import { CheckCircle2, UploadCloud, ExternalLink, FileText, Command, LogOut, ArrowRight, Clock } from "lucide-react"
+import { Logo } from "@/components/brand/logo"
 import SubmissionDialog from "./submission-dialog" // Client component for the dialog
 import Link from "next/link"
 
@@ -51,7 +52,7 @@ export default async function ParticipantDashboard({ params }: { params: { event
                 <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href={`/e/${eventSlug}`} className="p-2 rounded-lg hover:bg-charcoal/5 transition-colors">
-                            <Trophy className="w-5 h-5 text-charcoal/60" />
+                            <Logo className="w-5 h-5" />
                         </Link>
                         <div>
                             <span className="font-display font-semibold text-charcoal block leading-none">Participant Portal</span>

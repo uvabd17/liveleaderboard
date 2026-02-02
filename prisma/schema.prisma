@@ -1,14 +1,11 @@
-// Prisma schema for Supabase Postgres (can run locally with Docker or Supabase).
-// Minimal models: organization, event, participant (team/individual), score.
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -16,45 +13,45 @@ model User {
   id                        String              @id @default(cuid())
   email                     String              @unique
   name                      String?
-  password                  String?             // bcrypt hashed, optional for OAuth users
-  image                     String?             // Profile image from OAuth
-  emailVerified             DateTime?           // Email verification timestamp
-  emailVerifyToken          String?             // Token for email verification
-  emailVerifyExpires        DateTime?           // Token expiry
-  passwordResetToken        String?             // Token for password reset
-  passwordResetExpires      DateTime?           // Token expiry
+  password                  String?
   orgId                     String?
   createdAt                 DateTime            @default(now())
   updatedAt                 DateTime            @updatedAt
-  organization              Organization?       @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  ownedOrgs                 Organization[]      @relation("OrgOwner")
+  emailVerified             DateTime?
+  emailVerifyExpires        DateTime?
+  emailVerifyToken          String?
+  image                     String?
+  passwordResetExpires      DateTime?
+  passwordResetToken        String?
+  onboardingComplete        Boolean             @default(false)
+  accountType               String?
+  accounts                  Account[]
+  auditLogs                 AuditLog[]
   createdJudgeInvites       JudgeInvite[]       @relation("JudgeInviteCreatedBy")
   usedJudgeInvites          JudgeInvite[]       @relation("JudgeInviteUsedBy")
+  ownedOrgs                 Organization[]      @relation("OrgOwner")
   createdRegistrationTokens RegistrationToken[]
-  auditLogs                 AuditLog[]
-  accounts                  Account[]           // OAuth accounts
+  organization              Organization?       @relation(fields: [orgId], references: [id])
 
   @@index([email])
   @@index([emailVerifyToken])
   @@index([passwordResetToken])
 }
 
-// OAuth Account linking (for Google, GitHub, etc.)
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -64,13 +61,13 @@ model Organization {
   id            String   @id @default(cuid())
   name          String
   slug          String   @unique
-  ownerId       String
   brandingTheme Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  ownerId       String
+  events        Event[]
   owner         User     @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members       User[]
-  events        Event[]
 
   @@index([slug])
 }
@@ -80,27 +77,27 @@ model Event {
   orgId              String
   name               String
   slug               String              @unique
-  description        String?
-  logoUrl            String?             // Logo URL or data URL for event branding
-  brandColors        Json?               // Extracted brand colors: primary, secondary, accent
   startAt            DateTime?
   endAt              DateTime?
   timezone           String?
-  visibility         String              @default("public") // public|private|unlisted
-  rules              Json? // judgingMode, rubric, rounds, eliminations config
-  features           Json? // per-event toggleable features configuration
+  visibility         String              @default("public")
+  rules              Json?
+  features           Json?
   currentRound       Int                 @default(0)
-  archived           Boolean             @default(false)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  description        String?
+  archived           Boolean             @default(false)
+  brandColors        Json?
+  logoUrl            String?
+  auditLogs          AuditLog[]
   organization       Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  participants       Participant[]
-  scores             Score[]
-  roundCompletions   RoundCompletion[]
   judges             Judge[]
   judgeInvites       JudgeInvite[]
+  participants       Participant[]
   registrationTokens RegistrationToken[]
-  auditLogs          AuditLog[]
+  roundCompletions   RoundCompletion[]
+  scores             Score[]
 
   @@index([slug])
   @@index([orgId])
@@ -108,26 +105,22 @@ model Event {
   @@index([visibility])
 }
 
-enum ParticipantKind {
-  team
-  individual
-}
-
 model Participant {
-  id        String          @id @default(cuid())
-  eventId   String
-  kind      ParticipantKind
-  name      String
-  normalizedName String
-  accessCode String?         // Unique login code for portal
-  totalScore Int             @default(0)
-  profile   Json?
-  entries   Submission[]
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  event     Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  scores    Score[]
+  id               String            @id @default(cuid())
+  eventId          String
+  kind             ParticipantKind
+  name             String
+  profile          Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  normalizedName   String
+  totalScore       Int               @default(0)
+  accessCode       String?
+  event            Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
   roundCompletions RoundCompletion[]
+  scores           Score[]
+  entries          Submission[]
+
   @@unique([eventId, normalizedName, kind])
   @@index([eventId])
   @@index([eventId, totalScore])
@@ -140,10 +133,10 @@ model Score {
   value          Int         @default(0)
   criterion      String      @default("unknown")
   judgeUserId    String?
-  comment        String? // Judge feedback/comments feature
   idempotencyKey String?
   createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt // For score history tracking
+  comment        String?
+  updatedAt      DateTime    @updatedAt
   event          Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   participant    Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
@@ -155,17 +148,17 @@ model Score {
 }
 
 model Judge {
-  id        String    @id @default(cuid())
-  eventId   String
-  name      String?
-  email     String?
-  code      String?   @unique // Optional: for display (last 4) or legacy support
-  hashedCode String?  // bcrypt hashed access code
-  role      String    @default("judge") // judge|admin
-  active    Boolean   @default(true)
-  expiresAt DateTime?
-  createdAt DateTime  @default(now())
-  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  eventId    String
+  name       String?
+  email      String?
+  code       String?   @unique
+  role       String    @default("judge")
+  active     Boolean   @default(true)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  hashedCode String?
+  event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
 }
@@ -181,72 +174,66 @@ model JudgeInvite {
   singleUse   Boolean   @default(true)
   metadata    Json?
   createdAt   DateTime  @default(now())
-
-  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  createdBy User  @relation("JudgeInviteCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-  usedBy    User? @relation("JudgeInviteUsedBy", fields: [usedById], references: [id], onDelete: SetNull)
+  createdBy   User      @relation("JudgeInviteCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  usedBy      User?     @relation("JudgeInviteUsedBy", fields: [usedById], references: [id])
 
   @@index([eventId])
   @@index([token])
 }
 
 model RegistrationToken {
-  id          String    @id @default(cuid())
-  token       String    @unique
-  eventId     String
-  createdById String
-  usesLeft    Int? // null = unlimited
-  singleUse   Boolean   @default(false)
-  expiresAt   DateTime?
-  metadata    Json?
-  public      Boolean   @default(false)
-  scanCount   Int       @default(0)
-  registrationsCount Int @default(0)
-  createdAt   DateTime  @default(now())
-
-  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  createdBy User  @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  id                 String    @id @default(cuid())
+  token              String    @unique
+  eventId            String
+  createdById        String
+  usesLeft           Int?
+  singleUse          Boolean   @default(false)
+  expiresAt          DateTime?
+  metadata           Json?
+  public             Boolean   @default(false)
+  scanCount          Int       @default(0)
+  registrationsCount Int       @default(0)
+  createdAt          DateTime  @default(now())
+  createdBy          User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  event              Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
   @@index([token])
 }
 
-// Tracks when a participant is completed for a given round
 model RoundCompletion {
-  id            String   @id @default(cuid())
-  eventId       String
-  participantId String
-  roundNumber   Int
-  judgeUserId   String?
-  completedAt   DateTime @default(now())
+  id              String      @id @default(cuid())
+  eventId         String
+  participantId   String
+  roundNumber     Int
+  judgeUserId     String?
+  completedAt     DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
   durationSeconds Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  event           Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant     Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
-  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
-
+  @@unique([eventId, participantId, roundNumber])
   @@index([eventId, roundNumber])
   @@index([eventId, participantId, roundNumber])
   @@index([eventId, completedAt])
-  @@unique([eventId, participantId, roundNumber])
 }
 
-// Audit log for admin actions
 model AuditLog {
-  id            String   @id @default(cuid())
-  eventId       String?
-  userId        String
-  action        String   // 'score_adjust', 'round_manage', 'participant_create', etc.
-  entityType    String?  // 'Score', 'Round', 'Participant', etc.
-  entityId      String?
-  details       Json?    // Additional action details
-  ipAddress     String?
-  userAgent     String?
-  createdAt     DateTime @default(now())
-
-  event         Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  eventId    String?
+  userId     String
+  action     String
+  entityType String?
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  event      Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
   @@index([userId])
@@ -256,14 +243,18 @@ model AuditLog {
 }
 
 model Submission {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   participantId String
   roundNumber   Int
-  url           String   // The link (Google Drive, Github, etc)
+  url           String
   notes         String?
-  createdAt     DateTime @default(now())
-
+  createdAt     DateTime    @default(now())
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
   @@index([participantId, roundNumber])
+}
+
+enum ParticipantKind {
+  team
+  individual
 }

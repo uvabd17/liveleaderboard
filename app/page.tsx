@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
-  ArrowRight, Trophy, Activity, Users, Lock,
+  ArrowRight, Activity, Users, Lock,
   Play, ShieldCheck, Globe, Layout, Palette, BarChart3, Clock
 } from "lucide-react"
+import { Logo } from "@/components/brand/logo"
 
 export default function Home() {
   const { data: session, status } = useSession()
@@ -77,7 +78,7 @@ export default function Home() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-cream/80 backdrop-blur-md border-b border-charcoal/5">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <Trophy className="w-5 h-5" />
+            <Logo size={20} variant="icon" />
             <span className="font-display text-lg font-semibold tracking-tight">Live Leaderboard</span>
           </Link>
           <div className="flex items-center gap-6">
@@ -214,7 +215,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between gap-12">
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <Trophy className="w-5 h-5" />
+              <Logo size={20} variant="icon" />
               <span className="font-display text-lg font-semibold tracking-tight">Live Leaderboard</span>
             </div>
             <p className="text-charcoal/40 text-sm max-w-xs leading-relaxed">

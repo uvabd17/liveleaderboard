@@ -66,6 +66,7 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
             orgId: user.orgId || user.ownedOrgs[0]?.id || null,
             emailVerified: user.emailVerified,
+            onboardingComplete: user.onboardingComplete,
           }
         } catch (error: any) {
           if (error.message === 'EMAIL_NOT_VERIFIED') {
@@ -175,11 +176,26 @@ export const authOptions: NextAuthOptions = {
       return true
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         token.id = user.id
         token.orgId = user.orgId
         token.emailVerified = user.emailVerified
+        token.onboardingComplete = user.onboardingComplete
+      }
+
+      // Refresh user data from DB on update trigger (e.g., after onboarding)
+      if (trigger === 'update' && token.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: token.email as string },
+          include: { ownedOrgs: true }
+        })
+        if (dbUser) {
+          token.id = dbUser.id
+          token.orgId = dbUser.orgId || dbUser.ownedOrgs[0]?.id || null
+          token.emailVerified = dbUser.emailVerified
+          token.onboardingComplete = dbUser.onboardingComplete
+        }
       }
 
       // For OAuth, fetch user from DB to get latest orgId
@@ -192,6 +208,7 @@ export const authOptions: NextAuthOptions = {
           token.id = dbUser.id
           token.orgId = dbUser.orgId || dbUser.ownedOrgs[0]?.id || null
           token.emailVerified = dbUser.emailVerified
+          token.onboardingComplete = dbUser.onboardingComplete
         }
       }
 
@@ -203,6 +220,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.orgId = token.orgId as string
         session.user.emailVerified = token.emailVerified as Date | null
+        session.user.onboardingComplete = token.onboardingComplete as boolean
       }
       return session
     }

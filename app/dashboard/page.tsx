@@ -8,11 +8,11 @@ import toast from 'react-hot-toast'
 import { EventCreationWizard } from '@/components/event-creation-wizard'
 import { BrandingUpload } from '@/components/branding-upload'
 import { PageLoading } from '@/components/loading-spinner'
+import { Logo } from '@/components/brand/logo'
 import {
   BarChart,
   Calendar,
   Users,
-  Trophy,
   Activity,
   Plus,
   Settings,
@@ -66,12 +66,17 @@ export default function DashboardPage() {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     } else if (status === 'authenticated') {
+      // Redirect to onboarding if not completed
+      if (!session?.user?.onboardingComplete) {
+        router.push('/onboarding')
+        return
+      }
       // Set admin role when authenticated user accesses dashboard
       if (typeof window !== 'undefined') {
         localStorage.setItem('user-role', 'admin')
       }
     }
-  }, [status, router])
+  }, [status, session, router])
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -159,7 +164,7 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <Trophy className="w-5 h-5 text-charcoal" />
+              <Logo className="w-5 h-5" />
               <div>
                 <span className="font-display text-lg font-semibold text-charcoal block leading-none">Dashboard</span>
                 <span className="text-xs text-charcoal/40">Event Management</span>

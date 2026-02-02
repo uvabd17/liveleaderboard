@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { signIn, getProviders } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Trophy } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
+import { Logo } from '@/components/brand/logo'
+import { FloatingInput } from '@/components/ui/floating-input'
 
 // Google icon SVG component
 const GoogleIcon = () => (
@@ -89,27 +91,27 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
+    <div className="min-h-screen bg-cream dark:bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-md relative z-10 animate-fade-in">
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <Trophy className="w-6 h-6 text-charcoal" />
-            <span className="font-display text-lg font-semibold text-charcoal">Live Leaderboard</span>
+            <Logo size={24} variant="icon" />
+            <span className="font-display text-lg font-semibold text-charcoal dark:text-white">Live Leaderboard</span>
           </Link>
-          <h1 className="font-display text-3xl font-semibold text-charcoal mb-2">Welcome back</h1>
-          <p className="text-charcoal/50">Sign in to manage your events</p>
+          <h1 className="font-display text-3xl font-semibold text-charcoal dark:text-white mb-2">Welcome back</h1>
+          <p className="text-charcoal/50 dark:text-white/50">Sign in to manage your events</p>
         </div>
 
         {/* Card */}
-        <div className="card p-8">
+        <div className="card p-8 bg-white dark:bg-slate-900">
           {/* Google Sign In */}
           {hasGoogleProvider && (
             <>
               <button
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
-                className="w-full h-12 rounded-full border border-charcoal/10 bg-white hover:bg-charcoal/5 transition-colors flex items-center justify-center gap-3 text-charcoal font-medium disabled:opacity-50"
+                className="w-full h-12 rounded-full border border-charcoal/10 dark:border-white/10 bg-white dark:bg-transparent hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-3 text-charcoal dark:text-white font-medium disabled:opacity-50"
               >
                 {googleLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -123,53 +125,45 @@ export default function SignInPage() {
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-charcoal/10" />
+                  <div className="w-full border-t border-charcoal/10 dark:border-white/10" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-charcoal/40">or continue with email</span>
+                  <span className="px-4 bg-white dark:bg-slate-900 text-charcoal/40 dark:text-white/40">or continue with email</span>
                 </div>
               </div>
             </>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-medium">
+              <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 px-4 py-3 rounded-xl text-sm font-medium">
                 {error}
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-charcoal mb-2">Email address</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="input w-full"
-                placeholder="name@company.com"
-                autoComplete="email"
-              />
-            </div>
+            <FloatingInput
+              label="Email Address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-charcoal">Password</label>
-                <Link href="/auth/forgot-password" className="text-xs text-charcoal/50 hover:text-charcoal transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
-              <input
-                id="password"
+              <FloatingInput
+                label="Password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="input w-full"
-                placeholder="••••••••"
                 autoComplete="current-password"
               />
+              <div className="mt-2 text-right">
+                <Link href="/auth/forgot-password" className="text-xs text-charcoal/50 dark:text-white/50 hover:text-charcoal dark:hover:text-white transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button
@@ -185,20 +179,14 @@ export default function SignInPage() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-charcoal/5 text-center">
-            <p className="text-charcoal/50 text-sm">
+          <div className="mt-8 pt-6 border-t border-charcoal/5 dark:border-white/5 text-center">
+            <p className="text-charcoal/50 dark:text-white/50 text-sm">
               New to Live Leaderboard?{' '}
-              <Link href="/auth/signup" className="text-charcoal font-medium hover:underline">
+              <Link href="/auth/signup" className="text-charcoal dark:text-white font-medium hover:underline">
                 Create an account
               </Link>
             </p>
           </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <Link href="/" className="text-sm text-charcoal/40 hover:text-charcoal transition-colors inline-flex items-center gap-1">
-            <ArrowLeft className="w-3 h-3" /> Back to Home
-          </Link>
         </div>
       </div>
     </div>

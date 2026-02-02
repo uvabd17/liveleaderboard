@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Loader2, ArrowRight, ShieldCheck, Trophy } from "lucide-react"
+import { Loader2, ArrowRight, ShieldCheck } from "lucide-react"
+import { Logo } from "@/components/brand/logo"
 import toast from 'react-hot-toast'
 import Link from "next/link"
 
@@ -53,7 +54,7 @@ export default function ParticipantLoginPage() {
             <nav className="fixed top-0 left-0 right-0 z-50 bg-cream/80 backdrop-blur-md border-b border-charcoal/5">
                 <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
                     <Link href={`/e/${eventSlug}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                        <Trophy className="w-5 h-5 text-charcoal" />
+                        <Logo className="w-5 h-5" />
                         <span className="font-display font-semibold text-charcoal">Live Leaderboard</span>
                     </Link>
                 </div>

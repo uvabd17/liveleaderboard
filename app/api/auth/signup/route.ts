@@ -5,12 +5,12 @@ import { generateToken, sendVerificationEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name, organizationName } = await req.json()
+    const { email, password, name } = await req.json()
 
-    // Validation
-    if (!email || !password || !organizationName) {
+    // Validation - organization name no longer required at signup
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email, password, and organization name are required' },
+        { error: 'Email and password are required' },
         { status: 400 }
       )
     }
@@ -43,20 +43,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // Generate org slug from name
-    const baseSlug = organizationName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-
-    // Check slug uniqueness
-    let slug = baseSlug
-    let counter = 1
-    while (await db.organization.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${counter}`
-      counter++
-    }
-
     // Hash password
     const hashedPassword = await hash(password, 12)
 
@@ -64,33 +50,16 @@ export async function POST(req: Request) {
     const verifyToken = generateToken(32)
     const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-    // Create user and organization in transaction
-    const result = await db.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name: name || email.split('@')[0],
-          emailVerifyToken: verifyToken,
-          emailVerifyExpires: verifyExpires,
-        }
-      })
-
-      const organization = await tx.organization.create({
-        data: {
-          name: organizationName,
-          slug,
-          ownerId: user.id,
-        }
-      })
-
-      // Link user to organization
-      await tx.user.update({
-        where: { id: user.id },
-        data: { orgId: organization.id }
-      })
-
-      return { user, organization }
+    // Create user only - organization created during onboarding
+    const user = await db.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name: name || email.split('@')[0],
+        emailVerifyToken: verifyToken,
+        emailVerifyExpires: verifyExpires,
+        onboardingComplete: false, // Will complete during onboarding
+      }
     })
 
     // Send verification email (async, don't block response)
@@ -102,14 +71,9 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       user: {
-        id: result.user.id,
-        email: result.user.email,
-        name: result.user.name,
-      },
-      organization: {
-        id: result.organization.id,
-        name: result.organization.name,
-        slug: result.organization.slug,
+        id: user.id,
+        email: user.email,
+        name: user.name,
       },
       message: 'Account created. Please check your email to verify your account.'
     })

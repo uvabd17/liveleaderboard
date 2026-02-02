@@ -8,6 +8,7 @@ declare module 'next-auth' {
     image?: string | null
     orgId?: string | null
     emailVerified?: Date | null
+    onboardingComplete?: boolean
   }
 
   interface Session {
@@ -18,6 +19,7 @@ declare module 'next-auth' {
       image?: string | null
       orgId?: string | null
       emailVerified?: Date | null
+      onboardingComplete?: boolean
     }
   }
 }
@@ -27,5 +29,6 @@ declare module 'next-auth/jwt' {
     id: string
     orgId?: string | null
     emailVerified?: Date | null
+    onboardingComplete?: boolean
   }
 }

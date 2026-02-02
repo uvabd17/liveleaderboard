@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Lock, Loader2, CheckCircle, XCircle, Eye, EyeOff } from 'lucide-react'
+import { Logo } from '@/components/brand/logo'
+import { FloatingInput } from '@/components/ui/floating-input'
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams()
@@ -82,16 +84,24 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] dark:bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-cream dark:bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-8 border border-[#1A1A1A]/10 dark:border-white/10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-2 mb-6">
+            <Logo size={24} variant="icon" />
+            <span className="font-display text-lg font-semibold text-charcoal dark:text-white">Live Leaderboard</span>
+          </Link>
+        </div>
+
+        <div className="card p-8 bg-white dark:bg-slate-900">
           {status === 'validating' && (
             <div className="text-center">
-              <Loader2 className="w-16 h-16 mx-auto text-blue-500 animate-spin mb-4" />
-              <h1 className="text-xl font-semibold text-[#1A1A1A] dark:text-white mb-2">
+              <Loader2 className="w-16 h-16 mx-auto text-charcoal/30 dark:text-white/30 animate-spin mb-4" />
+              <h1 className="text-xl font-semibold text-charcoal dark:text-white mb-2">
                 Validating Reset Link...
               </h1>
-              <p className="text-[#1A1A1A]/60 dark:text-slate-400">
+              <p className="text-charcoal/60 dark:text-white/60">
                 Please wait
               </p>
             </div>
@@ -100,22 +110,22 @@ export default function ResetPasswordPage() {
           {status === 'invalid' && (
             <div className="text-center">
               <XCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
-              <h1 className="text-xl font-semibold text-[#1A1A1A] dark:text-white mb-2">
+              <h1 className="text-xl font-semibold text-charcoal dark:text-white mb-2">
                 Invalid Reset Link
               </h1>
-              <p className="text-[#1A1A1A]/60 dark:text-slate-400 mb-6">
+              <p className="text-charcoal/60 dark:text-white/60 mb-6">
                 {message}
               </p>
               <div className="space-y-3">
                 <Link
                   href="/auth/forgot-password"
-                  className="block w-full px-6 py-3 bg-[#1A1A1A] dark:bg-blue-600 text-white rounded-lg hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-700 transition-colors text-center"
+                  className="block w-full px-6 py-3 btn-primary rounded-full text-center"
                 >
                   Request New Reset Link
                 </Link>
                 <Link
                   href="/auth/signin"
-                  className="block text-center text-sm text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white"
+                  className="block text-center text-sm text-charcoal/60 dark:text-white/60 hover:text-charcoal dark:hover:text-white"
                 >
                   Back to Sign In
                 </Link>
@@ -126,15 +136,15 @@ export default function ResetPasswordPage() {
           {status === 'success' && (
             <div className="text-center">
               <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
-              <h1 className="text-xl font-semibold text-[#1A1A1A] dark:text-white mb-2">
+              <h1 className="text-xl font-semibold text-charcoal dark:text-white mb-2">
                 Password Reset!
               </h1>
-              <p className="text-[#1A1A1A]/60 dark:text-slate-400 mb-6">
+              <p className="text-charcoal/60 dark:text-white/60 mb-6">
                 {message} Redirecting to sign in...
               </p>
               <Link
                 href="/auth/signin"
-                className="inline-block px-6 py-3 bg-[#1A1A1A] dark:bg-blue-600 text-white rounded-lg hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-700 transition-colors"
+                className="inline-block px-6 py-3 btn-primary rounded-full"
               >
                 Continue to Sign In
               </Link>
@@ -144,59 +154,46 @@ export default function ResetPasswordPage() {
           {(status === 'valid' || status === 'loading' || status === 'error') && (
             <>
               <div className="text-center mb-6">
-                <Lock className="w-12 h-12 mx-auto text-blue-500 mb-4" />
-                <h1 className="text-2xl font-bold text-[#1A1A1A] dark:text-white mb-2">
+                <Lock className="w-12 h-12 mx-auto text-charcoal/30 dark:text-white/30 mb-4" />
+                <h1 className="text-2xl font-semibold text-charcoal dark:text-white mb-2">
                   Reset Your Password
                 </h1>
-                <p className="text-[#1A1A1A]/60 dark:text-slate-400">
+                <p className="text-charcoal/60 dark:text-white/60">
                   Enter a new password for {email}
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#1A1A1A]/70 dark:text-slate-300 mb-1">
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      className="w-full px-4 py-3 rounded-lg bg-[#FAF9F6] dark:bg-slate-800 border border-[#1A1A1A]/20 dark:border-slate-700 text-[#1A1A1A] dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1A1A1A]/40 dark:text-slate-500 hover:text-[#1A1A1A] dark:hover:text-white"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-[#1A1A1A]/50 dark:text-slate-500 mt-1">
-                    Minimum 8 characters
-                  </p>
-                </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <FloatingInput
+                  label="New Password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  hint="Minimum 8 characters"
+                  autoComplete="new-password"
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-[#1A1A1A]/70 dark:text-slate-300 mb-1">
-                    Confirm New Password
-                  </label>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 rounded-lg bg-[#FAF9F6] dark:bg-slate-800 border border-[#1A1A1A]/20 dark:border-slate-700 text-[#1A1A1A] dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="••••••••"
-                  />
-                </div>
+                <FloatingInput
+                  label="Confirm Password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="flex items-center gap-2 text-sm text-charcoal/60 dark:text-white/60 hover:text-charcoal dark:hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? 'Hide passwords' : 'Show passwords'}
+                </button>
 
                 {(status === 'error' || message) && status !== 'valid' && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+                  <div className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-sm">
                     {message}
                   </div>
                 )}
@@ -204,7 +201,7 @@ export default function ResetPasswordPage() {
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="w-full px-6 py-3 bg-[#1A1A1A] dark:bg-blue-600 text-white rounded-lg hover:bg-[#1A1A1A]/80 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="btn-primary w-full h-12 rounded-full flex items-center justify-center gap-2"
                 >
                   {status === 'loading' ? (
                     <>
@@ -218,7 +215,7 @@ export default function ResetPasswordPage() {
 
                 <Link
                   href="/auth/signin"
-                  className="block text-center text-sm text-[#1A1A1A]/60 dark:text-slate-400 hover:text-[#1A1A1A] dark:hover:text-white"
+                  className="block text-center text-sm text-charcoal/60 dark:text-white/60 hover:text-charcoal dark:hover:text-white"
                 >
                   Back to Sign In
                 </Link>
