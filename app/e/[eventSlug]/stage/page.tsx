@@ -374,11 +374,22 @@ export default function StagePage() {
     const total = (Number(round.roundDurationMinutes || round.duration || 0) || 0) * 60
     const startedAt = round.timerStartedAt ? new Date(round.timerStartedAt).getTime() : null
     // If startedAt missing but marked running, treat as full time remaining
-    if (!startedAt) return { total, left: total, running: !!round.timerRunning }
+    if (!startedAt) return { total, left: total, running: !!round.timerRunning, paused: false }
+    
+    // Handle paused state
+    const pausedAt = round.timerPausedAt ? new Date(round.timerPausedAt).getTime() : null
+    if (pausedAt) {
+      // Timer is paused - calculate time left at pause time
+      const elapsed = Math.floor((pausedAt - startedAt) / 1000)
+      const left = Math.max(0, total - elapsed)
+      return { total, left, running: false, paused: true }
+    }
+    
+    // Timer is running
     const now = Date.now()
     const elapsed = Math.floor((now - startedAt) / 1000)
     const left = Math.max(0, total - elapsed)
-    return { total, left, running: left > 0 }
+    return { total, left, running: left > 0 && !!round.timerRunning, paused: false }
   }
 
   const computeTimeLeftFor = (idx: number) => {

@@ -46,12 +46,23 @@ export async function GET(
       return NextResponse.json({ event })
     }
 
-    // Check if user owns this event for non-public events
-    if (session?.user?.orgId !== event.organization.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    // Check if user is authenticated
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    return NextResponse.json({ event })
+    // Check if user owns this event (is org member)
+    if (session.user.orgId === event.organization.id) {
+      return NextResponse.json({ event })
+    }
+
+    // Check if user is a judge for this event
+    const isJudge = event.judges.some(j => j.email === session.user?.email)
+    if (isJudge) {
+      return NextResponse.json({ event })
+    }
+
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   } catch (error) {
     console.error('Failed to fetch event:', error)
     return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
