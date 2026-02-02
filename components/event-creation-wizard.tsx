@@ -397,11 +397,11 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
   }
 
   const categoryIcons: Record<string, string> = {
-    presentation: '🎨',
-    competitive: '🏆',
-    judgeExperience: '⚖️',
-    leaderboardVisibility: '👁️',
-    operations: '⚙️',
+    presentation: 'PR',
+    competitive: 'CP',
+    judgeExperience: 'JX',
+    leaderboardVisibility: 'LB',
+    operations: 'OP',
   }
 
   const categoryNames: Record<string, string> = {
@@ -420,14 +420,14 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-slate-800 rounded-lg max-w-4xl w-full my-8 max-h-[90vh] flex flex-col">
+      <div className="bg-cream dark:bg-gray-950 rounded-2xl max-w-4xl w-full my-8 max-h-[90vh] flex flex-col shadow-2xl border border-charcoal/10 dark:border-white/10">
         {/* Header */}
-        <div className="p-6 border-b border-slate-700 flex-shrink-0">
+        <div className="p-6 border-b border-charcoal/10 dark:border-white/10 flex-shrink-0">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-white">Create New Event</h2>
+            <h2 className="text-2xl font-bold text-charcoal dark:text-white">Create New Event</h2>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-white text-2xl w-8 h-8 flex items-center justify-center"
+              className="text-charcoal/40 dark:text-white/40 hover:text-charcoal dark:hover:text-white text-2xl w-8 h-8 flex items-center justify-center transition-colors"
               aria-label="Close wizard"
             >
               ×
@@ -435,9 +435,9 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
           </div>
           
           {/* Progress Bar */}
-          <div className="w-full bg-slate-700 rounded-full h-2">
+          <div className="w-full bg-charcoal/10 dark:bg-white/10 rounded-full h-2">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-charcoal dark:bg-white h-2 rounded-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
               role="progressbar"
               aria-valuenow={progressPercent}
@@ -445,7 +445,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
               aria-valuemax={100}
             />
           </div>
-          <div className="text-sm text-slate-400 mt-2">
+          <div className="text-sm text-charcoal/50 dark:text-white/50 mt-2">
             Step {step} of 4
           </div>
         </div>
@@ -455,30 +455,30 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
           {/* Step 1: Basic Info */}
           {step === 1 && (
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-white mb-4">Basic Information</h3>
+              <h3 className="text-xl font-semibold text-charcoal dark:text-white mb-4">Basic Information</h3>
               
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Event Name <span className="text-red-400">*</span>
+                <label className="block text-sm font-medium text-charcoal/70 dark:text-white/70 mb-2">
+                  Event Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={basicInfo.name}
                   onChange={(e) => setBasicInfo({ ...basicInfo, name: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white placeholder-charcoal/40 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20 focus:border-charcoal dark:focus:border-white transition-all"
                   placeholder="Spring Hackathon 2025"
                   aria-label="Event name"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-charcoal/70 dark:text-white/70 mb-2">
                   Description
                 </label>
                 <textarea
                   value={basicInfo.description}
                   onChange={(e) => setBasicInfo({ ...basicInfo, description: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white placeholder-charcoal/40 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20 h-24 resize-none transition-all"
                   placeholder="Brief description of your event..."
                   aria-label="Event description"
                 />
@@ -486,12 +486,12 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
 
               {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-charcoal/70 dark:text-white/70 mb-2">
                   Event Logo (Optional)
                 </label>
                 <div className="flex items-center gap-4">
                   {logoPreview && (
-                    <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-slate-600">
+                    <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-charcoal/20 dark:border-white/20 bg-white dark:bg-gray-900">
                       <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain" />
                     </div>
                   )}
@@ -506,7 +506,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white hover:bg-slate-600 transition-colors"
+                      className="px-4 py-2 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors"
                     >
                       {logoPreview ? 'Change Logo' : 'Upload Logo'}
                     </button>
@@ -518,45 +518,45 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                           setExtractedColors(null)
                           if (fileInputRef.current) fileInputRef.current.value = ''
                         }}
-                        className="ml-2 px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors"
+                        className="ml-2 px-4 py-2 bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-500/20 transition-colors"
                       >
                         Remove
                       </button>
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Upload a logo to customize your event branding. Max 5MB.</p>
+                <p className="text-xs text-charcoal/50 dark:text-white/50 mt-1">Upload a logo to customize your event branding. Max 5MB.</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-charcoal/70 dark:text-white/70 mb-2">
                     Start Date
                   </label>
                   <input
                     type="datetime-local"
                     value={basicInfo.startAt}
                     onChange={(e) => setBasicInfo({ ...basicInfo, startAt: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20 transition-all [color-scheme:light] dark:[color-scheme:dark]"
                     aria-label="Start date"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-charcoal/70 dark:text-white/70 mb-2">
                     End Date
                   </label>
                   <input
                     type="datetime-local"
                     value={basicInfo.endAt}
                     onChange={(e) => setBasicInfo({ ...basicInfo, endAt: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20 transition-all [color-scheme:light] dark:[color-scheme:dark]"
                     aria-label="End date"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-charcoal/70 dark:text-white/70 mb-2">
                   Number of Rounds
                 </label>
                 <input
@@ -565,11 +565,11 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                   max="20"
                   value={basicInfo.numberOfRounds}
                   onChange={(e) => setBasicInfo({ ...basicInfo, numberOfRounds: parseInt(e.target.value) || 1 })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal/20 dark:focus:ring-white/20 transition-all"
                   placeholder="1"
                   aria-label="Number of rounds"
                 />
-                <p className="text-xs text-slate-400 mt-1">Specify how many rounds this competition will have</p>
+                <p className="text-xs text-charcoal/50 dark:text-white/50 mt-1">Specify how many rounds this competition will have</p>
               </div>
             </div>
           )}
@@ -578,8 +578,8 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
           {step === 2 && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold text-white mb-2">Features & Customization</h3>
-                <p className="text-slate-400 mb-4">Choose a preset or customize features manually</p>
+                <h3 className="text-xl font-semibold text-charcoal dark:text-white mb-2">Features & Customization</h3>
+                <p className="text-charcoal/50 dark:text-white/50 mb-4">Choose a preset or customize features manually</p>
                 
                 {/* Presets */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -587,14 +587,14 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                     <button
                       key={key}
                       onClick={() => applyPreset(key)}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      className={`p-4 rounded-xl border-2 transition-all text-left ${
                         selectedPreset === key
-                          ? 'border-blue-500 bg-blue-500/10'
-                          : 'border-slate-600 bg-slate-700 hover:border-slate-500'
+                          ? 'border-charcoal dark:border-white bg-charcoal/5 dark:bg-white/5'
+                          : 'border-charcoal/20 dark:border-white/20 bg-white dark:bg-gray-900 hover:border-charcoal/40 dark:hover:border-white/40'
                       }`}
                     >
-                      <div className="text-lg font-medium text-white capitalize mb-1">{key}</div>
-                      <div className="text-xs text-slate-400">Quick setup</div>
+                      <div className="text-lg font-medium text-charcoal dark:text-white capitalize mb-1">{key}</div>
+                      <div className="text-xs text-charcoal/50 dark:text-white/50">Quick setup</div>
                     </button>
                   ))}
                 </div>
@@ -607,10 +607,10 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                   const mediumPriority = metas.filter(m => m.priority === 'medium')
                   
                   return (
-                    <div key={category} className="border border-slate-700 rounded-lg p-4">
+                    <div key={category} className="border border-charcoal/10 dark:border-white/10 rounded-xl p-4 bg-white dark:bg-gray-900">
                       <div className="flex items-center gap-2 mb-4">
-                        <span className="text-2xl">{categoryIcons[category]}</span>
-                        <h4 className="text-lg font-semibold text-white">{categoryNames[category]}</h4>
+                        <span className="w-8 h-8 rounded-lg bg-charcoal/10 dark:bg-white/10 flex items-center justify-center text-xs font-bold text-charcoal/60 dark:text-white/60">{categoryIcons[category]}</span>
+                        <h4 className="text-lg font-semibold text-charcoal dark:text-white">{categoryNames[category]}</h4>
                       </div>
                       
                       <div className="space-y-3">
@@ -621,20 +621,20 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                           return (
                             <div
                               key={meta.id}
-                              className={`p-3 rounded-lg border ${
-                                isEnabled ? 'bg-blue-500/10 border-blue-500/30' : 'bg-slate-700/50 border-slate-600'
+                              className={`p-3 rounded-xl border ${
+                                isEnabled ? 'bg-charcoal/5 dark:bg-white/5 border-charcoal/20 dark:border-white/20' : 'bg-charcoal/[0.02] dark:bg-white/[0.02] border-charcoal/10 dark:border-white/10'
                               }`}
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <h5 className="font-medium text-white">{meta.name}</h5>
+                                    <h5 className="font-medium text-charcoal dark:text-white">{meta.name}</h5>
                                   </div>
-                                  <p className="text-sm text-slate-400">{meta.description}</p>
+                                  <p className="text-sm text-charcoal/50 dark:text-white/50">{meta.description}</p>
                                   
                                   {/* Configuration options */}
                                   {isEnabled && meta.configurable && (
-                                    <div className="mt-3 pt-3 border-t border-slate-600">
+                                    <div className="mt-3 pt-3 border-t border-charcoal/10 dark:border-white/10">
                                       {meta.configurable.type === 'select' && (
                                         <select
                                           value={typeof value === 'object' && value !== null ? (value as any).topN || (value as any).detail : ''}
@@ -642,7 +642,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                                             const configKey = meta.id.includes('podiumWinners') ? 'topN' : 'detail'
                                             updateFeatureConfig(meta.id, configKey, meta.configurable?.type === 'select' && meta.configurable.options?.find(o => o.value.toString() === e.target.value)?.value || e.target.value)
                                           }}
-                                          className="px-3 py-1.5 bg-slate-600 border border-slate-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-lg text-charcoal dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
                                         >
                                           {meta.configurable.options?.map((opt) => (
                                             <option key={opt.value} value={opt.value}>
@@ -658,7 +658,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                                           max={meta.configurable.max}
                                           value={typeof value === 'object' && value !== null ? (value as any).weight || 0 : 0}
                                           onChange={(e) => updateFeatureConfig(meta.id, 'weight', parseInt(e.target.value) || 0)}
-                                          className="px-3 py-1.5 bg-slate-600 border border-slate-500 rounded text-white text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-lg text-charcoal dark:text-white text-sm w-24 focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
                                         />
                                       )}
                                     </div>
@@ -669,7 +669,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                                     type="checkbox"
                                     checked={isEnabled}
                                     onChange={() => toggleFeature(meta.id)}
-                                    className="w-5 h-5 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                    className="w-5 h-5 rounded border-charcoal/30 dark:border-white/30 bg-white dark:bg-gray-800 text-charcoal dark:text-white focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
                                   />
                                 </label>
                               </div>
@@ -679,7 +679,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                         
                         {mediumPriority.length > 0 && (
                           <details className="mt-4">
-                            <summary className="text-sm text-slate-400 cursor-pointer hover:text-slate-300">
+                            <summary className="text-sm text-charcoal/60 dark:text-white/60 cursor-pointer hover:text-charcoal dark:hover:text-white">
                               Show {mediumPriority.length} medium priority features
                             </summary>
                             <div className="mt-3 space-y-3">
@@ -690,21 +690,21 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                                 return (
                                   <div
                                     key={meta.id}
-                                    className={`p-3 rounded-lg border ${
-                                      isEnabled ? 'bg-blue-500/10 border-blue-500/30' : 'bg-slate-700/50 border-slate-600'
+                                    className={`p-3 rounded-xl border ${
+                                      isEnabled ? 'bg-charcoal/5 dark:bg-white/5 border-charcoal/30 dark:border-white/30' : 'bg-white/50 dark:bg-gray-800/50 border-charcoal/10 dark:border-white/10'
                                     }`}
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="flex-1">
-                                        <h5 className="font-medium text-white mb-1">{meta.name}</h5>
-                                        <p className="text-sm text-slate-400">{meta.description}</p>
+                                        <h5 className="font-medium text-charcoal dark:text-white mb-1">{meta.name}</h5>
+                                        <p className="text-sm text-charcoal/60 dark:text-white/60">{meta.description}</p>
                                       </div>
                                       <label className="flex items-center cursor-pointer">
                                         <input
                                           type="checkbox"
                                           checked={isEnabled}
                                           onChange={() => toggleFeature(meta.id)}
-                                          className="w-5 h-5 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                          className="w-5 h-5 rounded border-charcoal/30 dark:border-white/30 bg-white dark:bg-gray-800 text-charcoal dark:text-white focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
                                         />
                                       </label>
                                     </div>
@@ -725,20 +725,20 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
           {/* Step 3: Rubric */}
           {step === 3 && (
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-white mb-4">Rounds & Scoring</h3>
+              <h3 className="text-xl font-semibold text-charcoal dark:text-white mb-4">Rounds & Scoring</h3>
 
-              <div className="bg-slate-700 p-4 rounded-lg space-y-3">
+              <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-charcoal/10 dark:border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-white font-semibold">Round Configuration</div>
-                    <div className="text-sm text-slate-300">Name each round and set timers or eliminations now.</div>
+                    <div className="text-charcoal dark:text-white font-semibold">Round Configuration</div>
+                    <div className="text-sm text-charcoal/60 dark:text-white/60">Name each round and set timers or eliminations now.</div>
                   </div>
                 </div>
                 <div className="space-y-3">
                   {rounds.map((r, idx) => (
-                    <div key={r.number} className="grid grid-cols-1 md:grid-cols-4 gap-2 bg-slate-800/60 p-3 rounded border border-slate-600">
+                    <div key={r.number} className="grid grid-cols-1 md:grid-cols-4 gap-2 bg-cream/50 dark:bg-gray-800/50 p-3 rounded-xl border border-charcoal/10 dark:border-white/10">
                       <div className="md:col-span-2">
-                        <label className="text-xs text-slate-300 mb-1 block">Round Name</label>
+                        <label className="text-xs text-charcoal/60 dark:text-white/60 mb-1 block">Round Name</label>
                         <input
                           value={r.name}
                           onChange={(e) => {
@@ -746,11 +746,11 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                             next[idx] = { ...next[idx], name: e.target.value }
                             setRounds(next)
                           }}
-                          className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white"
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-300 mb-1 block">Timer (minutes)</label>
+                        <label className="text-xs text-charcoal/60 dark:text-white/60 mb-1 block">Timer (minutes)</label>
                         <input
                           type="number"
                           min={0}
@@ -761,12 +761,12 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                             next[idx] = { ...next[idx], durationMinutes: val }
                             setRounds(next)
                           }}
-                          className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white"
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white"
                           placeholder="e.g. 10"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-300 mb-1 block">Eliminate (count)</label>
+                        <label className="text-xs text-charcoal/60 dark:text-white/60 mb-1 block">Eliminate (count)</label>
                         <input
                           type="number"
                           min={0}
@@ -777,7 +777,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                             next[idx] = { ...next[idx], eliminationCount: val }
                             setRounds(next)
                           }}
-                          className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white"
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white"
                           placeholder="0 = none"
                         />
                       </div>
@@ -786,10 +786,10 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                 </div>
               </div>
 
-              <h4 className="text-lg font-semibold text-white mt-6">Scoring Rubric</h4>
+              <h4 className="text-lg font-semibold text-charcoal dark:text-white mt-6">Scoring Rubric</h4>
               
               {criteria.map((criterion, index) => (
-                <div key={index} className="bg-slate-700 p-4 rounded-lg space-y-3">
+                <div key={index} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-charcoal/10 dark:border-white/10 space-y-3">
                   <div className="flex gap-3">
                     <input
                       type="text"
@@ -799,7 +799,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                         newCriteria[index].name = e.target.value
                         setCriteria(newCriteria)
                       }}
-                      className="flex-1 px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
                       placeholder="Criterion name"
                       aria-label={`Criterion ${index + 1} name`}
                     />
@@ -811,7 +811,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                         newCriteria[index].maxPoints = parseInt(e.target.value) || 0
                         setCriteria(newCriteria)
                       }}
-                      className="w-24 px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-24 px-3 py-2 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
                       placeholder="100"
                       min="0"
                       aria-label={`Criterion ${index + 1} max points`}
@@ -819,7 +819,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                     {criteria.length > 1 && (
                       <button
                         onClick={() => setCriteria(criteria.filter((_, i) => i !== index))}
-                        className="px-3 py-2 bg-red-600/20 text-red-400 rounded hover:bg-red-600/30"
+                        className="px-3 py-2 bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-500/20 dark:hover:bg-red-500/30"
                         aria-label={`Remove criterion ${index + 1}`}
                       >
                         ×
@@ -834,17 +834,17 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                       newCriteria[index].description = e.target.value
                       setCriteria(newCriteria)
                     }}
-                    className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-charcoal dark:focus:ring-white"
                     placeholder="Description (optional)"
                     aria-label={`Criterion ${index + 1} description`}
                   />
                   <div>
-                    <div className="text-xs text-slate-300 mb-2">Rounds where this applies</div>
+                    <div className="text-xs text-charcoal/60 dark:text-white/60 mb-2">Rounds where this applies</div>
                     <div className="flex flex-wrap gap-2">
                       {rounds.map((r) => {
                         const checked = criterion.rounds?.includes(r.number)
                         return (
-                          <label key={r.number} className="flex items-center gap-2 px-2 py-1 rounded bg-slate-600 border border-slate-500 text-sm text-white cursor-pointer">
+                          <label key={r.number} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-cream dark:bg-gray-800 border border-charcoal/10 dark:border-white/10 text-sm text-charcoal dark:text-white cursor-pointer">
                             <input
                               type="checkbox"
                               checked={!!checked}
@@ -874,7 +874,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
 
               <button
                 onClick={() => setCriteria([...criteria, { name: '', maxPoints: 100, weight: 1, description: '', rounds: rounds.map(r => r.number) }])}
-                className="w-full py-2 border-2 border-dashed border-slate-600 rounded-lg text-slate-400 hover:border-slate-500 hover:text-slate-300 transition-colors"
+                className="w-full py-2 border-2 border-dashed border-charcoal/20 dark:border-white/20 rounded-xl text-charcoal/60 dark:text-white/60 hover:border-charcoal/40 dark:hover:border-white/40 hover:text-charcoal dark:hover:text-white transition-colors"
                 aria-label="Add criterion"
               >
                 + Add Criterion
@@ -885,63 +885,63 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
           {/* Step 4: Review */}
           {step === 4 && (
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-white mb-4">Review & Launch</h3>
+              <h3 className="text-xl font-semibold text-charcoal dark:text-white mb-4">Review & Launch</h3>
               
-              <div className="bg-slate-700 rounded-lg p-4 space-y-3">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-charcoal/10 dark:border-white/10 p-4 space-y-3">
                 <div>
-                  <div className="text-sm text-slate-400">Event Name</div>
-                  <div className="text-white font-medium">{basicInfo.name}</div>
+                  <div className="text-sm text-charcoal/60 dark:text-white/60">Event Name</div>
+                  <div className="text-charcoal dark:text-white font-medium">{basicInfo.name}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-slate-400">Public URL</div>
-                  <div className="text-blue-400 font-mono text-sm">
+                  <div className="text-sm text-charcoal/60 dark:text-white/60">Public URL</div>
+                  <div className="text-charcoal dark:text-white font-mono text-sm">
                     /e/{basicInfo.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
                   </div>
                 </div>
                 {logoPreview && (
                   <div>
-                    <div className="text-sm text-slate-400 mb-2">Logo</div>
-                    <div className="w-16 h-16 rounded overflow-hidden border border-slate-600">
+                    <div className="text-sm text-charcoal/60 dark:text-white/60 mb-2">Logo</div>
+                    <div className="w-16 h-16 rounded-xl overflow-hidden border border-charcoal/10 dark:border-white/10">
                       <img src={logoPreview} alt="Event logo" className="w-full h-full object-contain" />
                     </div>
                   </div>
                 )}
                 {extractedColors && (
                   <div>
-                    <div className="text-sm text-slate-400 mb-2">Brand Colors</div>
+                    <div className="text-sm text-charcoal/60 dark:text-white/60 mb-2">Brand Colors</div>
                     <div className="flex gap-2">
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded border-2 border-slate-600" style={{ backgroundColor: extractedColors.primary }} />
-                        <span className="text-xs text-slate-400 mt-1">Primary</span>
+                        <div className="w-12 h-12 rounded-lg border-2 border-charcoal/10 dark:border-white/10" style={{ backgroundColor: extractedColors.primary }} />
+                        <span className="text-xs text-charcoal/60 dark:text-white/60 mt-1">Primary</span>
                       </div>
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded border-2 border-slate-600" style={{ backgroundColor: extractedColors.secondary }} />
-                        <span className="text-xs text-slate-400 mt-1">Secondary</span>
+                        <div className="w-12 h-12 rounded-lg border-2 border-charcoal/10 dark:border-white/10" style={{ backgroundColor: extractedColors.secondary }} />
+                        <span className="text-xs text-charcoal/60 dark:text-white/60 mt-1">Secondary</span>
                       </div>
                       <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded border-2 border-slate-600" style={{ backgroundColor: extractedColors.accent }} />
-                        <span className="text-xs text-slate-400 mt-1">Accent</span>
+                        <div className="w-12 h-12 rounded-lg border-2 border-charcoal/10 dark:border-white/10" style={{ backgroundColor: extractedColors.accent }} />
+                        <span className="text-xs text-charcoal/60 dark:text-white/60 mt-1">Accent</span>
                       </div>
                     </div>
                   </div>
                 )}
                 {selectedPreset && (
                   <div>
-                    <div className="text-sm text-slate-400">Template</div>
-                    <div className="text-white capitalize">{selectedPreset}</div>
+                    <div className="text-sm text-charcoal/60 dark:text-white/60">Template</div>
+                    <div className="text-charcoal dark:text-white capitalize">{selectedPreset}</div>
                   </div>
                 )}
                 <div>
-                  <div className="text-sm text-slate-400">Number of Rounds</div>
-                  <div className="text-white">{basicInfo.numberOfRounds}</div>
+                  <div className="text-sm text-charcoal/60 dark:text-white/60">Number of Rounds</div>
+                  <div className="text-charcoal dark:text-white">{basicInfo.numberOfRounds}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-slate-400">Scoring Criteria</div>
-                  <div className="text-white">{criteria.length} criteria</div>
+                  <div className="text-sm text-charcoal/60 dark:text-white/60">Scoring Criteria</div>
+                  <div className="text-charcoal dark:text-white">{criteria.length} criteria</div>
                 </div>
                 <div>
-                  <div className="text-sm text-slate-400">Features Enabled</div>
-                  <div className="text-white">
+                  <div className="text-sm text-charcoal/60 dark:text-white/60">Features Enabled</div>
+                  <div className="text-charcoal dark:text-white">
                     {featureMetadata.filter(meta => {
                       const value = getFeatureValue(features, meta.id)
                       return typeof value === 'boolean' ? value : value?.enabled
@@ -950,9 +950,9 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
                 </div>
               </div>
 
-              <div className="bg-blue-500/10 border border-blue-500 rounded-lg p-4">
-                <div className="text-blue-400 font-medium mb-2">✓ Ready to Launch</div>
-                <div className="text-sm text-slate-300">
+              <div className="bg-green-500/10 dark:bg-green-500/10 border border-green-500/30 dark:border-green-500/30 rounded-xl p-4">
+                <div className="text-green-700 dark:text-green-400 font-medium mb-2">✓ Ready to Launch</div>
+                <div className="text-sm text-charcoal/80 dark:text-white/80">
                   Your event will be created with a unique public URL. You'll be able to generate QR codes
                   and invite judges after creation.
                 </div>
@@ -962,10 +962,10 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-700 flex justify-between flex-shrink-0">
+        <div className="p-6 border-t border-charcoal/10 dark:border-white/10 flex justify-between flex-shrink-0">
           <button
             onClick={step === 1 ? onClose : handleBack}
-            className="px-6 py-3 text-slate-300 hover:text-white transition-colors"
+            className="px-6 py-3 text-charcoal/60 dark:text-white/60 hover:text-charcoal dark:hover:text-white transition-colors"
             disabled={loading}
             style={{ minHeight: '48px' }}
             aria-label={step === 1 ? 'Cancel' : 'Back'}
@@ -977,7 +977,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
             <button
               onClick={handleNext}
               disabled={!canProceed()}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              className="px-6 py-3 bg-charcoal dark:bg-white hover:bg-charcoal/90 dark:hover:bg-white/90 disabled:bg-charcoal/30 dark:disabled:bg-white/30 disabled:cursor-not-allowed text-cream dark:text-charcoal rounded-xl font-medium transition-colors"
               style={{ minHeight: '48px' }}
               aria-label="Next step"
             >
@@ -987,7 +987,7 @@ export function EventCreationWizard({ onClose, onSuccess }: EventWizardProps) {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
               style={{ minHeight: '48px' }}
               aria-label="Create event"
             >
