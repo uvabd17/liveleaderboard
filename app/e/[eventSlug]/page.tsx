@@ -82,7 +82,7 @@ export default function EventLeaderboardPage() {
 
     if (cached) {
       setEvent(cached.event)
-      setParticipants(cached.participants)
+      setParticipants(Array.isArray(cached.participants) ? cached.participants : [])
       setLoading(false)
     }
 
@@ -91,16 +91,20 @@ export default function EventLeaderboardPage() {
       if (response.ok) {
         const data = await response.json()
         setEvent(data.event)
-        setParticipants(data.participants)
-        if (data.roundsConfig) setRoundsConfig(data.roundsConfig)
+        setParticipants(Array.isArray(data.participants) ? data.participants : [])
+        if (Array.isArray(data.roundsConfig)) setRoundsConfig(data.roundsConfig)
         if (typeof data.currentRound === 'number') setCurrentRoundIdx(data.currentRound)
         cache.set(cacheKey, data, 2 * 60 * 1000)
         if (data.event?.brandColors) {
           setEventColors(data.event.brandColors)
         }
+      } else {
+        console.error('Failed to fetch leaderboard:', response.status)
+        setParticipants([])
       }
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error)
+      setParticipants([])
     } finally {
       setLoading(false)
     }
@@ -133,10 +137,12 @@ export default function EventLeaderboardPage() {
         }
         
         if (data.type === 'leaderboard-update') {
-          setParticipants(data.participants)
-          setLastUpdateTimestamp(messageTimestamp)
+          if (Array.isArray(data.participants)) {
+            setParticipants(data.participants)
+            setLastUpdateTimestamp(messageTimestamp)
+          }
         } else if (data.type === 'round-change') {
-          if (data.roundsConfig) setRoundsConfig(data.roundsConfig)
+          if (Array.isArray(data.roundsConfig)) setRoundsConfig(data.roundsConfig)
           if (typeof data.currentRound === 'number') setCurrentRoundIdx(data.currentRound)
           if (Array.isArray(data.leaderboard)) setParticipants(data.leaderboard)
           setLastUpdateTimestamp(messageTimestamp)
