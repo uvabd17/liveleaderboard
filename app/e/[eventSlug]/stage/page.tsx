@@ -407,13 +407,19 @@ export default function StagePage() {
 
   // Tick to update timer every second when running
   const [tick, setTick] = useState(0)
+  // Extract timer state fields to use as dependencies for proper reactivity
+  const currentRoundTimerRunning = currentRound?.timerRunning ?? false
+  const currentRoundTimerPausedAt = currentRound?.timerPausedAt ?? null
+  const currentRoundTimerStartedAt = currentRound?.timerStartedAt ?? null
+  
   useEffect(() => {
     let id: any = null
-    if (timerState && timerState.running) {
+    // Only tick if timer is running and NOT paused
+    if (timerState && timerState.running && !timerState.paused) {
       id = setInterval(() => setTick(t => t + 1), 1000)
     }
     return () => { if (id) clearInterval(id) }
-  }, [currentRoundIdx, !!(timerState && timerState.running)])
+  }, [currentRoundIdx, currentRoundTimerRunning, currentRoundTimerPausedAt, currentRoundTimerStartedAt, timerState?.running, timerState?.paused])
 
   // Audio Feedback for Timer End - with proper cleanup
   const timerEndAudioRef = useRef<HTMLAudioElement | null>(null)
