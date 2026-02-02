@@ -2,6 +2,8 @@ import './globals.css'
 import React from 'react'
 import { Providers } from '../lib/providers'
 import { Inter, Playfair_Display, JetBrains_Mono } from 'next/font/google'
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 // Primary UI font - clean, modern, highly legible
 const inter = Inter({
@@ -60,6 +62,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           {children}
         </Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

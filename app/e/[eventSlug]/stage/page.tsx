@@ -78,68 +78,7 @@ export default function StagePage() {
     }
   }, [event?.features?.isEnded, topN])
 
-  // Show loading while checking authentication
-  if (status === 'loading') {
-    return <PageLoading message="Verifying Access..." />
-  }
-
-  // Show access denied if not admin
-  if (status === 'authenticated' && role !== 'admin') {
-    return (
-      <div className="min-h-screen bg-charcoal flex items-center justify-center p-4">
-        <div className="bg-white/5 border border-white/10 p-12 rounded-2xl text-center space-y-6 max-w-md">
-          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto">
-            <span className="text-3xl">🔒</span>
-          </div>
-          <div className="space-y-2">
-            <h2 className="font-display text-2xl font-semibold text-white">Admin Access Required</h2>
-            <p className="text-white/80">The Stage Display is only accessible to event administrators.</p>
-          </div>
-          <button
-            onClick={() => router.push(`/e/${eventSlug}`)}
-            className="w-full py-3 bg-cream text-charcoal rounded-full font-medium hover:bg-white transition-colors"
-          >
-            Go to Standings
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Simple synthesized Gong/Bong sound
-  const playRoundSound = () => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
-      if (!AudioCtx) return
-      const ctx = new AudioCtx()
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(110, ctx.currentTime) // low A
-      osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 1.5)
-
-      gain.gain.setValueAtTime(0.5, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2)
-
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-
-      osc.start()
-      osc.stop(ctx.currentTime + 2)
-    } catch (e) { }
-  }
-
-  useEffect(() => {
-    fetchLeaderboard()
-    const cleanupSse = setupSSE()
-    return () => {
-      if (typeof cleanupSse === 'function') cleanupSse()
-      setEventColors(null)
-    }
-  }, [eventSlug, setEventColors])
-
-  // Refs for detecting transitions and timers
+  // Refs for detecting transitions and timers - MUST be before any conditional returns
   const prevRoundsRef = useRef<any[] | null>(null)
   const fullscreenTimeoutRef = useRef<any | null>(null)
   const intervalRef = useRef<any | null>(null)
@@ -393,6 +332,17 @@ export default function StagePage() {
     return () => eventSource.close()
   }
 
+  // Initial data loading - fetch leaderboard and setup SSE
+  useEffect(() => {
+    fetchLeaderboard()
+    const cleanupSse = setupSSE()
+    return () => {
+      if (typeof cleanupSse === 'function') cleanupSse()
+      setEventColors(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventSlug])
+
   // Filter participants by search query
   const filteredParticipants = useMemo(() => {
     if (!searchQuery.trim()) return allParticipants
@@ -506,6 +456,59 @@ export default function StagePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, participantsPerPage, viewMode])
+
+  // Simple synthesized Gong/Bong sound
+  const playRoundSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(110, ctx.currentTime) // low A
+      osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 1.5)
+
+      gain.gain.setValueAtTime(0.5, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start()
+      osc.stop(ctx.currentTime + 2)
+    } catch (e) { }
+  }
+
+  // ============ CONDITIONAL RETURNS (after all hooks) ============
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return <PageLoading message="Verifying Access..." />
+  }
+
+  // Show access denied if not admin
+  if (status === 'authenticated' && role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-charcoal flex items-center justify-center p-4">
+        <div className="bg-white/5 border border-white/10 p-12 rounded-2xl text-center space-y-6 max-w-md">
+          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto">
+            <span className="text-3xl">🔒</span>
+          </div>
+          <div className="space-y-2">
+            <h2 className="font-display text-2xl font-semibold text-white">Admin Access Required</h2>
+            <p className="text-white/80">The Stage Display is only accessible to event administrators.</p>
+          </div>
+          <button
+            onClick={() => router.push(`/e/${eventSlug}`)}
+            className="w-full py-3 bg-cream text-charcoal rounded-full font-medium hover:bg-white transition-colors"
+          >
+            Go to Standings
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!event) {
     return (
@@ -827,7 +830,7 @@ export default function StagePage() {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className={`text-2xl font-black tabular-nums tracking-tighter ${movedUp ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : movedDown ? 'text-rose-400' : 'text-white'}`}>
-                            {participant.totalScore.toLocaleString()}
+                            {(participant.totalScore ?? 0).toLocaleString()}
                           </div>
                           <div className={`w-1 h-8 rounded-full transition-all ${movedUp ? 'bg-emerald-500 scale-y-100' : movedDown ? 'bg-rose-500 scale-y-100' : 'bg-white/5'}`} />
                         </div>
@@ -942,7 +945,7 @@ export default function StagePage() {
                           </div>
                           <div className="flex items-center gap-3">
                             <div className={`text-xl font-black tabular-nums tracking-tighter ${movedUp ? 'text-emerald-400' : movedDown ? 'text-rose-400' : 'text-white'}`}>
-                              {participant.totalScore.toLocaleString()}
+                              {(participant.totalScore ?? 0).toLocaleString()}
                             </div>
                             <div className={`w-1 h-6 rounded-full transition-all ${movedUp ? 'bg-emerald-500' : movedDown ? 'bg-rose-500' : 'bg-white/5'}`} />
                           </div>

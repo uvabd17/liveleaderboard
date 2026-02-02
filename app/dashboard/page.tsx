@@ -168,7 +168,7 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <Logo className="w-5 h-5" />
+              <Logo className="w-5 h-5" variant="icon" />
               <div>
                 <span className="font-display text-lg font-semibold text-charcoal dark:text-cream block leading-none">Dashboard</span>
                 <span className="text-xs text-charcoal/40 dark:text-cream/40">Event Management</span>
