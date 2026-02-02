@@ -10,7 +10,7 @@ import { BrandingUpload } from '@/components/branding-upload'
 import { cn } from '@/lib/utils'
 import { AdminNavbar } from '@/components/ui/admin-navbar'
 import { PageLoading } from '@/components/loading-spinner'
-import { RefreshCw, CheckCircle2, Radio, Send } from 'lucide-react'
+import { RefreshCw, CheckCircle2, Radio, Send, BarChart3, Users, Scale, Radio as Broadcast, Settings as SettingsIcon, CheckCircle, Smartphone } from 'lucide-react'
 
 interface Event {
   id: string
@@ -349,12 +349,12 @@ export default function EventAdminPage() {
     )
   }
 
-  const tabs: { id: AdminTab; label: string; icon: string }[] = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
-    { id: 'participants', label: 'Participants', icon: '👥' },
-    { id: 'judges', label: 'Judges', icon: '⚖️' },
-    { id: 'broadcast', label: 'Broadcast', icon: '📢' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
+  const tabs: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'participants', label: 'Participants', icon: <Users className="w-4 h-4" /> },
+    { id: 'judges', label: 'Judges', icon: <Scale className="w-4 h-4" /> },
+    { id: 'broadcast', label: 'Broadcast', icon: <Broadcast className="w-4 h-4" /> },
+    { id: 'settings', label: 'Settings', icon: <SettingsIcon className="w-4 h-4" /> },
   ]
 
   return (
@@ -374,7 +374,7 @@ export default function EventAdminPage() {
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
-                  <span className="text-2xl">🏁</span>
+                  <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-[#1A1A1A] dark:text-white">All Rounds Complete!</h3>
@@ -476,7 +476,7 @@ export default function EventAdminPage() {
                     onClick={() => { setShowQR(true); setQrTab('registration') }}
                     className="flex flex-col items-center gap-2 p-6 bg-charcoal/5 dark:bg-white/5 hover:bg-charcoal/10 dark:hover:bg-white/10 rounded-lg transition-colors border border-charcoal/10 dark:border-white/5"
                   >
-                    <div className="text-4xl">📱</div>
+                    <Smartphone className="w-10 h-10 text-charcoal dark:text-cream" />
                     <div className="text-charcoal dark:text-white font-medium">Generate QR</div>
                   </button>
                   <button
